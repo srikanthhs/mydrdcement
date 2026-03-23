@@ -1274,16 +1274,16 @@ function renderDashboard(el) {
 
       <div class="card">
         <div class="section-title">Workflow Status</div>
-        <div class="info-row"><span class="info-key">⏳ Pending Approval</span><span class="info-val">${DB.allotments.filter(a=>a.status==='Pending').length} orders</span></div>
-        <div class="info-row"><span class="info-key">✅ Ready to Issue</span><span class="info-val">${DB.allotments.filter(a=>a.status==='Approved').length} orders</span></div>
-        <div class="info-row"><span class="info-key">📦 Issued</span><span class="info-val">${issued} records</span></div>
-        <div class="info-row"><span class="info-key">🔍 Inspected</span><span class="info-val">${verified} verified</span></div>
+        <div class="info-row"><span class="info-key">⏳ Pending Approval</span><span class="info-val">${myAllots.filter(a=>a.status==='Pending').length} orders</span></div>
+        <div class="info-row"><span class="info-key">✅ Ready to Issue</span><span class="info-val">${myAllots.filter(a=>a.status==='Approved').length} orders</span></div>
+        <div class="info-row"><span class="info-key">📦 Issued</span><span class="info-val">${myIss.length} records</span></div>
+        <div class="info-row"><span class="info-key">🔍 Inspected</span><span class="info-val">${myInsp.filter(i=>i.verified).length} verified</span></div>
       </div>
     </div>
 
     <div class="card" style="margin-top:16px">
       <div class="section-title">Recent Activity</div>
-      ${DB.issuances.slice(-5).reverse().map(i=>`
+      ${myIss.slice(-5).reverse().map(i=>`
         <div class="info-row">
           <span class="info-key"><span class="material-icons-round" style="font-size:16px;vertical-align:middle;color:var(--green)">output</span> Issued to ${i.beneficiaryName}</span>
           <span><strong>${i.bags} bags</strong> &nbsp;<span class="chip chip-issued">Issued</span></span>
@@ -1315,7 +1315,7 @@ function renderAllotments(el) {
         </table>
       </div>
     </div>`;
-  renderAllotTable(DB.allotments);
+  renderAllotTable(scopedAllotments());
 }
 let allotFilter = 'all';
 function filterAllotments(f, btn) {
@@ -1326,7 +1326,7 @@ function filterAllotments(f, btn) {
 }
 function filterAllotTable() {
   const q = (document.getElementById('allotSearch')?.value||'').toLowerCase();
-  let data = DB.allotments;
+  let data = scopedAllotments();
   if (allotFilter !== 'all') data = data.filter(a=>a.status===allotFilter);
   if (q) data = data.filter(a=>JSON.stringify(a).toLowerCase().includes(q));
   renderAllotTable(data);
@@ -1346,7 +1346,7 @@ function renderAllotTable(data) {
       <td>${new Date(a.createdAt).toLocaleDateString('en-IN')}</td>
       <td style="display:flex;gap:6px;flex-wrap:wrap">
         <button class="btn btn-text btn-sm" onclick="viewAllotment('${a.id}')"><span class="material-icons-round">visibility</span></button>
-        ${a.status==='Pending' && can('approveAllotment') ? `<button class="btn btn-green btn-sm" onclick="approveAllotment('${a.id}')">Approve</button><button class="btn btn-danger btn-sm" onclick="rejectAllotment('${a.id}')">Reject</button>` : ''}
+        ${a.status==='Pending' && can('approveAllotment') && (currentUser.role==='admin' || a.createdBy !== currentUser.name) ? `<button class="btn btn-green btn-sm" onclick="approveAllotment('${a.id}')">Approve</button><button class="btn btn-danger btn-sm" onclick="rejectAllotment('${a.id}')">Reject</button>` : (a.status==='Pending' && a.createdBy===currentUser.name ? '<span style="font-size:11px;color:var(--grey-500)">Awaiting approval</span>' : '')}
         ${a.status==='Approved' ? `<button class="btn btn-outlined btn-sm" onclick="printSlip('${a.id}')"><span class="material-icons-round">print</span> Slip</button>` : ''}
       </td>
     </tr>`).join('');
@@ -1422,7 +1422,7 @@ function submitAllotment() {
   pushToFirebase('allotments', allotment.id, allotment);
   closeModal();
   showToast('Allotment submitted for approval');
-  renderAllotTable(DB.allotments);
+  renderAllotTable(scopedAllotments());
 }
 function approveAllotment(id) {
   const a = DB.allotments.find(x=>x.id===id);
@@ -1469,7 +1469,7 @@ function viewAllotment(id) {
 
 // ===== ISSUANCE =====
 function renderIssuance(el) {
-  const approved = DB.allotments.filter(a=>a.status==='Approved');
+  const approved = scopedAllotments().filter(a=>a.status==='Approved');
   el.innerHTML = `
     <div class="page-header">
       <div><div class="page-title">Cement Issuance</div><div class="page-sub">Issue cement from store against approved allotments</div></div>
@@ -1490,7 +1490,6 @@ function renderIssuance(el) {
               <td>${a.cementType||'OPC 43'}</td>
               <td>
                 ${can('issueCement')?`<button class="btn btn-green btn-sm" onclick="openIssueModal('${a.id}')"><span class="material-icons-round">output</span> Issue</button>`:'<span style="color:var(--grey-500);font-size:12px">Restricted</span>'}
-                <button class="btn btn-outlined btn-sm" onclick="printSlip('${a.id}')"><span class="material-icons-round">print</span></button>
               </td>
             </tr>`).join('') || '<tr><td colspan="6"><div class="empty-state"><span class="material-icons-round">check_circle</span><p>All approved allotments have been issued</p></div></td></tr>'}
           </tbody>
@@ -1504,7 +1503,7 @@ function renderIssuance(el) {
         <table>
           <thead><tr><th>Issue ID</th><th>Allotment</th><th>Beneficiary</th><th>Bags</th><th>Date</th><th>Photo</th><th>Actions</th></tr></thead>
           <tbody>
-            ${DB.issuances.slice().reverse().map(i=>`
+            ${scopedIssuances().slice().reverse().map(i=>`
             <tr>
               <td><strong>${i.id}</strong></td>
               <td>${i.allotmentId}</td>
@@ -1539,7 +1538,8 @@ function openIssueModal(allotmentId) {
       <div class="form-group">
         <label class="form-label">Bags to Issue *</label>
         <input class="form-control" type="number" id="issBags" value="${a.bags}" min="1" max="${Math.min(a.bags, stockBal)}"
-          oninput="updateIssueStockPreview()">
+          ${currentUser.role !== 'admin' ? 'readonly style="background:var(--grey-50);cursor:not-allowed"' : 'oninput="updateIssueStockPreview()"'}>
+        ${currentUser.role !== 'admin' ? '<div style="font-size:11px;color:var(--grey-500);margin-top:2px">Quantity locked to approved amount. Only Admin can override.</div>' : ''}
         <div id="stockPreview" style="font-size:11px;margin-top:4px;color:var(--grey-500)">
           Balance after issue: <strong>${stockBal - a.bags}</strong> bags
         </div>
@@ -1843,7 +1843,7 @@ function renderCollection(el) {
         <table>
           <thead><tr><th>Issue ID</th><th>Beneficiary</th><th>Village</th><th>Bags Issued</th><th>Collection Status</th><th>Action</th></tr></thead>
           <tbody>
-            ${DB.issuances.map(i=>{
+            ${scopedIssuances().map(i=>{
               const ins = DB.inspections.find(x=>x.issuanceId===i.id);
               return `<tr>
                 <td><strong>${i.id}</strong></td>
@@ -1882,9 +1882,9 @@ function openCollectionVerify(issuanceId) {
       </div>
     </div>
     <div style="margin-top:12px">
-      <label class="form-label">GPS Location</label>
+      <label class="form-label">GPS Location <span style="color:var(--red);font-weight:600">* Required</span></label>
       <button class="btn btn-outlined btn-sm" onclick="captureGPS()" style="margin-top:6px"><span class="material-icons-round">my_location</span> Capture GPS</button>
-      <div id="gpsStatus" style="font-size:12px;color:var(--grey-500);margin-top:6px">Not captured</div>
+      <div id="gpsStatus" style="font-size:12px;color:var(--grey-500);margin-top:6px">⚠ Not captured – GPS is mandatory</div>
     </div>
   `, [{label:'Cancel',cls:'btn-outlined',fn:closeModal},{label:'Submit Verification',cls:'btn-green',fn:()=>submitVerification(issuanceId)}]);
 }
@@ -1898,6 +1898,19 @@ function captureGPS() {
 }
 function submitVerification(issuanceId) {
   const bags = parseInt(document.getElementById('colBags').value);
+  // Bug 5 fix: require at least 1 photo
+  if (!issPhotosData || issPhotosData.length < 1) {
+    showToast('At least 1 site photo is required for collection verification', 'error');
+    document.getElementById('colPhotos').scrollIntoView({behavior:'smooth',block:'center'});
+    return;
+  }
+  // Bug 5 fix: require GPS
+  if (!gpsCoords) {
+    showToast('GPS location is mandatory. Please capture GPS before submitting.', 'error');
+    document.getElementById('gpsStatus').scrollIntoView({behavior:'smooth',block:'center'});
+    document.getElementById('gpsStatus').style.color = 'var(--red)';
+    return;
+  }
   const inspection = {
     id: 'INS' + Date.now(),
     issuanceId,
@@ -1946,7 +1959,7 @@ function renderInspection(el) {
         <table>
           <thead><tr><th>Insp. ID</th><th>Beneficiary</th><th>Village</th><th>Stage</th><th>Inspector</th><th>Date</th><th>Photos</th><th>View</th></tr></thead>
           <tbody>
-            ${DB.inspections.filter(i=>i.stage).map(i=>`
+            ${scopedInspections().filter(i=>i.stage).map(i=>`
             <tr>
               <td><strong>${i.id}</strong></td>
               <td>${i.beneficiaryName||'—'}</td>
@@ -1985,8 +1998,9 @@ function openNewInspection() {
         </div>
       </div>
     </div>
-    <button class="btn btn-outlined btn-sm" onclick="captureGPS2()" style="margin-top:12px"><span class="material-icons-round">my_location</span> Capture GPS</button>
-    <div id="gpsStatus2" style="font-size:12px;color:var(--grey-500);margin-top:6px">GPS not captured</div>
+    <div class="form-label" style="margin-top:12px">GPS Location <span style="color:var(--red);font-weight:600">* Required</span></div>
+    <button class="btn btn-outlined btn-sm" onclick="captureGPS2()" style="margin-top:6px"><span class="material-icons-round">my_location</span> Capture GPS</button>
+    <div id="gpsStatus2" style="font-size:12px;color:var(--grey-500);margin-top:6px">⚠ Not captured – GPS is mandatory</div>
   `, [{label:'Cancel',cls:'btn-outlined',fn:closeModal},{label:'Submit Inspection',cls:'btn-primary',fn:submitFieldInspection}]);
 }
 function captureGPS2() {
@@ -1999,7 +2013,18 @@ function captureGPS2() {
 function submitFieldInspection() {
   const benId = document.getElementById('inspBen').value;
   const b = DB.beneficiaries.find(x=>x.id===benId);
-  if (!issPhotosData.length) { showToast('Please add at least 1 site photo','error'); return; }
+  if (!issPhotosData || issPhotosData.length < 1) {
+    showToast('At least 1 site photo is required for field inspection', 'error');
+    document.getElementById('inspPhotos').scrollIntoView({behavior:'smooth',block:'center'});
+    return;
+  }
+  // Bug 5 fix: require GPS for field inspection
+  if (!gpsCoords) {
+    showToast('GPS location is mandatory for field inspection.', 'error');
+    document.getElementById('gpsStatus2').scrollIntoView({behavior:'smooth',block:'center'});
+    document.getElementById('gpsStatus2').style.color = 'var(--red)';
+    return;
+  }
   const ins = {
     id: 'FI' + Date.now(),
     issuanceId: null,
@@ -2112,8 +2137,8 @@ function openAddBeneficiary() {
   openModal('Register New Beneficiary', `
     <div class="form-grid">
       <div class="form-group"><label class="form-label">Full Name *</label><input class="form-control" id="nbName" placeholder="Full name"></div>
-      <div class="form-group"><label class="form-label">Aadhaar No. *</label><input class="form-control" id="nbAadhaar" placeholder="XXXX-XXXX-XXXX" maxlength="14"></div>
-      <div class="form-group"><label class="form-label">Mobile *</label><input class="form-control" id="nbMobile" placeholder="10-digit" maxlength="10"></div>
+      <div class="form-group"><label class="form-label">Aadhaar No. *</label><input class="form-control" id="nbAadhaar" placeholder="12-digit Aadhaar number" maxlength="14" pattern="[0-9]{12}"></div>
+      <div class="form-group"><label class="form-label">Mobile *</label><input class="form-control" id="nbMobile" placeholder="10-digit mobile (starts with 6-9)" maxlength="10" pattern="[6-9][0-9]{9}"></div>
       <div class="form-group">
         <label class="form-label">Block *</label>
         <select class="form-control" id="nbBlock" onchange="updateVillageOptions()">${myBlocks.map(b=>`<option>${b}</option>`).join('')}</select>
@@ -2140,10 +2165,17 @@ function addBeneficiary() {
   const name = document.getElementById('nbName').value.trim();
   const aadhaar = document.getElementById('nbAadhaar').value.trim();
   const mobile = document.getElementById('nbMobile').value.trim();
-  if (!name||!aadhaar||!mobile) { showToast('Fill all required fields','error'); return; }
+  const houseNo = document.getElementById('nbHouse').value.trim();
+  const aadhaarClean = aadhaar.replace(/[-\s]/g,'');
+  if (!name)   { showToast('Beneficiary name is required','error'); return; }
+  if (aadhaarClean.length !== 12 || !/^\d+$/.test(aadhaarClean)) {
+    showToast('Aadhaar must be exactly 12 digits','error'); return; }
+  if (!/^[6-9]\d{9}$/.test(mobile)) {
+    showToast('Enter a valid 10-digit mobile number','error'); return; }
+  if (!houseNo) { showToast('House number is required','error'); return; }
   const b = {
     id: 'B' + String(Date.now()).slice(-6),
-    name, aadhaar: '****-****-' + aadhaar.slice(-4),
+    name, aadhaar: '****-****-' + aadhaarClean.slice(-4),
     mobile,
     village: document.getElementById('nbVillage').value,
     block: document.getElementById('nbBlock').value,
@@ -2346,13 +2378,13 @@ function addStock() {
 function renderReports(el) {
   const totalBens = DB.beneficiaries.length;
   const totalAllot = DB.allotments.length;
-  const totalIssued = DB.issuances.reduce((s,i)=>s+i.bags,0);
+  const totalIssued = scopedIssuances().reduce((s,i)=>s+i.bags,0);
   const totalVerified = DB.inspections.filter(i=>i.verified).length;
 
   const schemeData = {};
   DB.issuances.forEach(i=>{ schemeData[i.scheme]=(schemeData[i.scheme]||0)+i.bags; });
   const blockData = {};
-  DB.beneficiaries.forEach(b=>{ blockData[b.block]=(blockData[b.block]||0)+1; });
+  scopedBeneficiaries().forEach(b=>{ blockData[b.block]=(blockData[b.block]||0)+1; });
 
   el.innerHTML = `
     <div class="page-header">
@@ -2369,8 +2401,8 @@ function renderReports(el) {
       <div class="card">
         <div class="section-title">By Scheme</div>
         ${SCHEMES.map(s=>{
-          const issued = DB.issuances.filter(i=>i.scheme===s).reduce((t,i)=>t+i.bags,0);
-          const bens = DB.beneficiaries.filter(b=>b.scheme===s).length;
+          const issued = scopedIssuances().filter(i=>i.scheme===s).reduce((t,i)=>t+i.bags,0);
+          const bens = scopedBeneficiaries().filter(b=>b.scheme===s).length;
           const pct = DB.stock.total ? Math.round(issued/DB.stock.total*100) : 0;
           return `<div style="margin-bottom:14px">
             <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px">
@@ -2383,7 +2415,7 @@ function renderReports(el) {
       <div class="card">
         <div class="section-title">By Block</div>
         ${BLOCKS.map(b=>{
-          const count = DB.beneficiaries.filter(x=>x.block===b).length;
+          const count = scopedBeneficiaries().filter(x=>x.block===b).length;
           const pct = totalBens?Math.round(count/totalBens*100):0;
           return `<div style="margin-bottom:14px">
             <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px">
@@ -2396,10 +2428,10 @@ function renderReports(el) {
     </div>
     <div class="card" style="margin-top:16px">
       <div class="section-title">Pending Actions</div>
-      <div class="info-row"><span class="info-key">⏳ Allotments Pending Approval</span><span class="info-val">${DB.allotments.filter(a=>a.status==='Pending').length}</span></div>
-      <div class="info-row"><span class="info-key">📦 Approved But Not Issued</span><span class="info-val">${DB.allotments.filter(a=>a.status==='Approved').length}</span></div>
-      <div class="info-row"><span class="info-key">🔍 Issued But Not Verified</span><span class="info-val">${DB.issuances.filter(i=>!DB.inspections.find(x=>x.issuanceId===i.id)).length}</span></div>
-      <div class="info-row"><span class="info-key">🏗️ No Field Inspection Yet</span><span class="info-val">${DB.issuances.filter(i=>!DB.inspections.find(x=>x.beneficiaryId===i.beneficiaryId&&x.stage)).length}</span></div>
+      <div class="info-row"><span class="info-key">⏳ Allotments Pending Approval</span><span class="info-val">${scopedAllotments().filter(a=>a.status==='Pending').length}</span></div>
+      <div class="info-row"><span class="info-key">📦 Approved But Not Issued</span><span class="info-val">${scopedAllotments().filter(a=>a.status==='Approved').length}</span></div>
+      <div class="info-row"><span class="info-key">🔍 Issued But Not Verified</span><span class="info-val">${scopedIssuances().filter(i=>!DB.inspections.find(x=>x.issuanceId===i.id)).length}</span></div>
+      <div class="info-row"><span class="info-key">🏗️ No Field Inspection Yet</span><span class="info-val">${scopedIssuances().filter(i=>!DB.inspections.find(x=>x.beneficiaryId===i.beneficiaryId&&x.stage)).length}</span></div>
     </div>`;
 }
 
@@ -2750,7 +2782,13 @@ function addMasterBeneficiary() {
   const aadhaar = document.getElementById('muAadhaar').value.trim();
   const mobile  = document.getElementById('muMobile').value.trim();
   const houseNo = document.getElementById('muHouse').value.trim();
-  if (!name||!aadhaar||!mobile||!houseNo) { showToast('Fill all required fields','error'); return; }
+  const aadhaarCleanMU = aadhaar.replace(/[-\s]/g,'');
+  if (!name)   { showToast('Beneficiary name is required','error'); return; }
+  if (aadhaarCleanMU.length !== 12 || !/^\d+$/.test(aadhaarCleanMU)) {
+    showToast('Aadhaar must be exactly 12 digits','error'); return; }
+  if (!/^[6-9]\d{9}$/.test(mobile)) {
+    showToast('Enter a valid 10-digit mobile number','error'); return; }
+  if (!houseNo) { showToast('House number is required','error'); return; }
   const b = {
     id: 'B' + String(Date.now()).slice(-7),
     name, aadhaar: '****-****-' + aadhaar.slice(-4), mobile,
