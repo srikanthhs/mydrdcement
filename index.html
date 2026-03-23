@@ -1,0 +1,1974 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MYL Cement Tracker – Rural Development Department</title>
+<link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&family=Google+Sans+Display:wght@400;700&family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+
+<!-- Firebase loaded dynamically after DOM ready -->
+
+<style>
+  :root {
+    --blue: #1a73e8;
+    --blue-dark: #1557b0;
+    --blue-light: #e8f0fe;
+    --green: #1e8e3e;
+    --green-light: #e6f4ea;
+    --yellow: #f9ab00;
+    --yellow-light: #fef7e0;
+    --red: #d93025;
+    --red-light: #fce8e6;
+    --grey-50: #f8f9fa;
+    --grey-100: #f1f3f4;
+    --grey-200: #e8eaed;
+    --grey-300: #dadce0;
+    --grey-500: #9aa0a6;
+    --grey-700: #5f6368;
+    --grey-900: #202124;
+    --surface: #fff;
+    --shadow-1: 0 1px 2px rgba(60,64,67,.3), 0 1px 3px 1px rgba(60,64,67,.15);
+    --shadow-2: 0 1px 2px rgba(60,64,67,.3), 0 2px 6px 2px rgba(60,64,67,.15);
+    --shadow-3: 0 4px 8px 3px rgba(60,64,67,.15), 0 1px 3px rgba(60,64,67,.3);
+    --radius: 12px;
+    --radius-sm: 8px;
+    --font: 'Google Sans', 'Roboto', sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: var(--font); background: var(--grey-50); color: var(--grey-900); min-height: 100vh; }
+
+  /* ===== TOP APP BAR ===== */
+  .app-bar {
+    background: var(--blue);
+    color: #fff;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 16px;
+    height: 64px;
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    box-shadow: var(--shadow-2);
+  }
+  .app-bar-left { display: flex; align-items: center; gap: 12px; }
+  .app-bar h1 { font-size: 20px; font-weight: 700; letter-spacing: .25px; }
+  .app-bar h1 span { font-weight: 400; opacity: .85; font-size: 13px; display: block; }
+  .nav-icon-btn { background: none; border: none; color: #fff; cursor: pointer; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: background .2s; }
+  .nav-icon-btn:hover { background: rgba(255,255,255,.15); }
+  .chip-user { background: rgba(255,255,255,.2); border-radius: 20px; padding: 4px 12px 4px 4px; display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px; }
+  .chip-user .avatar { width: 28px; height: 28px; border-radius: 50%; background: #fff; color: var(--blue); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; }
+
+  /* ===== SIDEBAR ===== */
+  .layout { display: flex; margin-top: 64px; min-height: calc(100vh - 64px); }
+  .sidebar {
+    width: 280px; background: var(--surface); position: fixed; top: 64px; bottom: 0; left: 0;
+    overflow-y: auto; border-right: 1px solid var(--grey-200); z-index: 50;
+    transition: transform .3s; padding: 12px 0;
+  }
+  .sidebar-section { padding: 4px 16px; margin-bottom: 4px; }
+  .sidebar-label { font-size: 11px; font-weight: 700; letter-spacing: 1px; color: var(--grey-500); text-transform: uppercase; padding: 8px 16px 4px; }
+  .nav-item {
+    display: flex; align-items: center; gap: 16px; padding: 12px 16px;
+    border-radius: 0 24px 24px 0; cursor: pointer; transition: background .15s;
+    font-size: 14px; font-weight: 500; color: var(--grey-700); margin-right: 12px;
+    border: none; background: none; width: 100%; text-align: left;
+  }
+  .nav-item:hover { background: var(--grey-100); }
+  .nav-item.active { background: var(--blue-light); color: var(--blue); }
+  .nav-item .material-icons-round { font-size: 20px; }
+  .nav-badge { margin-left: auto; background: var(--red); color: #fff; border-radius: 10px; padding: 1px 7px; font-size: 11px; font-weight: 700; }
+
+  /* ===== MAIN CONTENT ===== */
+  .main { margin-left: 280px; flex: 1; padding: 24px; }
+
+  /* ===== CARDS ===== */
+  .card { background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow-1); padding: 20px; }
+  .card + .card { margin-top: 16px; }
+
+  /* ===== DASHBOARD STATS ===== */
+  .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px; }
+  .stat-card {
+    background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow-1);
+    padding: 20px; display: flex; align-items: flex-start; gap: 16px;
+  }
+  .stat-icon { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .stat-icon .material-icons-round { font-size: 24px; color: #fff; }
+  .stat-icon.blue { background: var(--blue); }
+  .stat-icon.green { background: var(--green); }
+  .stat-icon.yellow { background: var(--yellow); }
+  .stat-icon.red { background: var(--red); }
+  .stat-icon.purple { background: #7b1fa2; }
+  .stat-val { font-size: 28px; font-weight: 700; color: var(--grey-900); line-height: 1; }
+  .stat-label { font-size: 13px; color: var(--grey-700); margin-top: 4px; }
+  .stat-sub { font-size: 11px; color: var(--grey-500); margin-top: 2px; }
+
+  /* ===== PAGE HEADER ===== */
+  .page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+  .page-title { font-size: 22px; font-weight: 700; }
+  .page-sub { font-size: 13px; color: var(--grey-700); margin-top: 2px; }
+
+  /* ===== BUTTONS ===== */
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px;
+    border-radius: 8px; font-family: var(--font); font-size: 14px; font-weight: 500;
+    border: none; cursor: pointer; transition: all .2s; text-decoration: none;
+  }
+  .btn-primary { background: var(--blue); color: #fff; }
+  .btn-primary:hover { background: var(--blue-dark); box-shadow: var(--shadow-2); }
+  .btn-outlined { background: transparent; color: var(--blue); border: 1.5px solid var(--blue); }
+  .btn-outlined:hover { background: var(--blue-light); }
+  .btn-danger { background: var(--red); color: #fff; }
+  .btn-danger:hover { background: #b71c1c; }
+  .btn-text { background: transparent; color: var(--blue); padding: 8px 12px; }
+  .btn-text:hover { background: var(--blue-light); }
+  .btn-green { background: var(--green); color: #fff; }
+  .btn .material-icons-round { font-size: 18px; }
+  .btn-sm { padding: 6px 14px; font-size: 13px; }
+
+  /* ===== FORM ===== */
+  .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+  .form-group { display: flex; flex-direction: column; gap: 6px; }
+  .form-label { font-size: 12px; font-weight: 600; color: var(--grey-700); letter-spacing: .3px; }
+  .form-control {
+    padding: 10px 14px; border: 1.5px solid var(--grey-300); border-radius: var(--radius-sm);
+    font-family: var(--font); font-size: 14px; color: var(--grey-900); background: var(--surface);
+    transition: border .2s; outline: none;
+  }
+  .form-control:focus { border-color: var(--blue); }
+  .form-control::placeholder { color: var(--grey-500); }
+  select.form-control { cursor: pointer; }
+
+  /* ===== TABLE ===== */
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  thead tr { background: var(--grey-50); }
+  th { padding: 10px 14px; text-align: left; font-weight: 600; color: var(--grey-700); white-space: nowrap; border-bottom: 2px solid var(--grey-200); }
+  td { padding: 10px 14px; border-bottom: 1px solid var(--grey-200); vertical-align: middle; }
+  tr:hover td { background: var(--grey-50); }
+
+  /* ===== STATUS CHIPS ===== */
+  .chip {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; letter-spacing: .3px;
+  }
+  .chip-pending { background: var(--yellow-light); color: #9c6e00; }
+  .chip-approved { background: #e3f2fd; color: #1565c0; }
+  .chip-issued { background: var(--green-light); color: var(--green); }
+  .chip-collected { background: #f3e5f5; color: #6a1b9a; }
+  .chip-rejected { background: var(--red-light); color: var(--red); }
+  .chip-verified { background: var(--green-light); color: var(--green); }
+  .chip-partial { background: #fff3e0; color: #e65100; }
+
+  /* ===== MODAL ===== */
+  .modal-backdrop {
+    position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 200;
+    display: flex; align-items: center; justify-content: center; padding: 20px;
+    opacity: 0; pointer-events: none; transition: opacity .2s;
+  }
+  .modal-backdrop.open { opacity: 1; pointer-events: all; }
+  .modal {
+    background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow-3);
+    width: 100%; max-width: 680px; max-height: 90vh; overflow-y: auto;
+    transform: scale(.95); transition: transform .2s;
+  }
+  .modal-backdrop.open .modal { transform: scale(1); }
+  .modal-header { padding: 20px 24px 0; display: flex; align-items: center; justify-content: space-between; }
+  .modal-title { font-size: 18px; font-weight: 700; }
+  .modal-body { padding: 20px 24px; }
+  .modal-footer { padding: 12px 24px 20px; display: flex; gap: 12px; justify-content: flex-end; }
+
+  /* ===== SLIP ===== */
+  .slip {
+    border: 2px solid var(--grey-300); border-radius: var(--radius); padding: 24px;
+    font-family: 'Roboto', sans-serif; background: #fff; position: relative;
+  }
+  .slip-header { text-align: center; border-bottom: 2px dashed var(--grey-300); padding-bottom: 16px; margin-bottom: 16px; }
+  .slip-header .dept { font-size: 11px; font-weight: 700; letter-spacing: 2px; color: var(--grey-500); text-transform: uppercase; }
+  .slip-header h2 { font-size: 18px; font-weight: 700; color: var(--blue); margin: 4px 0; }
+  .slip-header .sub { font-size: 12px; color: var(--grey-700); }
+  .slip-id { position: absolute; top: 12px; right: 16px; font-size: 10px; color: var(--grey-500); font-family: monospace; }
+  .slip-row { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 13px; gap: 12px; }
+  .slip-key { color: var(--grey-700); font-weight: 500; white-space: nowrap; }
+  .slip-val { font-weight: 600; color: var(--grey-900); text-align: right; }
+  .slip-divider { border: none; border-top: 1px dashed var(--grey-300); margin: 12px 0; }
+  .slip-highlight { background: var(--blue-light); border-radius: 8px; padding: 12px 16px; text-align: center; margin: 12px 0; }
+  .slip-highlight .qty { font-size: 32px; font-weight: 700; color: var(--blue); }
+  .slip-highlight .qty-label { font-size: 12px; color: var(--grey-700); }
+  .slip-sign { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 20px; }
+  .slip-sign-box { text-align: center; }
+  .slip-sign-line { border-top: 1px solid var(--grey-700); padding-top: 4px; margin-top: 40px; font-size: 11px; color: var(--grey-700); }
+  .slip-barcode { font-family: monospace; font-size: 11px; letter-spacing: 3px; text-align: center; color: var(--grey-500); margin-top: 12px; }
+  .slip-watermark { color: var(--green); font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; text-align: center; margin-top: 8px; }
+
+  /* ===== TABS ===== */
+  .tab-bar { display: flex; gap: 0; border-bottom: 2px solid var(--grey-200); margin-bottom: 20px; overflow-x: auto; }
+  .tab { padding: 12px 20px; font-size: 14px; font-weight: 500; color: var(--grey-700); cursor: pointer; border: none; background: none; font-family: var(--font); white-space: nowrap; border-bottom: 3px solid transparent; margin-bottom: -2px; transition: all .15s; }
+  .tab.active { color: var(--blue); border-bottom-color: var(--blue); }
+  .tab:hover:not(.active) { background: var(--grey-100); }
+
+  /* ===== SEARCH BAR ===== */
+  .search-bar { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+  .search-input { flex: 1; display: flex; align-items: center; gap: 10px; background: var(--surface); border: 1.5px solid var(--grey-300); border-radius: 24px; padding: 8px 16px; }
+  .search-input input { border: none; outline: none; font-family: var(--font); font-size: 14px; width: 100%; background: transparent; }
+  .search-input .material-icons-round { color: var(--grey-500); font-size: 20px; }
+
+  /* ===== PHOTO CAPTURE ===== */
+  .photo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 12px; margin-top: 12px; }
+  .photo-thumb { width: 100%; aspect-ratio: 1; border-radius: var(--radius-sm); object-fit: cover; border: 2px solid var(--grey-200); cursor: pointer; transition: border .2s; }
+  .photo-thumb:hover { border-color: var(--blue); }
+  .photo-add {
+    width: 100%; aspect-ratio: 1; border-radius: var(--radius-sm); border: 2px dashed var(--grey-300);
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+    cursor: pointer; transition: all .2s; color: var(--grey-500); font-size: 12px;
+  }
+  .photo-add:hover { border-color: var(--blue); color: var(--blue); background: var(--blue-light); }
+
+  /* ===== TIMELINE ===== */
+  .timeline { position: relative; padding-left: 32px; }
+  .timeline::before { content: ''; position: absolute; left: 11px; top: 8px; bottom: 8px; width: 2px; background: var(--grey-200); }
+  .tl-item { position: relative; padding-bottom: 20px; }
+  .tl-dot { position: absolute; left: -25px; width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--grey-300); background: var(--surface); top: 3px; }
+  .tl-dot.done { background: var(--blue); border-color: var(--blue); }
+  .tl-dot.active { background: var(--yellow); border-color: var(--yellow); }
+  .tl-dot.success { background: var(--green); border-color: var(--green); }
+  .tl-dot.danger { background: var(--red); border-color: var(--red); }
+  .tl-label { font-size: 13px; font-weight: 600; }
+  .tl-meta { font-size: 11px; color: var(--grey-500); margin-top: 2px; }
+  .tl-note { font-size: 12px; color: var(--grey-700); margin-top: 4px; background: var(--grey-100); padding: 6px 10px; border-radius: 6px; }
+
+  /* ===== ALERT ===== */
+  .alert { display: flex; align-items: flex-start; gap: 12px; padding: 12px 16px; border-radius: var(--radius-sm); font-size: 13px; margin-bottom: 16px; }
+  .alert-info { background: var(--blue-light); color: #174ea6; }
+  .alert-warn { background: var(--yellow-light); color: #7d5c00; }
+  .alert-success { background: var(--green-light); color: #135626; }
+  .alert-danger { background: var(--red-light); color: #9e1f1a; }
+
+  /* ===== LOGIN ===== */
+  .login-wrap { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #e8f0fe 0%, #fff 60%); }
+  .login-card { background: #fff; border-radius: 16px; box-shadow: var(--shadow-3); padding: 40px; width: 100%; max-width: 400px; text-align: center; }
+  .login-logo { width: 64px; height: 64px; background: var(--blue); border-radius: 16px; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px; }
+  .login-logo .material-icons-round { color: #fff; font-size: 36px; }
+  .login-title { font-size: 22px; font-weight: 700; margin-bottom: 4px; }
+  .login-sub { font-size: 13px; color: var(--grey-700); margin-bottom: 28px; }
+  .role-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
+  .role-card { border: 2px solid var(--grey-200); border-radius: var(--radius-sm); padding: 14px 10px; cursor: pointer; transition: all .2s; text-align: center; }
+  .role-card:hover, .role-card.selected { border-color: var(--blue); background: var(--blue-light); }
+  .role-card .material-icons-round { font-size: 28px; color: var(--blue); }
+  .role-card span { display: block; font-size: 12px; font-weight: 600; margin-top: 4px; color: var(--grey-700); }
+
+  /* ===== MISC ===== */
+  .empty-state { text-align: center; padding: 60px 20px; color: var(--grey-500); }
+  .empty-state .material-icons-round { font-size: 56px; color: var(--grey-300); }
+  .empty-state p { margin-top: 12px; font-size: 14px; }
+  .divider { border: none; border-top: 1px solid var(--grey-200); margin: 16px 0; }
+  .section-title { font-size: 14px; font-weight: 700; color: var(--grey-700); margin-bottom: 12px; text-transform: uppercase; letter-spacing: .5px; }
+  .info-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--grey-200); font-size: 13px; }
+  .info-row:last-child { border-bottom: none; }
+  .info-key { color: var(--grey-700); }
+  .info-val { font-weight: 600; }
+  .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px); background: var(--grey-900); color: #fff; padding: 12px 20px; border-radius: 8px; font-size: 13px; font-weight: 500; z-index: 500; transition: transform .3s; box-shadow: var(--shadow-3); display: flex; align-items: center; gap: 10px; }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+  .progress-bar { height: 6px; background: var(--grey-200); border-radius: 3px; overflow: hidden; }
+  .progress-fill { height: 100%; background: var(--blue); border-radius: 3px; transition: width .5s; }
+
+  @media (max-width: 768px) {
+    .sidebar { transform: translateX(-100%); }
+    .sidebar.open { transform: translateX(0); }
+    .main { margin-left: 0; padding: 16px; }
+    .stat-grid { grid-template-columns: 1fr 1fr; }
+    .form-grid { grid-template-columns: 1fr; }
+  }
+
+  .hidden { display: none !important; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Print slip */
+  @media print {
+    body * { visibility: hidden; }
+    .print-zone, .print-zone * { visibility: visible; }
+    .print-zone { position: fixed; inset: 0; background: #fff; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ===== LOGIN SCREEN ===== -->
+<div id="loginScreen" class="login-wrap">
+  <div class="login-card">
+    <div class="login-logo"><span class="material-icons-round">business</span></div>
+    <div class="login-title">MYL Cement Tracker</div>
+    <div class="login-sub">Rural Development Department<br>Mayiladuthurai District</div>
+    <div class="role-cards">
+      <div class="role-card selected" data-role="admin" onclick="selectRole(this)">
+        <span class="material-icons-round">admin_panel_settings</span>
+        <span>District Admin</span>
+      </div>
+      <div class="role-card" data-role="vao" onclick="selectRole(this)">
+        <span class="material-icons-round">person_pin_circle</span>
+        <span>VAO / BDO</span>
+      </div>
+      <div class="role-card" data-role="store" onclick="selectRole(this)">
+        <span class="material-icons-round">warehouse</span>
+        <span>Store Keeper</span>
+      </div>
+      <div class="role-card" data-role="inspector" onclick="selectRole(this)">
+        <span class="material-icons-round">fact_check</span>
+        <span>Field Inspector</span>
+      </div>
+    </div>
+    <div class="form-group" style="margin-bottom:12px">
+      <input class="form-control" id="loginUser" placeholder="Username" value="admin@drd.tn.gov.in">
+    </div>
+    <div class="form-group" style="margin-bottom:20px">
+      <input class="form-control" type="password" id="loginPass" placeholder="Password" value="••••••••">
+    </div>
+    <button class="btn btn-primary" style="width:100%;justify-content:center;padding:12px" onclick="doLogin()">
+      <span class="material-icons-round">login</span> Sign In
+    </button>
+    <div style="margin-top:16px;font-size:11px;color:var(--grey-500)">
+      Government of Tamil Nadu · Rural Development Dept<br>
+      Powered by Digital District Initiative
+    </div>
+  </div>
+</div>
+
+<!-- ===== MAIN APP ===== -->
+<div id="mainApp" class="hidden">
+  <!-- Top Bar -->
+  <div class="app-bar">
+    <div class="app-bar-left">
+      <button class="nav-icon-btn" onclick="toggleSidebar()"><span class="material-icons-round">menu</span></button>
+      <div>
+        <h1>MYL Cement Tracker <span>Rural Development Dept · Mayiladuthurai</span></h1>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <button class="nav-icon-btn" title="Notifications" onclick="navigate('alerts')">
+        <span class="material-icons-round">notifications</span>
+      </button>
+      <div class="chip-user" onclick="doLogout()">
+        <div class="avatar" id="avatarInitial">A</div>
+        <span id="userLabel">Admin</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="layout">
+    <!-- Sidebar -->
+    <nav class="sidebar" id="sidebar">
+      <div class="sidebar-label">Main</div>
+      <button class="nav-item active" data-page="dashboard" onclick="navigate('dashboard')">
+        <span class="material-icons-round">dashboard</span> Dashboard
+      </button>
+      <button class="nav-item" data-page="allotments" onclick="navigate('allotments')">
+        <span class="material-icons-round">assignment</span> Allotments
+      </button>
+      <button class="nav-item" data-page="issuance" onclick="navigate('issuance')">
+        <span class="material-icons-round">output</span> Issuance
+        <span class="nav-badge" id="pendingBadge">0</span>
+      </button>
+      <button class="nav-item" data-page="collection" onclick="navigate('collection')">
+        <span class="material-icons-round">verified</span> Collection Verify
+      </button>
+      <button class="nav-item" data-page="inspection" onclick="navigate('inspection')">
+        <span class="material-icons-round">fact_check</span> Field Inspection
+      </button>
+      <div class="sidebar-label">Records</div>
+      <button class="nav-item" data-page="beneficiaries" onclick="navigate('beneficiaries')">
+        <span class="material-icons-round">people</span> Beneficiaries
+      </button>
+      <button class="nav-item" data-page="stock" onclick="navigate('stock')">
+        <span class="material-icons-round">inventory_2</span> Stock Register
+      </button>
+      <button class="nav-item" data-page="reports" onclick="navigate('reports')">
+        <span class="material-icons-round">bar_chart</span> Reports
+      </button>
+      <div class="sidebar-label">System</div>
+      <button class="nav-item" data-page="alerts" onclick="navigate('alerts')">
+        <span class="material-icons-round">warning_amber</span> Alerts
+      </button>
+      <button class="nav-item" data-page="settings" onclick="navigate('settings')">
+        <span class="material-icons-round">settings</span> Settings
+      </button>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main" id="mainContent">
+      <!-- Pages injected here -->
+    </main>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="modal-backdrop" id="modalBackdrop" onclick="closeModalOutside(event)">
+  <div class="modal" id="modalBox">
+    <div class="modal-header">
+      <div class="modal-title" id="modalTitle">Modal</div>
+      <button class="nav-icon-btn" style="color:var(--grey-700)" onclick="closeModal()"><span class="material-icons-round">close</span></button>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+    <div class="modal-footer" id="modalFooter"></div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast">
+  <span class="material-icons-round" id="toastIcon">check_circle</span>
+  <span id="toastMsg"></span>
+</div>
+
+<!-- PRINT ZONE -->
+<div class="print-zone hidden" id="printZone"></div>
+
+<script>
+// ===== FIREBASE CONFIG =====
+const firebaseConfig = {
+  apiKey: "AIzaSyD4dPHO647CHzNEY-yzJeGLjq5JoRN5VbA",
+  authDomain: "mydrdcement.firebaseapp.com",
+  projectId: "mydrdcement",
+  storageBucket: "mydrdcement.firebasestorage.app",
+  messagingSenderId: "325388858171",
+  appId: "1:325388858171:web:5cb91d18f8bd0900917d1e",
+  measurementId: "G-PS244YVT7K"
+};
+
+// Firebase is loaded asynchronously after page load.
+// All app code runs on localStorage immediately.
+// Firebase sync happens in background silently.
+let db = null;
+let firebaseReady = false;
+
+function loadFirebaseSDK() {
+  // CDN priority list – tries each in order until one succeeds
+  const CDN_PAIRS = [
+    [
+      'https://cdn.jsdelivr.net/npm/firebase@9.23.0/compat/app/dist/index.js',
+      'https://cdn.jsdelivr.net/npm/firebase@9.23.0/compat/firestore/dist/index.js'
+    ],
+    [
+      'https://cdnjs.cloudflare.com/ajax/libs/firebase/9.23.0/firebase-app-compat.min.js',
+      'https://cdnjs.cloudflare.com/ajax/libs/firebase/9.23.0/firebase-firestore-compat.min.js'
+    ],
+    [
+      'https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js',
+      'https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js'
+    ]
+  ];
+
+  function loadScript(src) {
+    return new Promise((res, rej) => {
+      const s = document.createElement('script');
+      s.src = src;
+      s.onload = res;
+      s.onerror = rej;
+      document.head.appendChild(s);
+    });
+  }
+
+  async function tryPair(pair) {
+    await loadScript(pair[0]);
+    await loadScript(pair[1]);
+  }
+
+  async function attemptConnect() {
+    for (const pair of CDN_PAIRS) {
+      try {
+        await tryPair(pair);
+        if (typeof firebase !== 'undefined') {
+          if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+          db = firebase.firestore();
+          firebaseReady = true;
+          updateFirebaseIndicator(true);
+          console.log('Firebase connected ✓');
+          return true;
+        }
+      } catch(e) { /* try next CDN */ }
+    }
+    return false;
+  }
+
+  return new Promise(async (resolve) => {
+    const connected = await attemptConnect();
+    if (!connected) {
+      updateFirebaseIndicator(false);
+      // Auto-retry every 30s when online
+      window.addEventListener('online', function handler() {
+        attemptConnect().then(ok => { if (ok) window.removeEventListener('online', handler); });
+      });
+    }
+    resolve();
+  });
+}
+
+function updateFirebaseIndicator(online) {
+  const el = document.getElementById('fbStatus');
+  if (!el) return;
+  if (online) {
+    el.innerHTML = '<span class=material-icons-round style=font-size:13px>cloud_done</span> Cloud Sync ON';
+    el.style.color = 'var(--green)';
+    el.title = 'Firebase Firestore connected';
+  } else {
+    el.innerHTML = '<span class=material-icons-round style=font-size:13px>cloud_off</span> Offline Mode';
+    el.style.color = 'var(--grey-500)';
+    el.title = 'No cloud sync – data saved locally';
+  }
+}
+
+// ===== APP STATE =====
+let currentUser = { role: 'admin', name: 'District Admin', email: 'admin@drd.tn.gov.in' };
+let selectedRole = 'admin';
+let currentPage = 'dashboard';
+let DB = {
+  beneficiaries: [],
+  allotments: [],
+  issuances: [],
+  inspections: [],
+  stock: { total: 0, issued: 0, balance: 0 }
+};
+
+// ===== SEED DATA =====
+const SCHEMES = ['PMAY-G', 'IAY', 'CM Housing', 'Weaker Section Housing', 'SC/ST Housing'];
+const VILLAGES = ['Mayiladuthurai', 'Sirkazhi', 'Papanasam', 'Nagapattinam', 'Poompuhar', 'Kollidam', 'Tharangambadi', 'Kuthalam', 'Seerkazhi', 'Vedaranyam'];
+const BLOCKS = ['Mayiladuthurai', 'Sirkazhi', 'Papanasam', 'Kuthalam', 'Seerkazhi'];
+const CEMENT_TYPES = ['OPC 43 Grade', 'OPC 53 Grade', 'PPC Cement', 'PSC Cement'];
+
+function seedData() {
+  const names = ['Murugan R', 'Lakshmi D', 'Selvam K', 'Geetha P', 'Rajan M', 'Vijaya S', 'Arumugam T', 'Kamala N', 'Pandi V', 'Saraswathi A', 'Karuppaiah B', 'Meenakshi C', 'Suresh G', 'Devika H', 'Balamurugan J'];
+  DB.beneficiaries = names.map((n, i) => ({
+    id: 'B' + String(i+1).padStart(4,'0'),
+    name: n,
+    aadhaar: '****-****-' + String(1000+i*77).slice(-4),
+    mobile: '9' + String(8000000000+i*1234567).slice(0,9),
+    village: VILLAGES[i%VILLAGES.length],
+    block: BLOCKS[i%BLOCKS.length],
+    scheme: SCHEMES[i%SCHEMES.length],
+    houseNo: 'MYL/' + String(2024001+i),
+    sanctionedBags: [50,75,100,120][i%4],
+    receivedBags: 0,
+    status: 'Pending',
+    createdAt: new Date(2025, 0, i+1).toISOString()
+  }));
+
+  DB.stock = { total: 2500, issued: 0, balance: 2500, openingBalance: 2500, type: 'OPC 43 Grade', lastUpdated: new Date().toISOString() };
+  DB.stockLedger = [{
+    id: 'GRN001',
+    type: 'RECEIPT',
+    date: new Date().toISOString(),
+    bags: 2500,
+    openingBalance: 0,
+    closingBalance: 2500,
+    cementType: 'OPC 43 Grade',
+    supplier: 'Govt. Depot – Nagapattinam',
+    grn: 'GRN/2025/001',
+    addedBy: 'Admin',
+    remark: 'Initial stock loaded'
+  }];
+  DB.allotments = [];
+  DB.issuances = [];
+  DB.inspections = [];
+  saveDB();
+}
+
+function saveDB() {
+  try { localStorage.setItem('drdCementDB', JSON.stringify(DB)); } catch(e) {}
+}
+function loadDB() {
+  try {
+    const d = localStorage.getItem('drdCementDB');
+    if (d) { DB = JSON.parse(d); return true; }
+  } catch(e) {}
+  return false;
+}
+
+// ===== FIREBASE SYNC (graceful – never blocks UI) =====
+async function pushToFirebase(collection, docId, data) {
+  if (!firebaseReady || !db) return;
+  try { await db.collection(collection).doc(docId).set(data, { merge: true }); } catch(e) { /* silent */ }
+}
+async function loadFromFirebase() {
+  if (!firebaseReady || !db) return false;
+  try {
+    const snap = await db.collection('drdData').doc('main').get();
+    if (snap.exists) { DB = { ...DB, ...snap.data() }; saveDB(); return true; }
+  } catch(e) { /* offline */ }
+  return false;
+}
+
+// ===== LOGIN =====
+function selectRole(el) {
+  document.querySelectorAll('.role-card').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  selectedRole = el.dataset.role;
+}
+function doLogin() {
+  const roleMap = {
+    admin: { name: 'District Admin', email: 'admin@drd.tn.gov.in' },
+    vao: { name: 'VAO - Mayiladuthurai', email: 'vao@drd.tn.gov.in' },
+    store: { name: 'Store Keeper', email: 'store@drd.tn.gov.in' },
+    inspector: { name: 'Field Inspector', email: 'inspector@drd.tn.gov.in' }
+  };
+  currentUser = { role: selectedRole, ...roleMap[selectedRole] };
+  document.getElementById('loginScreen').classList.add('hidden');
+  document.getElementById('mainApp').classList.remove('hidden');
+  document.getElementById('avatarInitial').textContent = currentUser.name[0];
+  document.getElementById('userLabel').textContent = currentUser.name.split(' ')[0];
+  if (!loadDB()) seedData();
+  navigate('dashboard');
+}
+function doLogout() {
+  document.getElementById('mainApp').classList.add('hidden');
+  document.getElementById('loginScreen').classList.remove('hidden');
+}
+
+// ===== NAVIGATION =====
+function navigate(page) {
+  currentPage = page;
+  document.querySelectorAll('.nav-item').forEach(b => {
+    b.classList.toggle('active', b.dataset.page === page);
+  });
+  const main = document.getElementById('mainContent');
+  main.innerHTML = '';
+  const pages = { dashboard: renderDashboard, allotments: renderAllotments, issuance: renderIssuance, collection: renderCollection, inspection: renderInspection, beneficiaries: renderBeneficiaries, stock: renderStock, reports: renderReports, alerts: renderAlerts, settings: renderSettings };
+  if (pages[page]) pages[page](main);
+  updateBadges();
+}
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('open');
+}
+function updateBadges() {
+  const pending = DB.allotments.filter(a => a.status === 'Approved' && !DB.issuances.find(i => i.allotmentId === a.id)).length;
+  document.getElementById('pendingBadge').textContent = pending;
+}
+
+// ===== DASHBOARD =====
+function renderDashboard(el) {
+  const total = DB.beneficiaries.length;
+  const allotted = DB.allotments.length;
+  const issued = DB.issuances.length;
+  const verified = DB.inspections.filter(i => i.verified).length;
+  const totalBagsIssued = DB.issuances.reduce((s,i)=>s+i.bags,0);
+  const pendingApprovals = DB.allotments.filter(a=>a.status==='Pending').length;
+
+  el.innerHTML = `
+    <div class="page-header">
+      <div>
+        <div class="page-title">Dashboard</div>
+        <div class="page-sub">Cement Distribution Overview · ${new Date().toLocaleDateString('en-IN',{dateStyle:'full'})}</div>
+      </div>
+      <button class="btn btn-primary" onclick="navigate('allotments')"><span class="material-icons-round">add</span> New Allotment</button>
+    </div>
+
+    ${pendingApprovals > 0 ? `<div class="alert alert-warn"><span class="material-icons-round">warning_amber</span><div><strong>${pendingApprovals} allotments</strong> pending approval. <a href="#" onclick="navigate('allotments');return false" style="color:inherit">Review now →</a></div></div>` : ''}
+
+    <div class="stat-grid">
+      <div class="stat-card">
+        <div class="stat-icon blue"><span class="material-icons-round">people</span></div>
+        <div><div class="stat-val">${total}</div><div class="stat-label">Total Beneficiaries</div><div class="stat-sub">Registered in system</div></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon yellow"><span class="material-icons-round">assignment</span></div>
+        <div><div class="stat-val">${allotted}</div><div class="stat-label">Allotments</div><div class="stat-sub">Approved orders</div></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon green"><span class="material-icons-round">output</span></div>
+        <div><div class="stat-val">${totalBagsIssued}</div><div class="stat-label">Bags Issued</div><div class="stat-sub">From store</div></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon purple"><span class="material-icons-round">inventory_2</span></div>
+        <div><div class="stat-val">${DB.stock.balance}</div><div class="stat-label">Stock Balance</div><div class="stat-sub">Bags available</div></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon red"><span class="material-icons-round">fact_check</span></div>
+        <div><div class="stat-val">${verified}</div><div class="stat-label">Field Verified</div><div class="stat-sub">Photo confirmed</div></div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+      <div class="card">
+        <div class="section-title">Stock Utilization</div>
+        <div style="margin-bottom:8px;display:flex;justify-content:space-between;font-size:13px">
+          <span>Used: <strong>${DB.stock.total - DB.stock.balance} bags</strong></span>
+          <span>Total: <strong>${DB.stock.total} bags</strong></span>
+        </div>
+        <div class="progress-bar"><div class="progress-fill" style="width:${DB.stock.total?Math.round((DB.stock.total-DB.stock.balance)/DB.stock.total*100):0}%"></div></div>
+        <div style="font-size:11px;color:var(--grey-500);margin-top:6px">${DB.stock.total?Math.round((DB.stock.total-DB.stock.balance)/DB.stock.total*100):0}% utilized</div>
+      </div>
+
+      <div class="card">
+        <div class="section-title">Workflow Status</div>
+        <div class="info-row"><span class="info-key">⏳ Pending Approval</span><span class="info-val">${DB.allotments.filter(a=>a.status==='Pending').length} orders</span></div>
+        <div class="info-row"><span class="info-key">✅ Ready to Issue</span><span class="info-val">${DB.allotments.filter(a=>a.status==='Approved').length} orders</span></div>
+        <div class="info-row"><span class="info-key">📦 Issued</span><span class="info-val">${issued} records</span></div>
+        <div class="info-row"><span class="info-key">🔍 Inspected</span><span class="info-val">${verified} verified</span></div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:16px">
+      <div class="section-title">Recent Activity</div>
+      ${DB.issuances.slice(-5).reverse().map(i=>`
+        <div class="info-row">
+          <span class="info-key"><span class="material-icons-round" style="font-size:16px;vertical-align:middle;color:var(--green)">output</span> Issued to ${i.beneficiaryName}</span>
+          <span><strong>${i.bags} bags</strong> &nbsp;<span class="chip chip-issued">Issued</span></span>
+        </div>`).join('') || '<div style="color:var(--grey-500);font-size:13px">No activity yet</div>'}
+    </div>`;
+}
+
+// ===== ALLOTMENTS =====
+function renderAllotments(el) {
+  el.innerHTML = `
+    <div class="page-header">
+      <div><div class="page-title">Cement Allotments</div><div class="page-sub">Create and manage allotment orders</div></div>
+      ${['admin','vao'].includes(currentUser.role) ? `<button class="btn btn-primary" onclick="openNewAllotment()"><span class="material-icons-round">add</span> New Allotment</button>` : ''}
+    </div>
+    <div class="tab-bar">
+      <button class="tab active" onclick="filterAllotments('all',this)">All</button>
+      <button class="tab" onclick="filterAllotments('Pending',this)">⏳ Pending</button>
+      <button class="tab" onclick="filterAllotments('Approved',this)">✅ Approved</button>
+      <button class="tab" onclick="filterAllotments('Rejected',this)">❌ Rejected</button>
+    </div>
+    <div class="card">
+      <div class="search-bar">
+        <div class="search-input"><span class="material-icons-round">search</span><input id="allotSearch" placeholder="Search by name, village, scheme..." oninput="filterAllotTable()"></div>
+      </div>
+      <div class="table-wrap">
+        <table id="allotTable">
+          <thead><tr><th>Allotment ID</th><th>Beneficiary</th><th>Village</th><th>Scheme</th><th>Bags</th><th>Status</th><th>Date</th><th>Actions</th></tr></thead>
+          <tbody id="allotBody"></tbody>
+        </table>
+      </div>
+    </div>`;
+  renderAllotTable(DB.allotments);
+}
+let allotFilter = 'all';
+function filterAllotments(f, btn) {
+  allotFilter = f;
+  document.querySelectorAll('.tab-bar .tab').forEach(t=>t.classList.remove('active'));
+  btn.classList.add('active');
+  filterAllotTable();
+}
+function filterAllotTable() {
+  const q = (document.getElementById('allotSearch')?.value||'').toLowerCase();
+  let data = DB.allotments;
+  if (allotFilter !== 'all') data = data.filter(a=>a.status===allotFilter);
+  if (q) data = data.filter(a=>JSON.stringify(a).toLowerCase().includes(q));
+  renderAllotTable(data);
+}
+function renderAllotTable(data) {
+  const body = document.getElementById('allotBody');
+  if (!body) return;
+  if (!data.length) { body.innerHTML = `<tr><td colspan="8"><div class="empty-state"><span class="material-icons-round">assignment</span><p>No allotments found</p></div></td></tr>`; return; }
+  body.innerHTML = data.map(a=>`
+    <tr>
+      <td><strong>${a.id}</strong></td>
+      <td>${a.beneficiaryName}<br><small style="color:var(--grey-500)">${a.beneficiaryId}</small></td>
+      <td>${a.village}</td>
+      <td>${a.scheme}</td>
+      <td><strong>${a.bags}</strong></td>
+      <td><span class="chip chip-${a.status.toLowerCase()}">${a.status}</span></td>
+      <td>${new Date(a.createdAt).toLocaleDateString('en-IN')}</td>
+      <td style="display:flex;gap:6px;flex-wrap:wrap">
+        <button class="btn btn-text btn-sm" onclick="viewAllotment('${a.id}')"><span class="material-icons-round">visibility</span></button>
+        ${a.status==='Pending' && currentUser.role==='admin' ? `<button class="btn btn-green btn-sm" onclick="approveAllotment('${a.id}')">Approve</button><button class="btn btn-danger btn-sm" onclick="rejectAllotment('${a.id}')">Reject</button>` : ''}
+        ${a.status==='Approved' ? `<button class="btn btn-outlined btn-sm" onclick="printSlip('${a.id}')"><span class="material-icons-round">print</span> Slip</button>` : ''}
+      </td>
+    </tr>`).join('');
+}
+function openNewAllotment() {
+  const bOpts = DB.beneficiaries.map(b=>`<option value="${b.id}">${b.name} – ${b.village} (${b.scheme})</option>`).join('');
+  openModal('New Allotment Order', `
+    <div class="form-grid">
+      <div class="form-group" style="grid-column:1/-1">
+        <label class="form-label">Beneficiary *</label>
+        <select class="form-control" id="aBen" onchange="fillBenDetails()">${bOpts}</select>
+      </div>
+      <div class="form-group"><label class="form-label">House No.</label><input class="form-control" id="aHouseNo" readonly></div>
+      <div class="form-group"><label class="form-label">Scheme</label><input class="form-control" id="aScheme" readonly></div>
+      <div class="form-group"><label class="form-label">Village / Block</label><input class="form-control" id="aVillage" readonly></div>
+      <div class="form-group">
+        <label class="form-label">Cement Type *</label>
+        <select class="form-control" id="aCType">${CEMENT_TYPES.map(t=>`<option>${t}</option>`).join('')}</select>
+      </div>
+      <div class="form-group"><label class="form-label">Bags Requested *</label><input class="form-control" type="number" id="aBags" min="1" max="200" value="50"></div>
+      <div class="form-group"><label class="form-label">Intended Use *</label>
+        <select class="form-control" id="aUse">
+          <option>Foundation</option><option>Walls</option><option>Roof Slab</option><option>Flooring</option><option>Complete Construction</option>
+        </select>
+      </div>
+      <div class="form-group" style="grid-column:1/-1"><label class="form-label">Remarks</label><input class="form-control" id="aRemark" placeholder="Additional notes..."></div>
+    </div>
+  `, [{label:'Cancel',cls:'btn-outlined',fn:closeModal},{label:'Submit Allotment',cls:'btn-primary',fn:submitAllotment}]);
+  setTimeout(fillBenDetails, 100);
+}
+function fillBenDetails() {
+  const sel = document.getElementById('aBen');
+  if (!sel) return;
+  const b = DB.beneficiaries.find(x=>x.id===sel.value);
+  if (!b) return;
+  document.getElementById('aHouseNo').value = b.houseNo;
+  document.getElementById('aScheme').value = b.scheme;
+  document.getElementById('aVillage').value = `${b.village} / ${b.block}`;
+  document.getElementById('aBags').value = b.sanctionedBags;
+}
+function submitAllotment() {
+  const benId = document.getElementById('aBen').value;
+  const b = DB.beneficiaries.find(x=>x.id===benId);
+  const bags = parseInt(document.getElementById('aBags').value);
+  if (!bags || bags < 1) { showToast('Enter valid bags count','error'); return; }
+  if (bags > DB.stock.balance) { showToast('Insufficient stock! Balance: ' + DB.stock.balance + ' bags','error'); return; }
+  const allotment = {
+    id: 'ALT' + Date.now(),
+    beneficiaryId: benId,
+    beneficiaryName: b.name,
+    village: b.village,
+    block: b.block,
+    scheme: b.scheme,
+    houseNo: b.houseNo,
+    mobile: b.mobile,
+    aadhaar: b.aadhaar,
+    cementType: document.getElementById('aCType').value,
+    bags: bags,
+    use: document.getElementById('aUse').value,
+    remark: document.getElementById('aRemark').value,
+    status: 'Pending',
+    createdBy: currentUser.name,
+    createdAt: new Date().toISOString(),
+    timeline: [{event:'Allotment Created', by: currentUser.name, at: new Date().toISOString(), note:''}]
+  };
+  DB.allotments.push(allotment);
+  saveDB();
+  pushToFirebase('allotments', allotment.id, allotment);
+  closeModal();
+  showToast('Allotment submitted for approval');
+  renderAllotTable(DB.allotments);
+}
+function approveAllotment(id) {
+  const a = DB.allotments.find(x=>x.id===id);
+  a.status = 'Approved';
+  a.approvedBy = currentUser.name;
+  a.approvedAt = new Date().toISOString();
+  a.timeline.push({event:'Approved', by:currentUser.name, at:new Date().toISOString(), note:''});
+  saveDB();
+  pushToFirebase('allotments', id, a);
+  showToast('Allotment approved ✓');
+  filterAllotTable();
+  updateBadges();
+}
+function rejectAllotment(id) {
+  const a = DB.allotments.find(x=>x.id===id);
+  a.status = 'Rejected';
+  a.timeline.push({event:'Rejected', by:currentUser.name, at:new Date().toISOString(), note:'Review required'});
+  saveDB();
+  showToast('Allotment rejected', 'error');
+  filterAllotTable();
+}
+function viewAllotment(id) {
+  const a = DB.allotments.find(x=>x.id===id);
+  openModal('Allotment Details – ' + a.id, `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0">
+      <div class="info-row" style="grid-column:1/-1"><span class="info-key">Beneficiary</span><span class="info-val">${a.beneficiaryName} (${a.beneficiaryId})</span></div>
+      <div class="info-row"><span class="info-key">Aadhaar</span><span class="info-val">${a.aadhaar}</span></div>
+      <div class="info-row"><span class="info-key">Mobile</span><span class="info-val">${a.mobile}</span></div>
+      <div class="info-row"><span class="info-key">House No.</span><span class="info-val">${a.houseNo}</span></div>
+      <div class="info-row"><span class="info-key">Scheme</span><span class="info-val">${a.scheme}</span></div>
+      <div class="info-row"><span class="info-key">Village</span><span class="info-val">${a.village}</span></div>
+      <div class="info-row"><span class="info-key">Cement Type</span><span class="info-val">${a.cementType}</span></div>
+      <div class="info-row"><span class="info-key">Bags</span><span class="info-val"><strong>${a.bags}</strong></span></div>
+      <div class="info-row"><span class="info-key">Use</span><span class="info-val">${a.use}</span></div>
+      <div class="info-row"><span class="info-key">Status</span><span class="info-val"><span class="chip chip-${a.status.toLowerCase()}">${a.status}</span></span></div>
+    </div>
+    <hr class="divider">
+    <div class="section-title">Timeline</div>
+    <div class="timeline">
+      ${(a.timeline||[]).map(t=>`<div class="tl-item"><div class="tl-dot done"></div><div class="tl-label">${t.event}</div><div class="tl-meta">${t.by} · ${new Date(t.at).toLocaleString('en-IN')}</div></div>`).join('')}
+    </div>
+  `, [{label:'Close',cls:'btn-outlined',fn:closeModal}, ...(a.status==='Approved'?[{label:'Print Slip',cls:'btn-primary',fn:()=>{closeModal();printSlip(id);}}]:[])]);
+}
+
+// ===== ISSUANCE =====
+function renderIssuance(el) {
+  const approved = DB.allotments.filter(a=>a.status==='Approved');
+  el.innerHTML = `
+    <div class="page-header">
+      <div><div class="page-title">Cement Issuance</div><div class="page-sub">Issue cement from store against approved allotments</div></div>
+    </div>
+    ${currentUser.role !== 'store' && currentUser.role !== 'admin' ? `<div class="alert alert-info"><span class="material-icons-round">info</span> Only Store Keeper or Admin can issue cement.</div>` : ''}
+    <div class="card" style="margin-bottom:16px">
+      <div class="section-title">Approved & Ready to Issue</div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Allotment ID</th><th>Beneficiary</th><th>Village</th><th>Bags</th><th>Cement</th><th>Action</th></tr></thead>
+          <tbody>
+            ${approved.filter(a=>!DB.issuances.find(i=>i.allotmentId===a.id)).map(a=>`
+            <tr>
+              <td><strong>${a.id}</strong></td>
+              <td>${a.beneficiaryName}<br><small style="color:var(--grey-500)">${a.mobile}</small></td>
+              <td>${a.village}</td>
+              <td><strong>${a.bags}</strong></td>
+              <td>${a.cementType||'OPC 43'}</td>
+              <td>
+                ${['store','admin'].includes(currentUser.role)?`<button class="btn btn-green btn-sm" onclick="openIssueModal('${a.id}')"><span class="material-icons-round">output</span> Issue</button>`:'<span style="color:var(--grey-500);font-size:12px">Restricted</span>'}
+                <button class="btn btn-outlined btn-sm" onclick="printSlip('${a.id}')"><span class="material-icons-round">print</span></button>
+              </td>
+            </tr>`).join('') || '<tr><td colspan="6"><div class="empty-state"><span class="material-icons-round">check_circle</span><p>All approved allotments have been issued</p></div></td></tr>'}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-title">Issuance History</div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Issue ID</th><th>Allotment</th><th>Beneficiary</th><th>Bags</th><th>Date</th><th>Photo</th><th>Actions</th></tr></thead>
+          <tbody>
+            ${DB.issuances.slice().reverse().map(i=>`
+            <tr>
+              <td><strong>${i.id}</strong></td>
+              <td>${i.allotmentId}</td>
+              <td>${i.beneficiaryName}<br><small style="color:var(--grey-500)">${i.village}</small></td>
+              <td><strong>${i.bags}</strong></td>
+              <td>${new Date(i.issuedAt).toLocaleDateString('en-IN')}</td>
+              <td>${i.photos&&i.photos.length?`<span class="chip chip-verified">✓ ${i.photos.length} photo(s)</span>`:'<span class="chip chip-pending">No photo</span>'}</td>
+              <td><button class="btn btn-text btn-sm" onclick="viewIssuance('${i.id}')">View</button></td>
+            </tr>`).join('') || '<tr><td colspan="7"><div class="empty-state"><span class="material-icons-round">output</span><p>No issuances yet</p></div></td></tr>'}
+          </tbody>
+        </table>
+      </div>
+    </div>`;
+}
+
+function openIssueModal(allotmentId) {
+  const a = DB.allotments.find(x=>x.id===allotmentId);
+  issPhotosData = [];
+  sigData = null;
+  const stockBal = DB.stock.balance;
+  openModal('Issue Cement – ' + allotmentId, `
+    <div class="alert alert-info" style="margin-bottom:16px">
+      <span class="material-icons-round">info</span>
+      <div>Issuing to <strong>${a.beneficiaryName}</strong> · ${a.village} &nbsp;|&nbsp;
+      Allotted: <strong>${a.bags} bags</strong> &nbsp;|&nbsp;
+      Stock balance: <strong>${stockBal} bags</strong></div>
+    </div>
+
+    <!-- STEP 1: Issuance Details -->
+    <div class="section-title" style="margin-bottom:10px">① Issuance Details</div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label class="form-label">Bags to Issue *</label>
+        <input class="form-control" type="number" id="issBags" value="${a.bags}" min="1" max="${Math.min(a.bags, stockBal)}"
+          oninput="updateIssueStockPreview()">
+        <div id="stockPreview" style="font-size:11px;margin-top:4px;color:var(--grey-500)">
+          Balance after issue: <strong>${stockBal - a.bags}</strong> bags
+        </div>
+      </div>
+      <div class="form-group"><label class="form-label">Lorry / Vehicle No.</label><input class="form-control" id="issVeh" placeholder="e.g. TN68AB1234"></div>
+      <div class="form-group"><label class="form-label">Driver Name</label><input class="form-control" id="issDrv" placeholder="Driver name"></div>
+      <div class="form-group"><label class="form-label">Driver Mobile</label><input class="form-control" id="issDrvMob" placeholder="10-digit mobile"></div>
+      <div class="form-group" style="grid-column:1/-1"><label class="form-label">Remark / Notes</label><input class="form-control" id="issRemark" placeholder="Optional notes..."></div>
+    </div>
+
+    <!-- STEP 2: Photo Proof (MANDATORY) -->
+    <hr class="divider">
+    <div class="section-title" style="margin-bottom:6px">② Photo Proof <span style="color:var(--red);font-size:11px;font-weight:400">(Mandatory – min. 2 photos required)</span></div>
+    <div style="font-size:12px;color:var(--grey-700);margin-bottom:10px">
+      Take photos of: <strong>(a) cement bags stacked</strong> and <strong>(b) beneficiary receiving bags</strong>
+    </div>
+    <input type="file" accept="image/*" capture="environment" id="issPhotoInput" multiple style="display:none"
+      onchange="handlePhotoCapture(event,'issPhotos')">
+    <div class="photo-grid" id="issPhotos">
+      <div class="photo-add" onclick="document.getElementById('issPhotoInput').click()">
+        <span class="material-icons-round">add_a_photo</span><span>Add Photo</span>
+      </div>
+    </div>
+    <div id="photoValidMsg" style="font-size:12px;color:var(--red);margin-top:6px;display:none">
+      <span class="material-icons-round" style="font-size:14px;vertical-align:middle">error</span>
+      At least 2 photos are required to proceed.
+    </div>
+    <div id="photoOkMsg" style="font-size:12px;color:var(--green);margin-top:6px;display:none">
+      <span class="material-icons-round" style="font-size:14px;vertical-align:middle">check_circle</span>
+      Photo proof captured.
+    </div>
+
+    <!-- STEP 3: Beneficiary Signature -->
+    <hr class="divider">
+    <div class="section-title" style="margin-bottom:6px">③ Beneficiary Signature / Thumb Impression</div>
+    <canvas id="sigCanvas" width="500" height="110" style="border:1.5px solid var(--grey-300);border-radius:8px;width:100%;touch-action:none;background:#fafafa;cursor:crosshair"></canvas>
+    <div style="display:flex;align-items:center;gap:8px;margin-top:4px">
+      <button class="btn btn-text btn-sm" onclick="clearSig()">Clear</button>
+      <span id="sigStatus" style="font-size:12px;color:var(--grey-500)">Draw signature above</span>
+    </div>
+
+    <!-- STEP 4: Authorizer PIN -->
+    <hr class="divider">
+    <div class="section-title" style="margin-bottom:6px">④ Authorizer Confirmation</div>
+    <div style="font-size:12px;color:var(--grey-700);margin-bottom:10px">
+      The issuing officer must enter their 4-digit PIN to authorize this transaction.
+    </div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label class="form-label">Issuing Officer Name</label>
+        <input class="form-control" id="issOfficer" value="${currentUser.name}" readonly>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Authorization PIN *</label>
+        <input class="form-control" type="password" id="issPin" maxlength="4" placeholder="4-digit PIN"
+          style="letter-spacing:6px;font-size:20px;text-align:center" oninput="this.value=this.value.replace(/\D/g,'')">
+        <div style="font-size:11px;color:var(--grey-500);margin-top:4px">Default PIN: <strong>1234</strong> (change in Settings)</div>
+      </div>
+    </div>
+  `, [{label:'Cancel',cls:'btn-outlined',fn:closeModal},{label:'✓ Authorize & Issue',cls:'btn-green',fn:()=>confirmIssue(allotmentId)}]);
+  setTimeout(initSig, 100);
+}
+
+function updateIssueStockPreview() {
+  const bags = parseInt(document.getElementById('issBags')?.value)||0;
+  const bal = DB.stock.balance - bags;
+  const el = document.getElementById('stockPreview');
+  if (!el) return;
+  el.innerHTML = `Balance after issue: <strong style="color:${bal<100?'var(--red)':bal<300?'var(--yellow)':'var(--green)'}">${bal}</strong> bags`;
+}
+
+let sigData = null;
+let issPhotosData = [];
+function initSig() {
+  const c = document.getElementById('sigCanvas');
+  if (!c) return;
+  sigData = null;
+  const ctx = c.getContext('2d');
+  let drawing = false;
+  const pos = e => {
+    const r = c.getBoundingClientRect();
+    const src = e.touches ? e.touches[0] : e;
+    return {x:(src.clientX-r.left)*(c.width/r.width), y:(src.clientY-r.top)*(c.height/r.height)};
+  };
+  c.onmousedown = c.ontouchstart = e => { e.preventDefault(); drawing=true; const p=pos(e); ctx.beginPath(); ctx.moveTo(p.x,p.y); };
+  c.onmousemove = c.ontouchmove = e => {
+    e.preventDefault();
+    if(!drawing)return;
+    const p=pos(e); ctx.lineWidth=2.5; ctx.strokeStyle='#1a1a2e'; ctx.lineJoin='round'; ctx.lineCap='round';
+    ctx.lineTo(p.x,p.y); ctx.stroke();
+  };
+  c.onmouseup = c.ontouchend = () => {
+    drawing=false;
+    sigData=c.toDataURL();
+    const el=document.getElementById('sigStatus');
+    if(el) { el.textContent='✓ Signature captured'; el.style.color='var(--green)'; }
+  };
+}
+function clearSig() {
+  const c=document.getElementById('sigCanvas');
+  if(c){c.getContext('2d').clearRect(0,0,c.width,c.height); sigData=null;}
+  const el=document.getElementById('sigStatus');
+  if(el){el.textContent='Draw signature above'; el.style.color='var(--grey-500)';}
+}
+
+function handlePhotoCapture(event, containerId) {
+  const files = Array.from(event.target.files);
+  const container = document.getElementById(containerId);
+  issPhotosData = issPhotosData || [];
+  files.forEach(file => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      issPhotosData.push(e.target.result);
+      const wrapper = document.createElement('div');
+      wrapper.style.cssText = 'position:relative;';
+      const img = document.createElement('img');
+      img.className = 'photo-thumb';
+      img.src = e.target.result;
+      img.title = 'Click × to remove';
+      const del = document.createElement('button');
+      del.innerHTML = '×';
+      del.style.cssText = 'position:absolute;top:2px;right:2px;background:var(--red);color:#fff;border:none;border-radius:50%;width:20px;height:20px;cursor:pointer;font-size:14px;line-height:1;display:flex;align-items:center;justify-content:center;padding:0;';
+      del.onclick = () => {
+        issPhotosData.splice(issPhotosData.indexOf(e.target.result),1);
+        wrapper.remove();
+        updatePhotoValidation(containerId);
+      };
+      wrapper.appendChild(img);
+      wrapper.appendChild(del);
+      container.insertBefore(wrapper, container.querySelector('.photo-add'));
+      updatePhotoValidation(containerId);
+    };
+    reader.readAsDataURL(file);
+  });
+  event.target.value = ''; // allow re-capture same file
+}
+
+function updatePhotoValidation(containerId) {
+  if (containerId !== 'issPhotos') return;
+  const count = issPhotosData.length;
+  const errEl = document.getElementById('photoValidMsg');
+  const okEl = document.getElementById('photoOkMsg');
+  if (!errEl || !okEl) return;
+  if (count === 0) { errEl.style.display='none'; okEl.style.display='none'; }
+  else if (count < 2) { errEl.style.display='flex'; okEl.style.display='none'; }
+  else { errEl.style.display='none'; okEl.style.display='flex'; }
+}
+
+function confirmIssue(allotmentId) {
+  // ── Validation ──────────────────────────────────────────────────
+  const bags = parseInt(document.getElementById('issBags').value);
+  const veh  = document.getElementById('issVeh').value.trim();
+  const pin  = document.getElementById('issPin').value.trim();
+  const AUTHORIZED_PIN = DB.authPin || '1234';
+
+  if (!bags || bags < 1) {
+    showToast('Enter a valid bags count', 'error'); return;
+  }
+  if (bags > DB.stock.balance) {
+    showToast('Insufficient stock! Balance: ' + DB.stock.balance + ' bags', 'error'); return;
+  }
+
+  // Photo validation — minimum 2 required
+  if (!issPhotosData || issPhotosData.length < 2) {
+    document.getElementById('photoValidMsg').style.display = 'flex';
+    document.getElementById('photoValidMsg').scrollIntoView({behavior:'smooth', block:'center'});
+    showToast('Minimum 2 photos required as proof', 'error');
+    return;
+  }
+
+  // Signature validation
+  if (!sigData) {
+    showToast('Beneficiary signature is required', 'error'); return;
+  }
+
+  // PIN validation
+  if (!pin) {
+    showToast('Enter your authorization PIN', 'error'); return;
+  }
+  if (pin !== AUTHORIZED_PIN) {
+    showToast('Incorrect PIN – authorization failed', 'error');
+    document.getElementById('issPin').value = '';
+    document.getElementById('issPin').focus();
+    return;
+  }
+
+  // ── All validations passed – proceed ────────────────────────────
+  const a = DB.allotments.find(x=>x.id===allotmentId);
+  const openingBalanceForEntry = DB.stock.balance;
+  const closingBalanceForEntry = openingBalanceForEntry - bags;
+
+  const issuanceId = 'ISS' + Date.now();
+  const issuedAt   = new Date().toISOString();
+
+  const issuance = {
+    id: issuanceId,
+    allotmentId,
+    beneficiaryId:   a.beneficiaryId,
+    beneficiaryName: a.beneficiaryName,
+    village:   a.village,
+    block:     a.block,
+    scheme:    a.scheme,
+    houseNo:   a.houseNo,
+    mobile:    a.mobile,
+    aadhaar:   a.aadhaar,
+    cementType: a.cementType || 'OPC 43 Grade',
+    bags,
+    vehicle:      veh,
+    driver:       document.getElementById('issDrv').value,
+    driverMobile: document.getElementById('issDrvMob').value,
+    remark:       document.getElementById('issRemark').value,
+    signature:    sigData,
+    photos:       [...issPhotosData],
+    photoCount:   issPhotosData.length,
+    issuedBy:     currentUser.name,
+    authorizedBy: currentUser.name,
+    authorizedAt: issuedAt,
+    issuedAt,
+    openingBalance: openingBalanceForEntry,
+    closingBalance: closingBalanceForEntry
+  };
+
+  // ── Stock ledger entry (ISSUE debit) ────────────────────────────
+  if (!DB.stockLedger) DB.stockLedger = [];
+  DB.stockLedger.push({
+    id: 'TXN' + Date.now(),
+    type: 'ISSUE',
+    date: issuedAt,
+    bags: bags,
+    openingBalance: openingBalanceForEntry,
+    closingBalance: closingBalanceForEntry,
+    cementType: issuance.cementType,
+    issuanceId: issuanceId,
+    beneficiaryName: a.beneficiaryName,
+    beneficiaryId: a.beneficiaryId,
+    houseNo: a.houseNo,
+    issuedBy: currentUser.name,
+    vehicle: veh,
+    remark: `Issued to ${a.beneficiaryName} | ${a.scheme}`
+  });
+
+  // ── Update stock totals ─────────────────────────────────────────
+  DB.stock.issued  += bags;
+  DB.stock.balance -= bags;                 // live running balance
+  DB.stock.lastUpdated = issuedAt;
+
+  // ── Update allotment + beneficiary ─────────────────────────────
+  a.status = 'Issued';
+  a.timeline.push({
+    event: 'Cement Issued',
+    by: currentUser.name,
+    at: issuedAt,
+    note: `${bags} bags · vehicle ${veh||'N/A'} · balance now ${closingBalanceForEntry} bags`
+  });
+  const ben = DB.beneficiaries.find(b=>b.id===a.beneficiaryId);
+  if (ben) ben.receivedBags = (ben.receivedBags||0) + bags;
+
+  // ── Push to DB and Firebase ─────────────────────────────────────
+  DB.issuances.push(issuance);
+  issPhotosData = [];
+  sigData = null;
+  saveDB();
+  pushToFirebase('issuances', issuance.id, {
+    ...issuance,
+    photos: issuance.photos.map((_,i)=>'[photo_' + i + ']')  // don't upload base64
+  });
+  pushToFirebase('stock', 'current', DB.stock);
+  pushToFirebase('stockLedger', DB.stockLedger[DB.stockLedger.length-1].id,
+    DB.stockLedger[DB.stockLedger.length-1]);
+
+  closeModal();
+  showToast('✓ Authorized & Issued: ' + bags + ' bags · Balance: ' + closingBalanceForEntry);
+  printIssuanceSlip(issuance);
+  navigate('issuance');
+}
+
+function viewIssuance(id) {
+  const i = DB.issuances.find(x=>x.id===id);
+  openModal('Issuance Record – ' + id, `
+    <div class="info-row"><span class="info-key">Beneficiary</span><span class="info-val">${i.beneficiaryName}</span></div>
+    <div class="info-row"><span class="info-key">House No.</span><span class="info-val">${i.houseNo}</span></div>
+    <div class="info-row"><span class="info-key">Village</span><span class="info-val">${i.village}</span></div>
+    <div class="info-row"><span class="info-key">Bags Issued</span><span class="info-val"><strong>${i.bags}</strong></span></div>
+    <div class="info-row"><span class="info-key">Vehicle</span><span class="info-val">${i.vehicle||'—'}</span></div>
+    <div class="info-row"><span class="info-key">Driver</span><span class="info-val">${i.driver||'—'}</span></div>
+    <div class="info-row"><span class="info-key">Issued By</span><span class="info-val">${i.issuedBy}</span></div>
+    <div class="info-row"><span class="info-key">Issued At</span><span class="info-val">${new Date(i.issuedAt).toLocaleString('en-IN')}</span></div>
+    ${i.signature?`<hr class="divider"><div class="section-title">Signature</div><img src="${i.signature}" style="border:1px solid var(--grey-200);border-radius:8px;max-width:100%">`:''}
+    ${i.photos&&i.photos.length?`<hr class="divider"><div class="section-title">Photos (${i.photos.length})</div><div class="photo-grid">${i.photos.map(p=>`<img class="photo-thumb" src="${p}">`).join('')}</div>`:''}
+  `, [{label:'Close',cls:'btn-outlined',fn:closeModal},{label:'Print Slip',cls:'btn-primary',fn:()=>{closeModal();printIssuanceSlip(i);}}]);
+}
+
+// ===== COLLECTION VERIFICATION =====
+function renderCollection(el) {
+  el.innerHTML = `
+    <div class="page-header">
+      <div><div class="page-title">Collection Verification</div><div class="page-sub">Verify cement received at beneficiary site</div></div>
+    </div>
+    <div class="card">
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Issue ID</th><th>Beneficiary</th><th>Village</th><th>Bags Issued</th><th>Collection Status</th><th>Action</th></tr></thead>
+          <tbody>
+            ${DB.issuances.map(i=>{
+              const ins = DB.inspections.find(x=>x.issuanceId===i.id);
+              return `<tr>
+                <td><strong>${i.id}</strong></td>
+                <td>${i.beneficiaryName}<br><small>${i.mobile}</small></td>
+                <td>${i.village}</td>
+                <td><strong>${i.bags}</strong></td>
+                <td>${ins?`<span class="chip chip-verified">✓ Verified</span>`:'<span class="chip chip-pending">Pending</span>'}</td>
+                <td>${!ins?`<button class="btn btn-green btn-sm" onclick="openCollectionVerify('${i.id}')">Verify Collection</button>`:`<button class="btn btn-text btn-sm" onclick="viewInspection('${i.id}')">View</button>`}</td>
+              </tr>`;
+            }).join('') || '<tr><td colspan="6"><div class="empty-state"><span class="material-icons-round">verified</span><p>No issuances to verify</p></div></td></tr>'}
+          </tbody>
+        </table>
+      </div>
+    </div>`;
+}
+function openCollectionVerify(issuanceId) {
+  const i = DB.issuances.find(x=>x.id===issuanceId);
+  issPhotosData = [];
+  openModal('Verify Collection – ' + issuanceId, `
+    <div class="alert alert-info"><span class="material-icons-round">info</span> Verifying delivery to <strong>${i.beneficiaryName}</strong> · ${i.village}</div>
+    <div class="form-grid">
+      <div class="form-group"><label class="form-label">Bags Actually Received</label><input class="form-control" type="number" id="colBags" value="${i.bags}" min="1" max="${i.bags}"></div>
+      <div class="form-group"><label class="form-label">Verified By</label><input class="form-control" id="colBy" placeholder="Inspector name" value="${currentUser.name}"></div>
+      <div class="form-group" style="grid-column:1/-1"><label class="form-label">Condition</label>
+        <select class="form-control" id="colCond"><option>Good – All bags intact</option><option>Partial – Some damage</option><option>Issue – Significant shortage</option></select>
+      </div>
+      <div class="form-group" style="grid-column:1/-1"><label class="form-label">Remarks</label><input class="form-control" id="colRem" placeholder="Field observations..."></div>
+    </div>
+    <div class="form-group" style="margin-top:12px">
+      <label class="form-label">Site Photos (Mandatory)</label>
+      <input type="file" accept="image/*" capture="environment" id="colPhotoInput" multiple style="display:none" onchange="handlePhotoCapture(event,'colPhotos')">
+      <div class="photo-grid" id="colPhotos">
+        <div class="photo-add" onclick="document.getElementById('colPhotoInput').click()">
+          <span class="material-icons-round">add_a_photo</span><span>Add Site Photo</span>
+        </div>
+      </div>
+    </div>
+    <div style="margin-top:12px">
+      <label class="form-label">GPS Location</label>
+      <button class="btn btn-outlined btn-sm" onclick="captureGPS()" style="margin-top:6px"><span class="material-icons-round">my_location</span> Capture GPS</button>
+      <div id="gpsStatus" style="font-size:12px;color:var(--grey-500);margin-top:6px">Not captured</div>
+    </div>
+  `, [{label:'Cancel',cls:'btn-outlined',fn:closeModal},{label:'Submit Verification',cls:'btn-green',fn:()=>submitVerification(issuanceId)}]);
+}
+let gpsCoords = null;
+function captureGPS() {
+  document.getElementById('gpsStatus').textContent = 'Capturing...';
+  navigator.geolocation.getCurrentPosition(pos=>{
+    gpsCoords = {lat:pos.coords.latitude.toFixed(6), lng:pos.coords.longitude.toFixed(6)};
+    document.getElementById('gpsStatus').innerHTML = `<span class="chip chip-verified">✓ ${gpsCoords.lat}, ${gpsCoords.lng}</span>`;
+  }, ()=>{ document.getElementById('gpsStatus').textContent='GPS unavailable'; });
+}
+function submitVerification(issuanceId) {
+  const bags = parseInt(document.getElementById('colBags').value);
+  const inspection = {
+    id: 'INS' + Date.now(),
+    issuanceId,
+    bagsVerified: bags,
+    verifiedBy: document.getElementById('colBy').value,
+    condition: document.getElementById('colCond').value,
+    remarks: document.getElementById('colRem').value,
+    gps: gpsCoords,
+    photos: [...(issPhotosData||[])],
+    verified: true,
+    verifiedAt: new Date().toISOString()
+  };
+  DB.inspections.push(inspection);
+  const a = DB.allotments.find(x=>x.id===DB.issuances.find(i=>i.id===issuanceId)?.allotmentId);
+  if (a) a.timeline.push({event:'Collection Verified', by:currentUser.name, at:new Date().toISOString(), note:`${bags} bags verified at site`});
+  issPhotosData = [];
+  gpsCoords = null;
+  saveDB();
+  closeModal();
+  showToast('Collection verified successfully!');
+  navigate('collection');
+}
+function viewInspection(issuanceId) {
+  const ins = DB.inspections.find(x=>x.issuanceId===issuanceId);
+  if (!ins) return;
+  openModal('Inspection Record', `
+    <div class="info-row"><span class="info-key">Bags Verified</span><span class="info-val"><strong>${ins.bagsVerified}</strong></span></div>
+    <div class="info-row"><span class="info-key">Verified By</span><span class="info-val">${ins.verifiedBy}</span></div>
+    <div class="info-row"><span class="info-key">Condition</span><span class="info-val">${ins.condition}</span></div>
+    <div class="info-row"><span class="info-key">GPS</span><span class="info-val">${ins.gps?`${ins.gps.lat}, ${ins.gps.lng}`:'N/A'}</span></div>
+    <div class="info-row"><span class="info-key">Date</span><span class="info-val">${new Date(ins.verifiedAt).toLocaleString('en-IN')}</span></div>
+    <div class="info-row"><span class="info-key">Remarks</span><span class="info-val">${ins.remarks||'—'}</span></div>
+    ${ins.photos&&ins.photos.length?`<hr class="divider"><div class="section-title">Photos</div><div class="photo-grid">${ins.photos.map(p=>`<img class="photo-thumb" src="${p}">`).join('')}</div>`:''}
+  `, [{label:'Close',cls:'btn-outlined',fn:closeModal}]);
+}
+
+// ===== FIELD INSPECTION =====
+function renderInspection(el) {
+  el.innerHTML = `
+    <div class="page-header">
+      <div><div class="page-title">Field Inspection</div><div class="page-sub">On-site construction progress verification</div></div>
+      <button class="btn btn-primary" onclick="openNewInspection()"><span class="material-icons-round">add</span> New Inspection</button>
+    </div>
+    <div class="card">
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Insp. ID</th><th>Beneficiary</th><th>Village</th><th>Stage</th><th>Inspector</th><th>Date</th><th>Photos</th><th>View</th></tr></thead>
+          <tbody>
+            ${DB.inspections.filter(i=>i.stage).map(i=>`
+            <tr>
+              <td><strong>${i.id}</strong></td>
+              <td>${i.beneficiaryName||'—'}</td>
+              <td>${i.village||'—'}</td>
+              <td><span class="chip chip-approved">${i.stage}</span></td>
+              <td>${i.verifiedBy}</td>
+              <td>${new Date(i.verifiedAt).toLocaleDateString('en-IN')}</td>
+              <td>${i.photos?.length||0} photos</td>
+              <td><button class="btn btn-text btn-sm" onclick="viewInspectionFull('${i.id}')">View</button></td>
+            </tr>`).join('') || '<tr><td colspan="8"><div class="empty-state"><span class="material-icons-round">fact_check</span><p>No field inspections yet</p></div></td></tr>'}
+          </tbody>
+        </table>
+      </div>
+    </div>`;
+}
+function openNewInspection() {
+  const bOpts = DB.beneficiaries.map(b=>`<option value="${b.id}">${b.name} – ${b.village}</option>`).join('');
+  issPhotosData = [];
+  openModal('New Field Inspection', `
+    <div class="form-grid">
+      <div class="form-group" style="grid-column:1/-1"><label class="form-label">Beneficiary</label><select class="form-control" id="inspBen">${bOpts}</select></div>
+      <div class="form-group"><label class="form-label">Construction Stage</label>
+        <select class="form-control" id="inspStage">
+          <option>Foundation</option><option>Plinth</option><option>Wall – Ground Floor</option><option>Roof Slab</option><option>Plastering</option><option>Completed</option>
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label">Cement Bags Used So Far</label><input class="form-control" type="number" id="inspBagsUsed" placeholder="e.g. 30" min="0"></div>
+      <div class="form-group" style="grid-column:1/-1"><label class="form-label">Observations</label><textarea class="form-control" id="inspObs" rows="3" placeholder="Construction quality, deviations from plan..."></textarea></div>
+    </div>
+    <div class="form-group" style="margin-top:12px">
+      <label class="form-label">Site Photos (Required)</label>
+      <input type="file" accept="image/*" capture="environment" id="inspPhotoInput" multiple style="display:none" onchange="handlePhotoCapture(event,'inspPhotos')">
+      <div class="photo-grid" id="inspPhotos">
+        <div class="photo-add" onclick="document.getElementById('inspPhotoInput').click()">
+          <span class="material-icons-round">add_a_photo</span><span>Add Photo</span>
+        </div>
+      </div>
+    </div>
+    <button class="btn btn-outlined btn-sm" onclick="captureGPS2()" style="margin-top:12px"><span class="material-icons-round">my_location</span> Capture GPS</button>
+    <div id="gpsStatus2" style="font-size:12px;color:var(--grey-500);margin-top:6px">GPS not captured</div>
+  `, [{label:'Cancel',cls:'btn-outlined',fn:closeModal},{label:'Submit Inspection',cls:'btn-primary',fn:submitFieldInspection}]);
+}
+function captureGPS2() {
+  document.getElementById('gpsStatus2').textContent = 'Capturing...';
+  navigator.geolocation.getCurrentPosition(pos=>{
+    gpsCoords = {lat:pos.coords.latitude.toFixed(6), lng:pos.coords.longitude.toFixed(6)};
+    document.getElementById('gpsStatus2').innerHTML = `<span class="chip chip-verified">✓ ${gpsCoords.lat}, ${gpsCoords.lng}</span>`;
+  }, ()=>{ document.getElementById('gpsStatus2').textContent='GPS unavailable'; gpsCoords=null; });
+}
+function submitFieldInspection() {
+  const benId = document.getElementById('inspBen').value;
+  const b = DB.beneficiaries.find(x=>x.id===benId);
+  if (!issPhotosData.length) { showToast('Please add at least 1 site photo','error'); return; }
+  const ins = {
+    id: 'FI' + Date.now(),
+    issuanceId: null,
+    beneficiaryId: benId,
+    beneficiaryName: b?.name,
+    village: b?.village,
+    stage: document.getElementById('inspStage').value,
+    bagsUsed: parseInt(document.getElementById('inspBagsUsed').value)||0,
+    observations: document.getElementById('inspObs').value,
+    gps: gpsCoords,
+    photos: [...issPhotosData],
+    verifiedBy: currentUser.name,
+    verified: true,
+    verifiedAt: new Date().toISOString()
+  };
+  DB.inspections.push(ins);
+  issPhotosData = [];
+  gpsCoords = null;
+  saveDB();
+  closeModal();
+  showToast('Field inspection submitted');
+  navigate('inspection');
+}
+function viewInspectionFull(id) {
+  const ins = DB.inspections.find(x=>x.id===id);
+  openModal('Field Inspection – ' + id, `
+    <div class="info-row"><span class="info-key">Beneficiary</span><span class="info-val">${ins.beneficiaryName||'—'}</span></div>
+    <div class="info-row"><span class="info-key">Village</span><span class="info-val">${ins.village||'—'}</span></div>
+    <div class="info-row"><span class="info-key">Stage</span><span class="info-val"><span class="chip chip-approved">${ins.stage}</span></span></div>
+    <div class="info-row"><span class="info-key">Bags Used</span><span class="info-val">${ins.bagsUsed||0}</span></div>
+    <div class="info-row"><span class="info-key">Inspector</span><span class="info-val">${ins.verifiedBy}</span></div>
+    <div class="info-row"><span class="info-key">GPS</span><span class="info-val">${ins.gps?`${ins.gps.lat}, ${ins.gps.lng}`:'N/A'}</span></div>
+    <div class="info-row"><span class="info-key">Date</span><span class="info-val">${new Date(ins.verifiedAt).toLocaleString('en-IN')}</span></div>
+    <div class="info-row"><span class="info-key">Observations</span><span class="info-val">${ins.observations||'—'}</span></div>
+    ${ins.photos?.length?`<hr class="divider"><div class="section-title">Photos (${ins.photos.length})</div><div class="photo-grid">${ins.photos.map(p=>`<img class="photo-thumb" src="${p}">`).join('')}</div>`:''}
+  `, [{label:'Close',cls:'btn-outlined',fn:closeModal}]);
+}
+
+// ===== BENEFICIARIES =====
+function renderBeneficiaries(el) {
+  el.innerHTML = `
+    <div class="page-header">
+      <div><div class="page-title">Beneficiary Register</div><div class="page-sub">All registered beneficiaries</div></div>
+      ${currentUser.role==='admin'?`<button class="btn btn-primary" onclick="openAddBeneficiary()"><span class="material-icons-round">person_add</span> Add Beneficiary</button>`:''}
+    </div>
+    <div class="card">
+      <div class="search-bar">
+        <div class="search-input"><span class="material-icons-round">search</span><input id="benSearch" placeholder="Search by name, village, scheme..." oninput="filterBenTable()"></div>
+        <select class="form-control" style="width:180px" id="benSchemeFilter" onchange="filterBenTable()">
+          <option value="">All Schemes</option>
+          ${SCHEMES.map(s=>`<option>${s}</option>`).join('')}
+        </select>
+      </div>
+      <div class="table-wrap">
+        <table id="benTable">
+          <thead><tr><th>ID</th><th>Name</th><th>Aadhaar</th><th>Mobile</th><th>Village</th><th>Scheme</th><th>House No.</th><th>Sanctioned</th><th>Received</th><th>Actions</th></tr></thead>
+          <tbody id="benBody"></tbody>
+        </table>
+      </div>
+    </div>`;
+  filterBenTable();
+}
+function filterBenTable() {
+  const q = (document.getElementById('benSearch')?.value||'').toLowerCase();
+  const scheme = document.getElementById('benSchemeFilter')?.value||'';
+  let data = DB.beneficiaries;
+  if (q) data = data.filter(b=>JSON.stringify(b).toLowerCase().includes(q));
+  if (scheme) data = data.filter(b=>b.scheme===scheme);
+  const body = document.getElementById('benBody');
+  if (!body) return;
+  body.innerHTML = data.map(b=>`
+    <tr>
+      <td><strong>${b.id}</strong></td>
+      <td>${b.name}</td>
+      <td>${b.aadhaar}</td>
+      <td>${b.mobile}</td>
+      <td>${b.village}</td>
+      <td><span class="chip chip-approved" style="font-size:10px">${b.scheme}</span></td>
+      <td>${b.houseNo}</td>
+      <td>${b.sanctionedBags}</td>
+      <td>${b.receivedBags||0} ${b.receivedBags>=b.sanctionedBags?'<span class="chip chip-verified" style="font-size:10px">Full</span>':''}</td>
+      <td>
+        <button class="btn btn-text btn-sm" onclick="viewBeneficiary('${b.id}')"><span class="material-icons-round">visibility</span></button>
+        ${currentUser.role==='admin'?`<button class="btn btn-outlined btn-sm" onclick="openAllotForBen('${b.id}')">Allot</button>`:''}
+      </td>
+    </tr>`).join('') || '<tr><td colspan="10"><div class="empty-state"><span class="material-icons-round">people</span><p>No beneficiaries found</p></div></td></tr>';
+}
+function openAddBeneficiary() {
+  openModal('Register New Beneficiary', `
+    <div class="form-grid">
+      <div class="form-group"><label class="form-label">Full Name *</label><input class="form-control" id="nbName" placeholder="Full name"></div>
+      <div class="form-group"><label class="form-label">Aadhaar No. *</label><input class="form-control" id="nbAadhaar" placeholder="XXXX-XXXX-XXXX" maxlength="14"></div>
+      <div class="form-group"><label class="form-label">Mobile *</label><input class="form-control" id="nbMobile" placeholder="10-digit" maxlength="10"></div>
+      <div class="form-group"><label class="form-label">Village *</label>
+        <select class="form-control" id="nbVillage">${VILLAGES.map(v=>`<option>${v}</option>`).join('')}</select>
+      </div>
+      <div class="form-group"><label class="form-label">Block *</label>
+        <select class="form-control" id="nbBlock">${BLOCKS.map(b=>`<option>${b}</option>`).join('')}</select>
+      </div>
+      <div class="form-group"><label class="form-label">Scheme *</label>
+        <select class="form-control" id="nbScheme">${SCHEMES.map(s=>`<option>${s}</option>`).join('')}</select>
+      </div>
+      <div class="form-group"><label class="form-label">House No. *</label><input class="form-control" id="nbHouse" placeholder="e.g. MYL/2025001"></div>
+      <div class="form-group"><label class="form-label">Sanctioned Bags *</label><input class="form-control" type="number" id="nbBags" value="100" min="1"></div>
+    </div>
+  `, [{label:'Cancel',cls:'btn-outlined',fn:closeModal},{label:'Register',cls:'btn-primary',fn:addBeneficiary}]);
+}
+function addBeneficiary() {
+  const name = document.getElementById('nbName').value.trim();
+  const aadhaar = document.getElementById('nbAadhaar').value.trim();
+  const mobile = document.getElementById('nbMobile').value.trim();
+  if (!name||!aadhaar||!mobile) { showToast('Fill all required fields','error'); return; }
+  const b = {
+    id: 'B' + String(Date.now()).slice(-6),
+    name, aadhaar: '****-****-' + aadhaar.slice(-4),
+    mobile,
+    village: document.getElementById('nbVillage').value,
+    block: document.getElementById('nbBlock').value,
+    scheme: document.getElementById('nbScheme').value,
+    houseNo: document.getElementById('nbHouse').value,
+    sanctionedBags: parseInt(document.getElementById('nbBags').value)||100,
+    receivedBags: 0,
+    status: 'Active',
+    createdAt: new Date().toISOString()
+  };
+  DB.beneficiaries.push(b);
+  saveDB();
+  pushToFirebase('beneficiaries', b.id, b);
+  closeModal();
+  showToast('Beneficiary registered: ' + b.name);
+  filterBenTable();
+}
+function viewBeneficiary(id) {
+  const b = DB.beneficiaries.find(x=>x.id===id);
+  const allotments = DB.allotments.filter(a=>a.beneficiaryId===id);
+  const issuances = DB.issuances.filter(i=>i.beneficiaryId===id);
+  openModal(b.name + ' – Profile', `
+    <div class="info-row"><span class="info-key">Beneficiary ID</span><span class="info-val">${b.id}</span></div>
+    <div class="info-row"><span class="info-key">Aadhaar</span><span class="info-val">${b.aadhaar}</span></div>
+    <div class="info-row"><span class="info-key">Mobile</span><span class="info-val">${b.mobile}</span></div>
+    <div class="info-row"><span class="info-key">Village / Block</span><span class="info-val">${b.village} / ${b.block}</span></div>
+    <div class="info-row"><span class="info-key">Scheme</span><span class="info-val">${b.scheme}</span></div>
+    <div class="info-row"><span class="info-key">House No.</span><span class="info-val">${b.houseNo}</span></div>
+    <div class="info-row"><span class="info-key">Sanctioned Bags</span><span class="info-val">${b.sanctionedBags}</span></div>
+    <div class="info-row"><span class="info-key">Received Bags</span><span class="info-val"><strong>${b.receivedBags||0}</strong> / ${b.sanctionedBags}</span></div>
+    <hr class="divider">
+    <div class="progress-bar"><div class="progress-fill" style="width:${b.sanctionedBags?Math.round((b.receivedBags||0)/b.sanctionedBags*100):0}%"></div></div>
+    <div style="font-size:11px;color:var(--grey-500);margin-top:4px">${b.sanctionedBags?Math.round((b.receivedBags||0)/b.sanctionedBags*100):0}% of sanctioned quantity received</div>
+    <hr class="divider">
+    <div class="section-title">Allotments (${allotments.length})</div>
+    ${allotments.map(a=>`<div class="info-row"><span>${a.id}</span><span><span class="chip chip-${a.status.toLowerCase()}">${a.status}</span> · ${a.bags} bags</span></div>`).join('') || '<div style="font-size:12px;color:var(--grey-500)">No allotments</div>'}
+    <hr class="divider">
+    <div class="section-title">Issuances (${issuances.length})</div>
+    ${issuances.map(i=>`<div class="info-row"><span>${i.id}</span><span>${i.bags} bags · ${new Date(i.issuedAt).toLocaleDateString('en-IN')}</span></div>`).join('') || '<div style="font-size:12px;color:var(--grey-500)">No issuances</div>'}
+  `, [{label:'Close',cls:'btn-outlined',fn:closeModal}]);
+}
+function openAllotForBen(id) {
+  closeModal();
+  setTimeout(()=>{ navigate('allotments'); setTimeout(()=>openNewAllotment(),100); },100);
+}
+
+// ===== STOCK REGISTER =====
+function renderStock(el) {
+  const s = DB.stock;
+  if (!DB.stockLedger) DB.stockLedger = [];
+  const ledger = DB.stockLedger.slice().sort((a,b)=>new Date(b.date)-new Date(a.date));
+  const totalReceipts = ledger.filter(l=>l.type==='RECEIPT').reduce((t,l)=>t+l.bags,0);
+  const totalIssued   = ledger.filter(l=>l.type==='ISSUE').reduce((t,l)=>t+l.bags,0);
+  const pct = s.total ? Math.round((s.issued||0)/s.total*100) : 0;
+
+  el.innerHTML = `
+    <div class="page-header">
+      <div><div class="page-title">Stock Register</div><div class="page-sub">Cement warehouse ledger – running balance</div></div>
+      ${currentUser.role==='admin'?`<button class="btn btn-primary" onclick="openAddStock()"><span class="material-icons-round">add</span> Add Receipt</button>`:''}
+    </div>
+
+    ${s.balance<50?`<div class="alert alert-danger"><span class="material-icons-round">warning</span><strong>Critical stock!</strong> Only ${s.balance} bags remaining.</div>`:
+      s.balance<150?`<div class="alert alert-warn"><span class="material-icons-round">warning_amber</span><strong>Low stock warning.</strong> ${s.balance} bags remaining.</div>`:''}
+
+    <div class="stat-grid" style="grid-template-columns:repeat(auto-fit,minmax(160px,1fr));margin-bottom:16px">
+      <div class="stat-card">
+        <div class="stat-icon blue"><span class="material-icons-round">inventory_2</span></div>
+        <div><div class="stat-val">${s.total}</div><div class="stat-label">Total Received</div><div class="stat-sub">All receipts</div></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon green"><span class="material-icons-round">output</span></div>
+        <div><div class="stat-val">${s.issued||0}</div><div class="stat-label">Total Issued</div><div class="stat-sub">Debited</div></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon ${s.balance<100?'red':s.balance<300?'yellow':'green'}">
+          <span class="material-icons-round">balance</span>
+        </div>
+        <div><div class="stat-val">${s.balance}</div><div class="stat-label">Current Balance</div><div class="stat-sub">${pct}% utilized</div></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon purple"><span class="material-icons-round">receipt_long</span></div>
+        <div><div class="stat-val">${ledger.length}</div><div class="stat-label">Ledger Entries</div><div class="stat-sub">All movements</div></div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:16px">
+      <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:8px">
+        <span>Stock utilization</span>
+        <span><strong>${s.issued||0}</strong> issued of <strong>${s.total}</strong> received</span>
+      </div>
+      <div class="progress-bar" style="height:10px">
+        <div class="progress-fill" style="width:${pct}%;background:${pct>85?'var(--red)':pct>60?'var(--yellow)':'var(--blue)'}"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--grey-500);margin-top:6px">
+        <span>Opening Balance: <strong>${s.openingBalance||s.total}</strong> bags</span>
+        <span>Type: <strong>${s.type||'OPC 43 Grade'}</strong></span>
+        <span>Updated: ${s.lastUpdated?new Date(s.lastUpdated).toLocaleString('en-IN'):'—'}</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <div class="section-title" style="margin:0">Stock Ledger – All Movements</div>
+        <div style="display:flex;gap:8px">
+          <span class="chip chip-verified">▲ Receipt</span>
+          <span class="chip chip-rejected">▼ Issue</span>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th><th>Date & Time</th><th>Type</th><th>Details</th>
+              <th style="text-align:right">In (bags)</th>
+              <th style="text-align:right">Out (bags)</th>
+              <th style="text-align:right">Opening Bal</th>
+              <th style="text-align:right">Closing Bal</th>
+              <th>By</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${ledger.map((l, idx)=>`
+            <tr style="background:${l.type==='RECEIPT'?'rgba(30,142,62,.04)':'rgba(217,48,37,.03)'}">
+              <td style="color:var(--grey-500);font-size:11px">${ledger.length-idx}</td>
+              <td style="font-size:12px">${new Date(l.date).toLocaleString('en-IN',{dateStyle:'short',timeStyle:'short'})}</td>
+              <td>${l.type==='RECEIPT'
+                  ?'<span class="chip chip-verified" style="font-size:10px">▲ RECEIPT</span>'
+                  :'<span class="chip chip-rejected" style="font-size:10px">▼ ISSUE</span>'}</td>
+              <td style="max-width:200px;font-size:12px">
+                ${l.type==='RECEIPT'
+                  ?`<strong>${l.supplier||'—'}</strong><br><span style="color:var(--grey-500)">GRN: ${l.grn||'—'}</span>`
+                  :`<strong>${l.beneficiaryName||'—'}</strong><br><span style="color:var(--grey-500)">${l.houseNo||''} · Veh: ${l.vehicle||'—'}</span>`}
+              </td>
+              <td style="text-align:right;font-weight:700;color:var(--green)">${l.type==='RECEIPT'?'+'+l.bags:'—'}</td>
+              <td style="text-align:right;font-weight:700;color:var(--red)">${l.type==='ISSUE'?'-'+l.bags:'—'}</td>
+              <td style="text-align:right">${l.openingBalance}</td>
+              <td style="text-align:right;font-weight:700;color:${l.closingBalance<100?'var(--red)':l.closingBalance<300?'var(--yellow)':'inherit'}">${l.closingBalance}</td>
+              <td style="font-size:12px">${l.addedBy||l.issuedBy||'—'}</td>
+            </tr>`).join('')||'<tr><td colspan="9"><div class="empty-state"><span class="material-icons-round">inventory_2</span><p>No ledger entries yet</p></div></td></tr>'}
+            ${ledger.length?`<tr style="background:var(--grey-100);font-weight:700">
+              <td colspan="4" style="text-align:right;padding:10px 14px">TOTALS</td>
+              <td style="text-align:right;color:var(--green)">+${totalReceipts}</td>
+              <td style="text-align:right;color:var(--red)">-${totalIssued}</td>
+              <td></td><td style="text-align:right">${s.balance}</td><td></td>
+            </tr>`:''}
+          </tbody>
+        </table>
+      </div>
+    </div>`;
+}
+function openAddStock() {
+  openModal('Add Cement Stock', `
+    <div class="form-grid">
+      <div class="form-group"><label class="form-label">Cement Type</label>
+        <select class="form-control" id="stType">${CEMENT_TYPES.map(t=>`<option>${t}</option>`).join('')}</select>
+      </div>
+      <div class="form-group"><label class="form-label">Bags to Add *</label><input class="form-control" type="number" id="stBags" placeholder="e.g. 500" min="1"></div>
+      <div class="form-group"><label class="form-label">Supplier / Source</label><input class="form-control" id="stSupplier" placeholder="Supplier name or GRN"></div>
+      <div class="form-group"><label class="form-label">Invoice / GRN No.</label><input class="form-control" id="stGrn" placeholder="GRN number"></div>
+    </div>
+  `, [{label:'Cancel',cls:'btn-outlined',fn:closeModal},{label:'Add Stock',cls:'btn-primary',fn:addStock}]);
+}
+function addStock() {
+  const bags = parseInt(document.getElementById('stBags').value);
+  if (!bags||bags<1) { showToast('Enter valid bags count','error'); return; }
+  const openingBal = DB.stock.balance;
+  const closingBal = openingBal + bags;
+  const now = new Date().toISOString();
+  DB.stock.total   += bags;
+  DB.stock.balance  = closingBal;
+  DB.stock.openingBalance = DB.stock.openingBalance || 0;
+  DB.stock.type = document.getElementById('stType').value;
+  DB.stock.lastUpdated = now;
+  if (!DB.stockLedger) DB.stockLedger = [];
+  const ledgerEntry = {
+    id: 'GRN' + Date.now(),
+    type: 'RECEIPT',
+    date: now,
+    bags: bags,
+    openingBalance: openingBal,
+    closingBalance: closingBal,
+    cementType: DB.stock.type,
+    supplier: document.getElementById('stSupplier').value || '—',
+    grn: document.getElementById('stGrn').value || '—',
+    addedBy: currentUser.name,
+    remark: 'Stock receipt'
+  };
+  DB.stockLedger.push(ledgerEntry);
+  saveDB();
+  pushToFirebase('stock', 'current', DB.stock);
+  pushToFirebase('stockLedger', ledgerEntry.id, ledgerEntry);
+  closeModal();
+  showToast(bags + ' bags added · New balance: ' + closingBal);
+  navigate('stock');
+}
+
+// ===== REPORTS =====
+function renderReports(el) {
+  const totalBens = DB.beneficiaries.length;
+  const totalAllot = DB.allotments.length;
+  const totalIssued = DB.issuances.reduce((s,i)=>s+i.bags,0);
+  const totalVerified = DB.inspections.filter(i=>i.verified).length;
+
+  const schemeData = {};
+  DB.issuances.forEach(i=>{ schemeData[i.scheme]=(schemeData[i.scheme]||0)+i.bags; });
+  const blockData = {};
+  DB.beneficiaries.forEach(b=>{ blockData[b.block]=(blockData[b.block]||0)+1; });
+
+  el.innerHTML = `
+    <div class="page-header">
+      <div><div class="page-title">Reports & Analytics</div><div class="page-sub">District-level cement distribution summary</div></div>
+      <button class="btn btn-outlined" onclick="window.print()"><span class="material-icons-round">print</span> Print</button>
+    </div>
+    <div class="stat-grid">
+      <div class="stat-card"><div class="stat-icon blue"><span class="material-icons-round">people</span></div><div><div class="stat-val">${totalBens}</div><div class="stat-label">Beneficiaries</div></div></div>
+      <div class="stat-card"><div class="stat-icon green"><span class="material-icons-round">inventory_2</span></div><div><div class="stat-val">${totalIssued}</div><div class="stat-label">Total Bags Issued</div></div></div>
+      <div class="stat-card"><div class="stat-icon yellow"><span class="material-icons-round">assignment</span></div><div><div class="stat-val">${totalAllot}</div><div class="stat-label">Allotments</div></div></div>
+      <div class="stat-card"><div class="stat-icon purple"><span class="material-icons-round">verified</span></div><div><div class="stat-val">${totalVerified}</div><div class="stat-label">Verified</div></div></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+      <div class="card">
+        <div class="section-title">By Scheme</div>
+        ${SCHEMES.map(s=>{
+          const issued = DB.issuances.filter(i=>i.scheme===s).reduce((t,i)=>t+i.bags,0);
+          const bens = DB.beneficiaries.filter(b=>b.scheme===s).length;
+          const pct = DB.stock.total ? Math.round(issued/DB.stock.total*100) : 0;
+          return `<div style="margin-bottom:14px">
+            <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px">
+              <span>${s}</span><span><strong>${issued} bags</strong> · ${bens} bens</span>
+            </div>
+            <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
+          </div>`;
+        }).join('')}
+      </div>
+      <div class="card">
+        <div class="section-title">By Block</div>
+        ${BLOCKS.map(b=>{
+          const count = DB.beneficiaries.filter(x=>x.block===b).length;
+          const pct = totalBens?Math.round(count/totalBens*100):0;
+          return `<div style="margin-bottom:14px">
+            <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px">
+              <span>${b}</span><span><strong>${count}</strong> beneficiaries (${pct}%)</span>
+            </div>
+            <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>
+    <div class="card" style="margin-top:16px">
+      <div class="section-title">Pending Actions</div>
+      <div class="info-row"><span class="info-key">⏳ Allotments Pending Approval</span><span class="info-val">${DB.allotments.filter(a=>a.status==='Pending').length}</span></div>
+      <div class="info-row"><span class="info-key">📦 Approved But Not Issued</span><span class="info-val">${DB.allotments.filter(a=>a.status==='Approved').length}</span></div>
+      <div class="info-row"><span class="info-key">🔍 Issued But Not Verified</span><span class="info-val">${DB.issuances.filter(i=>!DB.inspections.find(x=>x.issuanceId===i.id)).length}</span></div>
+      <div class="info-row"><span class="info-key">🏗️ No Field Inspection Yet</span><span class="info-val">${DB.issuances.filter(i=>!DB.inspections.find(x=>x.beneficiaryId===i.beneficiaryId&&x.stage)).length}</span></div>
+    </div>`;
+}
+
+// ===== ALERTS =====
+function renderAlerts(el) {
+  const alerts = [];
+  DB.allotments.filter(a=>a.status==='Pending').forEach(a=>alerts.push({type:'warn',msg:`Allotment ${a.id} pending approval – ${a.beneficiaryName}`,time:a.createdAt}));
+  DB.issuances.filter(i=>!DB.inspections.find(x=>x.issuanceId===i.id)).forEach(i=>alerts.push({type:'info',msg:`Collection not verified for ${i.beneficiaryName} (${i.id}) – ${i.bags} bags`,time:i.issuedAt}));
+  if (DB.stock.balance<100) alerts.push({type:'danger',msg:`Critical: Stock balance only ${DB.stock.balance} bags remaining!`,time:new Date().toISOString()});
+  DB.beneficiaries.filter(b=>b.receivedBags>=(b.sanctionedBags||0) && !DB.inspections.find(i=>i.beneficiaryId===b.id&&i.stage==='Completed')).forEach(b=>{
+    if ((b.receivedBags||0)>0) alerts.push({type:'info',msg:`${b.name} has received all bags but no completion inspection recorded`,time:b.createdAt});
+  });
+
+  el.innerHTML = `
+    <div class="page-header"><div><div class="page-title">Alerts & Notifications</div><div class="page-sub">${alerts.length} active alerts</div></div></div>
+    ${alerts.length ? alerts.map(a=>`
+      <div class="alert alert-${a.type}" style="margin-bottom:12px">
+        <span class="material-icons-round">${{warn:'warning_amber',info:'info',danger:'error',success:'check_circle'}[a.type]}</span>
+        <div><div>${a.msg}</div><div style="font-size:11px;opacity:.7;margin-top:2px">${new Date(a.time).toLocaleString('en-IN')}</div></div>
+      </div>`).join('') : `<div class="card"><div class="empty-state"><span class="material-icons-round">check_circle</span><p>No alerts – everything is on track!</p></div></div>`}`;
+}
+
+// ===== SETTINGS =====
+function renderSettings(el) {
+  el.innerHTML = `
+    <div class="page-header"><div><div class="page-title">Settings</div><div class="page-sub">System configuration</div></div></div>
+    <div class="card">
+      <div class="section-title">User Profile</div>
+      <div class="info-row"><span class="info-key">Name</span><span class="info-val">${currentUser.name}</span></div>
+      <div class="info-row"><span class="info-key">Email</span><span class="info-val">${currentUser.email}</span></div>
+      <div class="info-row"><span class="info-key">Role</span><span class="info-val"><span class="chip chip-approved">${currentUser.role.toUpperCase()}</span></span></div>
+    </div>
+    <div class="card" style="margin-top:16px">
+      <div class="section-title">Department Information</div>
+      <div class="info-row"><span class="info-key">Department</span><span class="info-val">Rural Development</span></div>
+      <div class="info-row"><span class="info-key">District</span><span class="info-val">Mayiladuthurai</span></div>
+      <div class="info-row"><span class="info-key">State</span><span class="info-val">Tamil Nadu</span></div>
+    </div>
+    ${currentUser.role==='admin'?`
+    <div class="card" style="margin-top:16px">
+      <div class="section-title">Data Management</div>
+      <button class="btn btn-danger btn-sm" onclick="if(confirm('Reset all data? This cannot be undone.')){localStorage.clear();seedData();navigate('dashboard');showToast('Data reset');}">
+        <span class="material-icons-round">delete_forever</span> Reset All Data
+      </button>
+      <button class="btn btn-outlined btn-sm" style="margin-left:12px" onclick="exportData()">
+        <span class="material-icons-round">download</span> Export JSON
+      </button>
+    </div>`:''} `;
+}
+function changePin() {
+  const cur  = document.getElementById('curPin').value;
+  const nw   = document.getElementById('newPin').value;
+  const conf = document.getElementById('confPin').value;
+  const CURRENT = DB.authPin || '1234';
+  if (cur !== CURRENT) { showToast('Current PIN is incorrect', 'error'); return; }
+  if (nw.length !== 4 || !/^\d{4}$/.test(nw)) { showToast('New PIN must be exactly 4 digits', 'error'); return; }
+  if (nw !== conf) { showToast('PINs do not match', 'error'); return; }
+  DB.authPin = nw;
+  saveDB();
+  pushToFirebase('settings', 'authPin', { pin: nw, updatedBy: currentUser.name, updatedAt: new Date().toISOString() });
+  document.getElementById('curPin').value = '';
+  document.getElementById('newPin').value = '';
+  document.getElementById('confPin').value = '';
+  showToast('Authorization PIN updated successfully');
+}
+
+function exportData() {
+  const blob = new Blob([JSON.stringify(DB,null,2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'drd_cement_data_' + new Date().toISOString().slice(0,10) + '.json';
+  a.click();
+}
+
+// ===== PRINT SLIP =====
+function printSlip(allotmentId) {
+  const a = DB.allotments.find(x=>x.id===allotmentId);
+  if (!a) return;
+  const slipHTML = generateAllotmentSlip(a);
+  const w = window.open('','_blank','width=600,height=800');
+  w.document.write(`<html><head><title>Allotment Slip</title><link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet"><style>*{box-sizing:border-box;margin:0;padding:0;}body{font-family:'Roboto',sans-serif;background:#f5f5f5;display:flex;justify-content:center;padding:20px;}@media print{body{background:#fff;padding:0;}}</style></head><body>${slipHTML}<br><div style="text-align:center;margin-top:12px"><button onclick="window.print()" style="padding:10px 24px;background:#1a73e8;color:#fff;border:none;border-radius:8px;font-size:14px;cursor:pointer">Print / Save PDF</button></div></body></html>`);
+  w.document.close();
+}
+
+function printIssuanceSlip(issuance) {
+  const slipHTML = generateIssuanceSlip(issuance);
+  const w = window.open('','_blank','width=600,height=900');
+  w.document.write(`<html><head><title>Issuance Slip</title><link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet"><style>*{box-sizing:border-box;margin:0;padding:0;}body{font-family:'Roboto',sans-serif;background:#f5f5f5;display:flex;flex-direction:column;align-items:center;padding:20px;}@media print{body{background:#fff;padding:0;}}</style></head><body>${slipHTML}<br><div style="text-align:center;margin-top:12px"><button onclick="window.print()" style="padding:10px 24px;background:#1e8e3e;color:#fff;border:none;border-radius:8px;font-size:14px;cursor:pointer">Print Slip</button></div></body></html>`);
+  w.document.close();
+}
+
+function generateAllotmentSlip(a) {
+  return `<div style="max-width:520px;border:2px solid #ddd;border-radius:12px;padding:24px;background:#fff;font-family:Roboto,sans-serif">
+    <div style="text-align:center;border-bottom:2px dashed #ddd;padding-bottom:16px;margin-bottom:16px">
+      <div style="font-size:10px;font-weight:700;letter-spacing:2px;color:#999;text-transform:uppercase">Government of Tamil Nadu</div>
+      <div style="font-size:10px;color:#999">Rural Development Department · Mayiladuthurai District</div>
+      <div style="font-size:18px;font-weight:700;color:#1a73e8;margin:8px 0">CEMENT ALLOTMENT ORDER</div>
+      <div style="font-size:11px;color:#666">This is an official order. Subject to availability of stock.</div>
+    </div>
+    <div style="font-size:11px;color:#999;text-align:right;margin-top:-8px;margin-bottom:12px">ID: ${a.id}</div>
+    <table style="width:100%;font-size:13px;border-collapse:collapse">
+      <tr><td style="padding:6px 0;color:#666;width:40%">Beneficiary Name</td><td style="font-weight:700">${a.beneficiaryName}</td></tr>
+      <tr><td style="padding:6px 0;color:#666">House No.</td><td style="font-weight:600">${a.houseNo}</td></tr>
+      <tr><td style="padding:6px 0;color:#666">Village / Block</td><td>${a.village} / ${a.block}</td></tr>
+      <tr><td style="padding:6px 0;color:#666">Aadhaar</td><td>${a.aadhaar}</td></tr>
+      <tr><td style="padding:6px 0;color:#666">Mobile</td><td>${a.mobile}</td></tr>
+      <tr><td style="padding:6px 0;color:#666">Scheme</td><td>${a.scheme}</td></tr>
+      <tr><td style="padding:6px 0;color:#666">Cement Type</td><td>${a.cementType||'OPC 43 Grade'}</td></tr>
+      <tr><td style="padding:6px 0;color:#666">Intended Use</td><td>${a.use||'—'}</td></tr>
+    </table>
+    <div style="background:#e8f0fe;border-radius:8px;text-align:center;padding:16px;margin:16px 0">
+      <div style="font-size:36px;font-weight:700;color:#1a73e8">${a.bags}</div>
+      <div style="font-size:12px;color:#666">Bags of Cement (50 kg each) Allotted</div>
+    </div>
+    <div style="display:flex;justify-content:space-between;margin-top:32px">
+      <div style="text-align:center;flex:1"><div style="border-top:1px solid #333;padding-top:4px;font-size:11px;color:#555;margin-top:40px">Beneficiary Signature</div></div>
+      <div style="text-align:center;flex:1"><div style="border-top:1px solid #333;padding-top:4px;font-size:11px;color:#555;margin-top:40px">Issuing Officer</div></div>
+      <div style="text-align:center;flex:1"><div style="border-top:1px solid #333;padding-top:4px;font-size:11px;color:#555;margin-top:40px">BDO / VAO</div></div>
+    </div>
+    <div style="text-align:center;margin-top:16px;font-family:monospace;font-size:10px;letter-spacing:3px;color:#bbb">${a.id}|${a.beneficiaryId}|${new Date(a.createdAt).toLocaleDateString()}</div>
+    <div style="text-align:center;font-size:10px;color:#1e8e3e;font-weight:700;letter-spacing:2px;margin-top:4px">APPROVED ORDER</div>
+  </div>`;
+}
+
+function generateIssuanceSlip(i) {
+  return `<div style="max-width:520px;border:2px solid #1e8e3e;border-radius:12px;padding:24px;background:#fff;font-family:Roboto,sans-serif">
+    <div style="text-align:center;border-bottom:2px dashed #ddd;padding-bottom:16px;margin-bottom:16px">
+      <div style="font-size:10px;font-weight:700;letter-spacing:2px;color:#999;text-transform:uppercase">Government of Tamil Nadu</div>
+      <div style="font-size:10px;color:#999">Rural Development Department · Mayiladuthurai District</div>
+      <div style="font-size:18px;font-weight:700;color:#1e8e3e;margin:8px 0">CEMENT ISSUANCE SLIP</div>
+      <div style="font-size:11px;color:#666">Present this slip to collect cement from the store</div>
+    </div>
+    <div style="font-size:11px;color:#999;text-align:right;margin-top:-8px;margin-bottom:12px">ID: ${i.id} · Allotment: ${i.allotmentId}</div>
+    <table style="width:100%;font-size:13px;border-collapse:collapse">
+      <tr><td style="padding:6px 0;color:#666;width:40%">Beneficiary</td><td style="font-weight:700">${i.beneficiaryName}</td></tr>
+      <tr><td style="padding:6px 0;color:#666">Aadhaar</td><td>${i.aadhaar}</td></tr>
+      <tr><td style="padding:6px 0;color:#666">Mobile</td><td>${i.mobile}</td></tr>
+      <tr><td style="padding:6px 0;color:#666">House No.</td><td>${i.houseNo}</td></tr>
+      <tr><td style="padding:6px 0;color:#666">Village / Block</td><td>${i.village} / ${i.block}</td></tr>
+      <tr><td style="padding:6px 0;color:#666">Scheme</td><td>${i.scheme}</td></tr>
+      <tr><td style="padding:6px 0;color:#666">Cement Type</td><td>${i.cementType||'OPC 43 Grade'}</td></tr>
+      <tr><td style="padding:6px 0;color:#666">Vehicle No.</td><td>${i.vehicle||'—'}</td></tr>
+      <tr><td style="padding:6px 0;color:#666">Driver</td><td>${i.driver||'—'} · ${i.driverMobile||'—'}</td></tr>
+      <tr><td style="padding:6px 0;color:#666">Issued By</td><td>${i.issuedBy}</td></tr>
+      <tr><td style="padding:6px 0;color:#666">Issue Date & Time</td><td>${new Date(i.issuedAt).toLocaleString('en-IN')}</td></tr>
+    </table>
+    <div style="background:#e6f4ea;border-radius:8px;text-align:center;padding:16px;margin:16px 0">
+      <div style="font-size:36px;font-weight:700;color:#1e8e3e">${i.bags}</div>
+      <div style="font-size:12px;color:#555">Bags Issued (${i.bags*50} kg)</div>
+    </div>
+    ${i.signature?`<div><img src="${i.signature}" style="max-width:100%;border:1px solid #ddd;border-radius:6px"><div style="font-size:10px;color:#999;text-align:center;margin-top:2px">Beneficiary Signature / Thumb</div></div><br>`:``}
+    <div style="display:flex;justify-content:space-between;margin-top:24px">
+      <div style="text-align:center;flex:1"><div style="border-top:1px solid #333;padding-top:4px;font-size:11px;color:#555;margin-top:40px">Store Keeper</div></div>
+      <div style="text-align:center;flex:1"><div style="border-top:1px solid #333;padding-top:4px;font-size:11px;color:#555;margin-top:40px">Receiving Officer</div></div>
+    </div>
+    <div style="text-align:center;margin-top:16px;font-family:monospace;font-size:10px;letter-spacing:2px;color:#bbb">${i.id}|${i.allotmentId}|${i.beneficiaryId}</div>
+    <div style="text-align:center;font-size:10px;color:#1e8e3e;font-weight:700;letter-spacing:2px;margin-top:4px">✓ CEMENT ISSUED</div>
+  </div>`;
+}
+
+// ===== MODAL HELPERS =====
+function openModal(title, body, buttons) {
+  document.getElementById('modalTitle').textContent = title;
+  document.getElementById('modalBody').innerHTML = body;
+  document.getElementById('modalFooter').innerHTML = (buttons||[]).map((b,i)=>`<button class="btn ${b.cls}" onclick="modalBtnFns[${i}]()">${b.label}</button>`).join('');
+  window.modalBtnFns = (buttons||[]).map(b=>b.fn);
+  document.getElementById('modalBackdrop').classList.add('open');
+}
+function closeModal() { document.getElementById('modalBackdrop').classList.remove('open'); issPhotosData=[]; }
+function closeModalOutside(e) { if (e.target===document.getElementById('modalBackdrop')) closeModal(); }
+
+// ===== TOAST =====
+function showToast(msg, type='success') {
+  const t = document.getElementById('toast');
+  const icon = document.getElementById('toastIcon');
+  document.getElementById('toastMsg').textContent = msg;
+  icon.textContent = type==='error' ? 'error' : 'check_circle';
+  t.style.background = type==='error' ? 'var(--red)' : 'var(--grey-900)';
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 3500);
+}
+
+// ===== INIT =====
+window.onload = () => { loadFirebaseSDK(); };
+</script>
+</body>
+</html>
