@@ -243,17 +243,86 @@
   .alert-danger { background: var(--red-light); color: #9e1f1a; }
 
   /* ===== LOGIN ===== */
-  .login-wrap { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #e8f0fe 0%, #fff 60%); }
-  .login-card { background: #fff; border-radius: 16px; box-shadow: var(--shadow-3); padding: 40px; width: 100%; max-width: 400px; text-align: center; }
-  .login-logo { width: 64px; height: 64px; background: var(--blue); border-radius: 16px; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px; }
-  .login-logo .material-icons-round { color: #fff; font-size: 36px; }
-  .login-title { font-size: 22px; font-weight: 700; margin-bottom: 4px; }
-  .login-sub { font-size: 13px; color: var(--grey-700); margin-bottom: 28px; }
-  .role-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
+  .login-wrap {
+    min-height: 100vh; display: flex; align-items: stretch;
+    background: var(--grey-50);
+  }
+  .login-left {
+    flex: 1; background: var(--blue);
+    display: flex; flex-direction: column; justify-content: center; padding: 60px 48px;
+    position: relative; overflow: hidden;
+  }
+  .login-left::before {
+    content: ''; position: absolute; width: 400px; height: 400px; border-radius: 50%;
+    background: rgba(255,255,255,.06); top: -100px; right: -100px;
+  }
+  .login-left::after {
+    content: ''; position: absolute; width: 300px; height: 300px; border-radius: 50%;
+    background: rgba(255,255,255,.04); bottom: -80px; left: -60px;
+  }
+  .login-left-logo { display: flex; align-items: center; gap: 14px; margin-bottom: 40px; }
+  .login-left-logo .logo-box { width: 52px; height: 52px; background: rgba(255,255,255,.2); border-radius: 14px; display: flex; align-items: center; justify-content: center; }
+  .login-left-logo .logo-box .material-icons-round { color: #fff; font-size: 28px; }
+  .login-left-logo .logo-text { color: #fff; font-size: 16px; font-weight: 700; line-height: 1.3; }
+  .login-left-logo .logo-text span { font-weight: 400; opacity: .8; font-size: 13px; display: block; }
+  .login-left h2 { color: #fff; font-size: 28px; font-weight: 700; margin-bottom: 12px; line-height: 1.3; }
+  .login-left p { color: rgba(255,255,255,.75); font-size: 14px; line-height: 1.7; max-width: 340px; }
+  .login-feat { margin-top: 36px; display: flex; flex-direction: column; gap: 12px; }
+  .login-feat-item { display: flex; align-items: center; gap: 12px; color: rgba(255,255,255,.85); font-size: 13px; }
+  .login-feat-item .material-icons-round { font-size: 18px; background: rgba(255,255,255,.15); border-radius: 8px; padding: 6px; }
+  .login-right {
+    width: 460px; display: flex; flex-direction: column; justify-content: center;
+    padding: 48px 48px; background: #fff;
+  }
+  .login-right h3 { font-size: 22px; font-weight: 700; margin-bottom: 4px; }
+  .login-right p { font-size: 13px; color: var(--grey-700); margin-bottom: 28px; }
+  .user-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; }
+  .user-item {
+    display: flex; align-items: center; gap: 14px; padding: 12px 16px;
+    border: 1.5px solid var(--grey-200); border-radius: 10px; cursor: pointer; transition: all .15s;
+  }
+  .user-item:hover { border-color: var(--blue); background: var(--blue-light); }
+  .user-item.selected { border-color: var(--blue); background: var(--blue-light); }
+  .user-item .u-avatar {
+    width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center;
+    justify-content: center; flex-shrink: 0; font-size: 18px; color: #fff;
+  }
+  .u-avatar.admin    { background: #1a73e8; }
+  .u-avatar.bdo      { background: #1e8e3e; }
+  .u-avatar.overseer { background: #6d4c41; }
+  .u-avatar.store    { background: #e65100; }
+  .u-avatar.inspector{ background: #c62828; }
+  .user-item .u-info { flex: 1; }
+  .user-item .u-name { font-size: 14px; font-weight: 600; color: var(--grey-900); }
+  .user-item .u-role { font-size: 11px; color: var(--grey-500); margin-top: 1px; }
+  .user-item .u-check { color: var(--blue); display: none; }
+  .user-item.selected .u-check { display: block; }
+  .login-divider { display: flex; align-items: center; gap: 10px; margin: 16px 0; color: var(--grey-500); font-size: 12px; }
+  .login-divider::before, .login-divider::after { content:''; flex:1; height:1px; background:var(--grey-200); }
   .role-card { border: 2px solid var(--grey-200); border-radius: var(--radius-sm); padding: 14px 10px; cursor: pointer; transition: all .2s; text-align: center; }
   .role-card:hover, .role-card.selected { border-color: var(--blue); background: var(--blue-light); }
   .role-card .material-icons-round { font-size: 28px; color: var(--blue); }
   .role-card span { display: block; font-size: 12px; font-weight: 600; margin-top: 4px; color: var(--grey-700); }
+  /* Role badge in sidebar user section */
+  .sidebar-user { padding: 16px; border-bottom: 1px solid var(--grey-200); margin-bottom: 8px; display: flex; align-items: center; gap: 12px; }
+  .sidebar-user .su-avatar { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; color: #fff; flex-shrink: 0; }
+  .sidebar-user .su-name { font-size: 13px; font-weight: 700; }
+  .sidebar-user .su-role { font-size: 11px; color: var(--grey-500); }
+  .role-badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase; }
+  .rb-admin    { background: #e8f0fe; color: #1a73e8; }
+  .rb-bdo      { background: #e6f4ea; color: #1e8e3e; }
+  .rb-overseer { background: #efebe9; color: #6d4c41; }
+  .rb-store    { background: #fff3e0; color: #e65100; }
+  .rb-inspector{ background: #fce8e6; color: #c62828; }
+  /* Locked page overlay */
+  .access-denied { text-align:center; padding: 80px 24px; }
+  .access-denied .material-icons-round { font-size: 64px; color: var(--grey-300); }
+  .access-denied h3 { font-size: 18px; margin: 16px 0 8px; }
+  .access-denied p { font-size: 13px; color: var(--grey-700); }
+  @media (max-width: 900px) {
+    .login-left { display: none; }
+    .login-right { width: 100%; padding: 40px 28px; }
+  }
 
   /* ===== MISC ===== */
   .empty-state { text-align: center; padding: 60px 20px; color: var(--grey-500); }
@@ -293,40 +362,96 @@
 
 <!-- ===== LOGIN SCREEN ===== -->
 <div id="loginScreen" class="login-wrap">
-  <div class="login-card">
-    <div class="login-logo"><span class="material-icons-round">business</span></div>
-    <div class="login-title">MYL Cement Tracker</div>
-    <div class="login-sub">Rural Development Department<br>Mayiladuthurai District</div>
-    <div class="role-cards">
-      <div class="role-card selected" data-role="admin" onclick="selectRole(this)">
-        <span class="material-icons-round">admin_panel_settings</span>
-        <span>District Admin</span>
+
+  <!-- Left Panel – Branding -->
+  <div class="login-left">
+    <div class="login-left-logo">
+      <div class="logo-box"><span class="material-icons-round">business</span></div>
+      <div class="logo-text">MYL Cement Tracker<span>Rural Development Dept · Mayiladuthurai</span></div>
+    </div>
+    <h2>Cement Distribution<br>Management System</h2>
+    <p>A transparent, end-to-end digital platform for managing government cement issuance under rural housing schemes across Mayiladuthurai district.</p>
+    <div class="login-feat">
+      <div class="login-feat-item"><span class="material-icons-round">verified_user</span>Role-based access control for 5 user types</div>
+      <div class="login-feat-item"><span class="material-icons-round">add_a_photo</span>Mandatory photo + signature proof at issuance</div>
+      <div class="login-feat-item"><span class="material-icons-round">balance</span>Automatic stock ledger debit on every issue</div>
+      <div class="login-feat-item"><span class="material-icons-round">cloud_sync</span>Firebase Firestore cloud sync + offline mode</div>
+    </div>
+    <div style="margin-top:48px;font-size:11px;color:rgba(255,255,255,.5)">
+      Government of Tamil Nadu &nbsp;·&nbsp; Rural Development Department<br>
+      Powered by Digital District Initiative
+    </div>
+  </div>
+
+  <!-- Right Panel – Login Form (clean, no user list, no demo hints) -->
+  <div class="login-right">
+
+    <!-- Role indicator shown after typing (hidden initially) -->
+    <div id="roleDetected" style="display:none;align-items:center;gap:12px;background:var(--grey-50);border:1.5px solid var(--grey-200);border-radius:10px;padding:12px 16px;margin-bottom:20px">
+      <div id="rdAvatar" style="width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+        <span class="material-icons-round" id="rdIcon" style="font-size:22px;color:#fff"></span>
       </div>
-      <div class="role-card" data-role="vao" onclick="selectRole(this)">
-        <span class="material-icons-round">person_pin_circle</span>
-        <span>VAO / BDO</span>
+      <div>
+        <div id="rdName" style="font-size:14px;font-weight:700"></div>
+        <div id="rdDesig" style="font-size:11px;color:var(--grey-500);margin-top:1px"></div>
       </div>
-      <div class="role-card" data-role="store" onclick="selectRole(this)">
-        <span class="material-icons-round">warehouse</span>
-        <span>Store Keeper</span>
-      </div>
-      <div class="role-card" data-role="inspector" onclick="selectRole(this)">
-        <span class="material-icons-round">fact_check</span>
-        <span>Field Inspector</span>
+      <span class="role-badge" id="rdBadge" style="margin-left:auto"></span>
+    </div>
+
+    <h3 style="margin-bottom:4px">Welcome back</h3>
+    <p style="margin-bottom:24px">Enter your username and password to continue</p>
+
+    <div class="form-group" style="margin-bottom:14px">
+      <label class="form-label">Username</label>
+      <input class="form-control" id="loginUser" placeholder="Your username"
+        autocomplete="username" oninput="onUsernameInput(this.value)"
+        onkeydown="if(event.key==='Enter')document.getElementById('loginPass').focus()">
+    </div>
+
+    <div class="form-group" style="margin-bottom:6px">
+      <label class="form-label">Password</label>
+      <div style="position:relative">
+        <input class="form-control" type="password" id="loginPass" placeholder="Password"
+          autocomplete="current-password" style="padding-right:44px"
+          onkeydown="if(event.key==='Enter')doLogin()">
+        <button onclick="togglePwd()" tabindex="-1"
+          style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--grey-500)">
+          <span class="material-icons-round" id="pwdEye" style="font-size:20px">visibility</span>
+        </button>
       </div>
     </div>
-    <div class="form-group" style="margin-bottom:12px">
-      <input class="form-control" id="loginUser" placeholder="Username" value="admin@drd.tn.gov.in">
+
+    <div id="loginError" style="display:none;align-items:center;gap:6px;font-size:12px;color:var(--red);margin:8px 0 4px">
+      <span class="material-icons-round" style="font-size:16px">error_outline</span>
+      <span id="loginErrorMsg">Incorrect username or password.</span>
     </div>
-    <div class="form-group" style="margin-bottom:20px">
-      <input class="form-control" type="password" id="loginPass" placeholder="Password" value="••••••••">
-    </div>
-    <button class="btn btn-primary" style="width:100%;justify-content:center;padding:12px" onclick="doLogin()">
+
+    <button class="btn btn-primary" id="loginBtn"
+      style="width:100%;justify-content:center;padding:13px;margin-top:12px;font-size:15px;border-radius:10px"
+      onclick="doLogin()">
       <span class="material-icons-round">login</span> Sign In
     </button>
-    <div style="margin-top:16px;font-size:11px;color:var(--grey-500)">
-      Government of Tamil Nadu · Rural Development Dept<br>
-      Powered by Digital District Initiative
+
+    <div style="margin-top:28px;border-top:1px solid var(--grey-200);padding-top:16px">
+      <details style="font-size:11px;color:var(--grey-500)">
+        <summary style="cursor:pointer;list-style:none;display:flex;align-items:center;gap:6px;user-select:none">
+          <span class="material-icons-round" style="font-size:14px">info_outline</span>
+          Demo login credentials
+        </summary>
+        <div style="margin-top:10px;background:var(--grey-50);border-radius:8px;padding:12px;display:grid;grid-template-columns:auto 1fr 1fr;gap:5px 14px;align-items:center;font-size:11px">
+          <span style="font-weight:700;color:var(--grey-700);grid-column:1/-1;margin-bottom:2px;font-size:10px;letter-spacing:.5px;text-transform:uppercase">Role</span>
+          <span style="font-weight:600;grid-column:2/3;font-size:10px;letter-spacing:.5px;text-transform:uppercase;color:var(--grey-700)">Username</span>
+          <span style="font-weight:600;grid-column:3/4;font-size:10px;letter-spacing:.5px;text-transform:uppercase;color:var(--grey-700)">Password</span>
+          <span>District Collector</span><code style="background:#fff;padding:1px 6px;border-radius:4px;border:1px solid var(--grey-200)">collector</code><code style="background:#fff;padding:1px 6px;border-radius:4px;border:1px solid var(--grey-200)">admin2025</code>
+          <span>BDO</span><code style="background:#fff;padding:1px 6px;border-radius:4px;border:1px solid var(--grey-200)">bdo</code><code style="background:#fff;padding:1px 6px;border-radius:4px;border:1px solid var(--grey-200)">bdo2025</code>
+          <span>Works Overseer</span><code style="background:#fff;padding:1px 6px;border-radius:4px;border:1px solid var(--grey-200)">overseer</code><code style="background:#fff;padding:1px 6px;border-radius:4px;border:1px solid var(--grey-200)">overseer2025</code>
+          <span>Store Keeper</span><code style="background:#fff;padding:1px 6px;border-radius:4px;border:1px solid var(--grey-200)">storekeeper</code><code style="background:#fff;padding:1px 6px;border-radius:4px;border:1px solid var(--grey-200)">store2025</code>
+          <span>Field Inspector</span><code style="background:#fff;padding:1px 6px;border-radius:4px;border:1px solid var(--grey-200)">inspector</code><code style="background:#fff;padding:1px 6px;border-radius:4px;border:1px solid var(--grey-200)">inspect2025</code>
+        </div>
+      </details>
+      <div style="margin-top:12px;font-size:11px;color:var(--grey-500);text-align:center;line-height:1.7">
+        Government of Tamil Nadu · Rural Development Department<br>Mayiladuthurai District
+      </div>
     </div>
   </div>
 </div>
@@ -353,42 +478,10 @@
   </div>
 
   <div class="layout">
-    <!-- Sidebar -->
+    <!-- Sidebar (built dynamically based on role) -->
     <nav class="sidebar" id="sidebar">
-      <div class="sidebar-label">Main</div>
-      <button class="nav-item active" data-page="dashboard" onclick="navigate('dashboard')">
-        <span class="material-icons-round">dashboard</span> Dashboard
-      </button>
-      <button class="nav-item" data-page="allotments" onclick="navigate('allotments')">
-        <span class="material-icons-round">assignment</span> Allotments
-      </button>
-      <button class="nav-item" data-page="issuance" onclick="navigate('issuance')">
-        <span class="material-icons-round">output</span> Issuance
-        <span class="nav-badge" id="pendingBadge">0</span>
-      </button>
-      <button class="nav-item" data-page="collection" onclick="navigate('collection')">
-        <span class="material-icons-round">verified</span> Collection Verify
-      </button>
-      <button class="nav-item" data-page="inspection" onclick="navigate('inspection')">
-        <span class="material-icons-round">fact_check</span> Field Inspection
-      </button>
-      <div class="sidebar-label">Records</div>
-      <button class="nav-item" data-page="beneficiaries" onclick="navigate('beneficiaries')">
-        <span class="material-icons-round">people</span> Beneficiaries
-      </button>
-      <button class="nav-item" data-page="stock" onclick="navigate('stock')">
-        <span class="material-icons-round">inventory_2</span> Stock Register
-      </button>
-      <button class="nav-item" data-page="reports" onclick="navigate('reports')">
-        <span class="material-icons-round">bar_chart</span> Reports
-      </button>
-      <div class="sidebar-label">System</div>
-      <button class="nav-item" data-page="alerts" onclick="navigate('alerts')">
-        <span class="material-icons-round">warning_amber</span> Alerts
-      </button>
-      <button class="nav-item" data-page="settings" onclick="navigate('settings')">
-        <span class="material-icons-round">settings</span> Settings
-      </button>
+      <!-- User info injected by buildSidebar() -->
+      <div id="sidebarContent"></div>
     </nav>
 
     <!-- Main Content -->
@@ -513,9 +606,249 @@ function updateFirebaseIndicator(online) {
   }
 }
 
+// ===== USER REGISTRY =====
+// One Collector (district-wide) + per-block BDO, Overseer, Store Keeper, Inspector
+// block: null  → sees ALL blocks (Collector only)
+// block: 'X'   → sees ONLY block X data
+const USERS = [
+  // ── District Level ─────────────────────────────────────────────────────────
+  {
+    id: 'U001', username: 'collector', password: 'admin2025',
+    role: 'admin', block: null,   // null = all blocks
+    name: 'District Collector', designation: 'District Collector, Mayiladuthurai',
+    dept: 'Collectorate, Mayiladuthurai', mobile: '9400000001',
+    avatarColor: 'admin', icon: 'admin_panel_settings',
+    pages: ['dashboard','masterupload','allotments','issuance','collection','inspection',
+            'beneficiaries','stock','reports','alerts','settings','users']
+  },
+
+  // ── Block: Mayiladuthurai ──────────────────────────────────────────────────
+  {
+    id: 'U101', username: 'bdo.myl', password: 'bdo.myl2025',
+    role: 'bdo', block: 'Mayiladuthurai',
+    name: 'S. Ravikumar', designation: 'BDO – Mayiladuthurai Block',
+    dept: 'Block Development Office, Mayiladuthurai', mobile: '9400001001',
+    avatarColor: 'bdo', icon: 'account_balance',
+    pages: ['dashboard','allotments','beneficiaries','collection','reports','alerts']
+  },
+  {
+    id: 'U102', username: 'overseer.myl', password: 'over.myl2025',
+    role: 'overseer', block: 'Mayiladuthurai',
+    name: 'K. Anbazhagan', designation: 'Works Overseer – Mayiladuthurai',
+    dept: 'Rural Development Dept, Mayiladuthurai', mobile: '9400001002',
+    avatarColor: 'overseer', icon: 'engineering',
+    pages: ['dashboard','allotments','beneficiaries','inspection','alerts']
+  },
+  {
+    id: 'U103', username: 'store.myl', password: 'store.myl2025',
+    role: 'store', block: 'Mayiladuthurai',
+    name: 'P. Murugesan', designation: 'Store Keeper – Mayiladuthurai Depot',
+    dept: 'Rural Development Dept, Mayiladuthurai', mobile: '9400001003',
+    avatarColor: 'store', icon: 'warehouse',
+    pages: ['dashboard','issuance','stock','alerts']
+  },
+  {
+    id: 'U104', username: 'inspector.myl', password: 'insp.myl2025',
+    role: 'inspector', block: 'Mayiladuthurai',
+    name: 'M. Selvaraj', designation: 'Field Inspector – Mayiladuthurai',
+    dept: 'Rural Development Dept, Mayiladuthurai', mobile: '9400001004',
+    avatarColor: 'inspector', icon: 'fact_check',
+    pages: ['dashboard','collection','inspection','alerts']
+  },
+
+  // ── Block: Sirkazhi ───────────────────────────────────────────────────────
+  {
+    id: 'U201', username: 'bdo.skz', password: 'bdo.skz2025',
+    role: 'bdo', block: 'Sirkazhi',
+    name: 'R. Ganesh', designation: 'BDO – Sirkazhi Block',
+    dept: 'Block Development Office, Sirkazhi', mobile: '9400002001',
+    avatarColor: 'bdo', icon: 'account_balance',
+    pages: ['dashboard','allotments','beneficiaries','collection','reports','alerts']
+  },
+  {
+    id: 'U202', username: 'overseer.skz', password: 'over.skz2025',
+    role: 'overseer', block: 'Sirkazhi',
+    name: 'T. Vijayakumar', designation: 'Works Overseer – Sirkazhi',
+    dept: 'Rural Development Dept, Sirkazhi', mobile: '9400002002',
+    avatarColor: 'overseer', icon: 'engineering',
+    pages: ['dashboard','allotments','beneficiaries','inspection','alerts']
+  },
+  {
+    id: 'U203', username: 'store.skz', password: 'store.skz2025',
+    role: 'store', block: 'Sirkazhi',
+    name: 'A. Rajan', designation: 'Store Keeper – Sirkazhi Depot',
+    dept: 'Rural Development Dept, Sirkazhi', mobile: '9400002003',
+    avatarColor: 'store', icon: 'warehouse',
+    pages: ['dashboard','issuance','stock','alerts']
+  },
+  {
+    id: 'U204', username: 'inspector.skz', password: 'insp.skz2025',
+    role: 'inspector', block: 'Sirkazhi',
+    name: 'D. Lakshmi', designation: 'Field Inspector – Sirkazhi',
+    dept: 'Rural Development Dept, Sirkazhi', mobile: '9400002004',
+    avatarColor: 'inspector', icon: 'fact_check',
+    pages: ['dashboard','collection','inspection','alerts']
+  },
+
+  // ── Block: Papanasam ──────────────────────────────────────────────────────
+  {
+    id: 'U301', username: 'bdo.ppn', password: 'bdo.ppn2025',
+    role: 'bdo', block: 'Papanasam',
+    name: 'V. Suresh', designation: 'BDO – Papanasam Block',
+    dept: 'Block Development Office, Papanasam', mobile: '9400003001',
+    avatarColor: 'bdo', icon: 'account_balance',
+    pages: ['dashboard','allotments','beneficiaries','collection','reports','alerts']
+  },
+  {
+    id: 'U302', username: 'overseer.ppn', password: 'over.ppn2025',
+    role: 'overseer', block: 'Papanasam',
+    name: 'N. Karthik', designation: 'Works Overseer – Papanasam',
+    dept: 'Rural Development Dept, Papanasam', mobile: '9400003002',
+    avatarColor: 'overseer', icon: 'engineering',
+    pages: ['dashboard','allotments','beneficiaries','inspection','alerts']
+  },
+  {
+    id: 'U303', username: 'store.ppn', password: 'store.ppn2025',
+    role: 'store', block: 'Papanasam',
+    name: 'B. Mani', designation: 'Store Keeper – Papanasam Depot',
+    dept: 'Rural Development Dept, Papanasam', mobile: '9400003003',
+    avatarColor: 'store', icon: 'warehouse',
+    pages: ['dashboard','issuance','stock','alerts']
+  },
+  {
+    id: 'U304', username: 'inspector.ppn', password: 'insp.ppn2025',
+    role: 'inspector', block: 'Papanasam',
+    name: 'C. Devika', designation: 'Field Inspector – Papanasam',
+    dept: 'Rural Development Dept, Papanasam', mobile: '9400003004',
+    avatarColor: 'inspector', icon: 'fact_check',
+    pages: ['dashboard','collection','inspection','alerts']
+  },
+
+  // ── Block: Kuthalam ───────────────────────────────────────────────────────
+  {
+    id: 'U401', username: 'bdo.ktl', password: 'bdo.ktl2025',
+    role: 'bdo', block: 'Kuthalam',
+    name: 'G. Pandi', designation: 'BDO – Kuthalam Block',
+    dept: 'Block Development Office, Kuthalam', mobile: '9400004001',
+    avatarColor: 'bdo', icon: 'account_balance',
+    pages: ['dashboard','allotments','beneficiaries','collection','reports','alerts']
+  },
+  {
+    id: 'U402', username: 'overseer.ktl', password: 'over.ktl2025',
+    role: 'overseer', block: 'Kuthalam',
+    name: 'H. Saravanan', designation: 'Works Overseer – Kuthalam',
+    dept: 'Rural Development Dept, Kuthalam', mobile: '9400004002',
+    avatarColor: 'overseer', icon: 'engineering',
+    pages: ['dashboard','allotments','beneficiaries','inspection','alerts']
+  },
+  {
+    id: 'U403', username: 'store.ktl', password: 'store.ktl2025',
+    role: 'store', block: 'Kuthalam',
+    name: 'J. Arumugam', designation: 'Store Keeper – Kuthalam Depot',
+    dept: 'Rural Development Dept, Kuthalam', mobile: '9400004003',
+    avatarColor: 'store', icon: 'warehouse',
+    pages: ['dashboard','issuance','stock','alerts']
+  },
+  {
+    id: 'U404', username: 'inspector.ktl', password: 'insp.ktl2025',
+    role: 'inspector', block: 'Kuthalam',
+    name: 'F. Kamala', designation: 'Field Inspector – Kuthalam',
+    dept: 'Rural Development Dept, Kuthalam', mobile: '9400004004',
+    avatarColor: 'inspector', icon: 'fact_check',
+    pages: ['dashboard','collection','inspection','alerts']
+  },
+
+  // ── Block: Seerkazhi ──────────────────────────────────────────────────────
+  {
+    id: 'U501', username: 'bdo.skl', password: 'bdo.skl2025',
+    role: 'bdo', block: 'Seerkazhi',
+    name: 'I. Balamurugan', designation: 'BDO – Seerkazhi Block',
+    dept: 'Block Development Office, Seerkazhi', mobile: '9400005001',
+    avatarColor: 'bdo', icon: 'account_balance',
+    pages: ['dashboard','allotments','beneficiaries','collection','reports','alerts']
+  },
+  {
+    id: 'U502', username: 'overseer.skl', password: 'over.skl2025',
+    role: 'overseer', block: 'Seerkazhi',
+    name: 'E. Meenakshi', designation: 'Works Overseer – Seerkazhi',
+    dept: 'Rural Development Dept, Seerkazhi', mobile: '9400005002',
+    avatarColor: 'overseer', icon: 'engineering',
+    pages: ['dashboard','allotments','beneficiaries','inspection','alerts']
+  },
+  {
+    id: 'U503', username: 'store.skl', password: 'store.skl2025',
+    role: 'store', block: 'Seerkazhi',
+    name: 'L. Karuppaiah', designation: 'Store Keeper – Seerkazhi Depot',
+    dept: 'Rural Development Dept, Seerkazhi', mobile: '9400005003',
+    avatarColor: 'store', icon: 'warehouse',
+    pages: ['dashboard','issuance','stock','alerts']
+  },
+  {
+    id: 'U504', username: 'inspector.skl', password: 'insp.skl2025',
+    role: 'inspector', block: 'Seerkazhi',
+    name: 'O. Geetha', designation: 'Field Inspector – Seerkazhi',
+    dept: 'Rural Development Dept, Seerkazhi', mobile: '9400005004',
+    avatarColor: 'inspector', icon: 'fact_check',
+    pages: ['dashboard','collection','inspection','alerts']
+  }
+];
+
+// Role → display metadata
+const ROLE_META = {
+  admin:    { label: 'District Admin', badge: 'rb-admin',    color: '#1a73e8' },
+  bdo:      { label: 'BDO',            badge: 'rb-bdo',      color: '#1e8e3e' },
+  overseer: { label: 'Overseer',       badge: 'rb-overseer', color: '#6d4c41' },
+  store:    { label: 'Store Keeper',   badge: 'rb-store',    color: '#e65100' },
+  inspector:{ label: 'Field Inspector',badge: 'rb-inspector',color: '#c62828' }
+};
+
+// Page → {label, icon, section}
+const PAGE_META = {
+  dashboard:     { label:'Dashboard',            icon:'dashboard',        section:'main' },
+  masterupload:  { label:'Master Upload',        icon:'upload_file',      section:'main' },
+  allotments:    { label:'Allotments',           icon:'assignment',       section:'main', badge:'pendingBadge' },
+  issuance:      { label:'Issuance',             icon:'output',           section:'main', badge:'issuanceBadge' },
+  collection:    { label:'Collection Verify',    icon:'verified',         section:'main' },
+  inspection:    { label:'Field Inspection',     icon:'fact_check',       section:'main' },
+  beneficiaries: { label:'Beneficiaries',        icon:'people',           section:'records' },
+  stock:         { label:'Stock Register',       icon:'inventory_2',      section:'records' },
+  reports:       { label:'Reports',              icon:'bar_chart',        section:'records' },
+  alerts:        { label:'Alerts',               icon:'warning_amber',    section:'system' },
+  users:         { label:'User Management',      icon:'manage_accounts',  section:'system' },
+  settings:      { label:'Settings',             icon:'settings',         section:'system' }
+};
+
+// ── Block-scoped data filter ─────────────────────────────────────────────────
+// Returns only records belonging to the current user's block.
+// Collector (block:null) always gets everything.
+function scopedBeneficiaries() {
+  if (!currentUser.block) return DB.beneficiaries;
+  return DB.beneficiaries.filter(b => b.block === currentUser.block);
+}
+function scopedAllotments() {
+  const bens = new Set(scopedBeneficiaries().map(b => b.id));
+  if (!currentUser.block) return DB.allotments;
+  return DB.allotments.filter(a => bens.has(a.beneficiaryId) || a.block === currentUser.block);
+}
+function scopedIssuances() {
+  if (!currentUser.block) return DB.issuances;
+  return DB.issuances.filter(i => i.block === currentUser.block);
+}
+function scopedInspections() {
+  if (!currentUser.block) return DB.inspections;
+  return DB.inspections.filter(i => i.block === currentUser.block);
+}
+function blockVillages() {
+  if (!currentUser.block) return VILLAGES;
+  return BLOCK_DATA[currentUser.block]?.villages || VILLAGES;
+}
+function allowedBlocks() {
+  if (!currentUser.block) return BLOCKS;
+  return [currentUser.block];
+}
+
 // ===== APP STATE =====
-let currentUser = { role: 'admin', name: 'District Admin', email: 'admin@drd.tn.gov.in' };
-let selectedRole = 'admin';
+let currentUser = null;
 let currentPage = 'dashboard';
 let DB = {
   beneficiaries: [],
@@ -525,28 +858,70 @@ let DB = {
   stock: { total: 0, issued: 0, balance: 0 }
 };
 
-// ===== SEED DATA =====
+// ===== DISTRICT STRUCTURE =====
 const SCHEMES = ['PMAY-G', 'IAY', 'CM Housing', 'Weaker Section Housing', 'SC/ST Housing'];
-const VILLAGES = ['Mayiladuthurai', 'Sirkazhi', 'Papanasam', 'Nagapattinam', 'Poompuhar', 'Kollidam', 'Tharangambadi', 'Kuthalam', 'Seerkazhi', 'Vedaranyam'];
-const BLOCKS = ['Mayiladuthurai', 'Sirkazhi', 'Papanasam', 'Kuthalam', 'Seerkazhi'];
 const CEMENT_TYPES = ['OPC 43 Grade', 'OPC 53 Grade', 'PPC Cement', 'PSC Cement'];
 
+// The 5 blocks of Mayiladuthurai district with their villages
+const BLOCK_DATA = {
+  'Mayiladuthurai': {
+    hq: 'Mayiladuthurai',
+    villages: ['Mayiladuthurai', 'Poompuhar', 'Kollidam', 'Sembanarkoil', 'Thirukadaiyur', 'Koothanallur']
+  },
+  'Sirkazhi': {
+    hq: 'Sirkazhi',
+    villages: ['Sirkazhi', 'Chidambaram Road', 'Tharangambadi', 'Kollidam North', 'Thiruvenkadu']
+  },
+  'Papanasam': {
+    hq: 'Papanasam',
+    villages: ['Papanasam', 'Kumbakonam Road', 'Nachiyarkoil', 'Thiruvidaimarudur', 'Vallam']
+  },
+  'Kuthalam': {
+    hq: 'Kuthalam',
+    villages: ['Kuthalam', 'Vaimedu', 'Puthur', 'Thiruvarur Road', 'Manakkal']
+  },
+  'Seerkazhi': {
+    hq: 'Seerkazhi',
+    villages: ['Seerkazhi', 'Vedaranyam Road', 'Poigainallur', 'Vailankanni', 'Nagore']
+  }
+};
+const BLOCKS   = Object.keys(BLOCK_DATA);
+const VILLAGES = Object.values(BLOCK_DATA).flatMap(b => b.villages);
+
+// ===== SEED DATA =====
+
 function seedData() {
-  const names = ['Murugan R', 'Lakshmi D', 'Selvam K', 'Geetha P', 'Rajan M', 'Vijaya S', 'Arumugam T', 'Kamala N', 'Pandi V', 'Saraswathi A', 'Karuppaiah B', 'Meenakshi C', 'Suresh G', 'Devika H', 'Balamurugan J'];
-  DB.beneficiaries = names.map((n, i) => ({
-    id: 'B' + String(i+1).padStart(4,'0'),
-    name: n,
-    aadhaar: '****-****-' + String(1000+i*77).slice(-4),
-    mobile: '9' + String(8000000000+i*1234567).slice(0,9),
-    village: VILLAGES[i%VILLAGES.length],
-    block: BLOCKS[i%BLOCKS.length],
-    scheme: SCHEMES[i%SCHEMES.length],
-    houseNo: 'MYL/' + String(2024001+i),
-    sanctionedBags: [50,75,100,120][i%4],
-    receivedBags: 0,
-    status: 'Pending',
-    createdAt: new Date(2025, 0, i+1).toISOString()
-  }));
+  // Seed 3 beneficiaries per block = 15 total, each with correct village
+  const perBlock = [
+    { block:'Mayiladuthurai', names:['Murugan R','Lakshmi D','Selvam K'] },
+    { block:'Sirkazhi',       names:['Geetha P','Rajan M','Vijaya S'] },
+    { block:'Papanasam',      names:['Arumugam T','Kamala N','Pandi V'] },
+    { block:'Kuthalam',       names:['Saraswathi A','Karuppaiah B','Meenakshi C'] },
+    { block:'Seerkazhi',      names:['Suresh G','Devika H','Balamurugan J'] },
+  ];
+  let idx = 0;
+  DB.beneficiaries = perBlock.flatMap(({block, names}) =>
+    names.map((name, j) => {
+      const vils = BLOCK_DATA[block].villages;
+      idx++;
+      return {
+        id: 'B' + String(idx).padStart(4,'0'),
+        name,
+        aadhaar: '****-****-' + String(1000+idx*77).slice(-4),
+        mobile: '9' + String(8000000000+idx*1234567).slice(0,9),
+        village: vils[j % vils.length],
+        block,
+        scheme: SCHEMES[idx % SCHEMES.length],
+        houseNo: block.slice(0,3).toUpperCase() + '/' + String(2025001+idx),
+        sanctionedBags: [50,75,100,120][idx%4],
+        receivedBags: 0,
+        status: 'Active',
+        uploadedBy: 'Collector',
+        uploadedAt: new Date(2025,0,idx).toISOString(),
+        createdAt: new Date(2025, 0, idx).toISOString()
+      };
+    })
+  );
 
   DB.stock = { total: 2500, issued: 0, balance: 2500, openingBalance: 2500, type: 'OPC 43 Grade', lastUpdated: new Date().toISOString() };
   DB.stockLedger = [{
@@ -594,67 +969,246 @@ async function loadFromFirebase() {
 }
 
 // ===== LOGIN =====
-function selectRole(el) {
-  document.querySelectorAll('.role-card').forEach(c => c.classList.remove('selected'));
-  el.classList.add('selected');
-  selectedRole = el.dataset.role;
+function initLoginPage() {
+  // Nothing to pre-populate — clean form only
+  document.getElementById('loginUser').focus();
 }
+
+// Show role card as user types username (live feedback, no password exposed)
+function onUsernameInput(val) {
+  const uname = val.trim().toLowerCase();
+  const user  = USERS.find(u => u.username === uname);
+  const box   = document.getElementById('roleDetected');
+  if (user) {
+    const rm = ROLE_META[user.role];
+    document.getElementById('rdAvatar').style.background = rm.color;
+    document.getElementById('rdIcon').textContent        = user.icon;
+    document.getElementById('rdName').textContent        = user.name;
+    document.getElementById('rdDesig').textContent       = user.designation;
+    const badge = document.getElementById('rdBadge');
+    badge.textContent  = rm.label;
+    badge.className    = 'role-badge ' + rm.badge;
+    box.style.display  = 'flex';
+  } else {
+    box.style.display  = 'none';
+  }
+  // Hide any previous error when user starts retyping
+  document.getElementById('loginError').style.display = 'none';
+}
+
+function togglePwd() {
+  const f = document.getElementById('loginPass');
+  const e = document.getElementById('pwdEye');
+  if (f.type === 'password') { f.type = 'text'; e.textContent = 'visibility_off'; }
+  else { f.type = 'password'; e.textContent = 'visibility'; }
+}
+
+let _loginAttempts = 0;
 function doLogin() {
-  const roleMap = {
-    admin: { name: 'District Admin', email: 'admin@drd.tn.gov.in' },
-    vao: { name: 'VAO - Mayiladuthurai', email: 'vao@drd.tn.gov.in' },
-    store: { name: 'Store Keeper', email: 'store@drd.tn.gov.in' },
-    inspector: { name: 'Field Inspector', email: 'inspector@drd.tn.gov.in' }
-  };
-  currentUser = { role: selectedRole, ...roleMap[selectedRole] };
+  const uname  = document.getElementById('loginUser').value.trim().toLowerCase();
+  const pwd    = document.getElementById('loginPass').value;
+  const errEl  = document.getElementById('loginError');
+  const errMsg = document.getElementById('loginErrorMsg');
+
+  // Basic empty check
+  if (!uname || !pwd) {
+    errMsg.textContent = 'Please enter both username and password.';
+    errEl.style.display = 'flex'; return;
+  }
+
+  // Lookup user
+  const user = USERS.find(u => u.username === uname && u.password === pwd);
+
+  if (!user) {
+    _loginAttempts++;
+    errMsg.textContent = _loginAttempts >= 3
+      ? 'Multiple failed attempts. Contact district admin if you forgot your password.'
+      : 'Incorrect username or password. Please try again.';
+    errEl.style.display = 'flex';
+    document.getElementById('loginPass').value = '';
+    document.getElementById('loginPass').focus();
+    return;
+  }
+
+  // ── Successful login ──────────────────────────────────────────────
+  _loginAttempts = 0;
+  currentUser = user;
+  errEl.style.display = 'none';
+
   document.getElementById('loginScreen').classList.add('hidden');
   document.getElementById('mainApp').classList.remove('hidden');
-  document.getElementById('avatarInitial').textContent = currentUser.name[0];
-  document.getElementById('userLabel').textContent = currentUser.name.split(' ')[0];
+
+  // App bar chip
+  document.getElementById('avatarInitial').textContent  = user.name.split(' ').find(w=>w).charAt(0);
+  document.getElementById('userLabel').textContent       = user.name.split(' ').slice(0,2).join(' ');
+
   if (!loadDB()) seedData();
+  buildSidebar();
   navigate('dashboard');
+  loadFirebaseSDK();
 }
+
 function doLogout() {
+  currentUser = null;
+  _loginAttempts = 0;
   document.getElementById('mainApp').classList.add('hidden');
   document.getElementById('loginScreen').classList.remove('hidden');
+  // Clear form cleanly
+  document.getElementById('loginUser').value = '';
+  document.getElementById('loginPass').value = '';
+  document.getElementById('loginError').style.display = 'none';
+  document.getElementById('roleDetected').style.display = 'none';
+  setTimeout(() => document.getElementById('loginUser').focus(), 100);
+}
+
+// ===== SIDEBAR =====
+function buildSidebar() {
+  if (!currentUser) return;
+  const rm = ROLE_META[currentUser.role];
+  const avatarBg = rm.color;
+  const sections = { main: 'Main', records: 'Records', system: 'System' };
+  let html = `
+    <div class="sidebar-user">
+      <div class="su-avatar" style="background:${avatarBg}">
+        <span class="material-icons-round" style="font-size:20px">${currentUser.icon}</span>
+      </div>
+      <div>
+        <div class="su-name">${currentUser.name.split(' ').slice(0,2).join(' ')}</div>
+        <div class="su-role"><span class="role-badge ${rm.badge}">${rm.label}</span></div>
+      </div>
+    </div>`;
+
+  let lastSection = '';
+  for (const [pageKey, meta] of Object.entries(PAGE_META)) {
+    if (!currentUser.pages.includes(pageKey)) continue;
+    if (meta.section !== lastSection) {
+      html += `<div class="sidebar-label">${sections[meta.section]}</div>`;
+      lastSection = meta.section;
+    }
+    html += `<button class="nav-item" data-page="${pageKey}" onclick="navigate('${pageKey}')">
+      <span class="material-icons-round">${meta.icon}</span> ${meta.label}
+      ${meta.badge ? `<span class="nav-badge" id="${meta.badge}">0</span>` : ''}
+    </button>`;
+  }
+  document.getElementById('sidebarContent').innerHTML = html;
 }
 
 // ===== NAVIGATION =====
 function navigate(page) {
+  if (!currentUser) return;
+  // Access guard
+  if (!currentUser.pages.includes(page)) {
+    showAccessDenied(page);
+    return;
+  }
   currentPage = page;
   document.querySelectorAll('.nav-item').forEach(b => {
     b.classList.toggle('active', b.dataset.page === page);
   });
   const main = document.getElementById('mainContent');
   main.innerHTML = '';
-  const pages = { dashboard: renderDashboard, allotments: renderAllotments, issuance: renderIssuance, collection: renderCollection, inspection: renderInspection, beneficiaries: renderBeneficiaries, stock: renderStock, reports: renderReports, alerts: renderAlerts, settings: renderSettings };
+  const pages = {
+    dashboard:     renderDashboard,
+    masterupload:  renderMasterUpload,
+    allotments:    renderAllotments,
+    issuance:      renderIssuance,
+    collection:    renderCollection,
+    inspection:    renderInspection,
+    beneficiaries: renderBeneficiaries,
+    stock:         renderStock,
+    reports:       renderReports,
+    alerts:        renderAlerts,
+    users:         renderUsers,
+    settings:      renderSettings
+  };
   if (pages[page]) pages[page](main);
   updateBadges();
+  // Close sidebar on mobile
+  if (window.innerWidth < 769) document.getElementById('sidebar').classList.remove('open');
 }
+
+function showAccessDenied(page) {
+  const main = document.getElementById('mainContent');
+  const pm = PAGE_META[page] || {};
+  const rm = ROLE_META[currentUser.role];
+  main.innerHTML = `
+    <div class="access-denied">
+      <span class="material-icons-round">lock</span>
+      <h3>Access Restricted</h3>
+      <p>The <strong>${pm.label||page}</strong> page is not available for your role.</p>
+      <p style="margin-top:8px">Your role: <span class="role-badge ${rm.badge}">${rm.label}</span></p>
+      <p style="margin-top:16px;font-size:12px;color:var(--grey-500)">Contact the District Admin if you need access.</p>
+      <button class="btn btn-outlined" style="margin-top:20px" onclick="navigate('dashboard')">
+        <span class="material-icons-round">arrow_back</span> Back to Dashboard
+      </button>
+    </div>`;
+}
+
 function toggleSidebar() {
   document.getElementById('sidebar').classList.toggle('open');
 }
+
 function updateBadges() {
-  const pending = DB.allotments.filter(a => a.status === 'Approved' && !DB.issuances.find(i => i.allotmentId === a.id)).length;
-  document.getElementById('pendingBadge').textContent = pending;
+  const allotPending = DB.allotments.filter(a => a.status === 'Pending').length;
+  const issuancePending = DB.allotments.filter(a => a.status === 'Approved' && !DB.issuances.find(i => i.allotmentId === a.id)).length;
+  const pb = document.getElementById('pendingBadge');
+  const ib = document.getElementById('issuanceBadge');
+  if (pb) pb.textContent = allotPending;
+  if (ib) ib.textContent = issuancePending;
+}
+
+// ===== ROLE HELPERS =====
+function can(action) {
+  // Overseer replaces VAO.  Each action lists exactly which roles are permitted.
+  const perms = {
+    createAllotment:  ['admin','bdo','overseer'],  // overseer raises allotments for beneficiaries
+    approveAllotment: ['admin','bdo'],              // only BDO/Admin can approve
+    issueCement:      ['admin','store'],            // store keeper issues physically
+    addStock:         ['admin'],                    // only admin adds stock receipts
+    verifyCollection: ['admin','bdo','inspector'],  // inspector+BDO verify delivery at site
+    fieldInspect:     ['admin','overseer','inspector'], // overseer does on-site construction check
+    viewReports:      ['admin','bdo'],              // reports only for supervisory roles
+    manageUsers:      ['admin'],
+    viewBeneficiary:  ['admin','bdo','overseer'],   // inspector removed – they only verify/inspect
+    editBeneficiary:  ['admin','bdo']
+  };
+  return (perms[action]||[]).includes(currentUser?.role);
 }
 
 // ===== DASHBOARD =====
 function renderDashboard(el) {
-  const total = DB.beneficiaries.length;
-  const allotted = DB.allotments.length;
-  const issued = DB.issuances.length;
-  const verified = DB.inspections.filter(i => i.verified).length;
-  const totalBagsIssued = DB.issuances.reduce((s,i)=>s+i.bags,0);
-  const pendingApprovals = DB.allotments.filter(a=>a.status==='Pending').length;
+  const myBens    = scopedBeneficiaries();
+  const myAllots  = scopedAllotments();
+  const myIss     = scopedIssuances();
+  const myInsp    = scopedInspections();
+  const totalBagsIssued = myIss.reduce((s,i)=>s+i.bags,0);
+  const pendingApprovals = myAllots.filter(a=>a.status==='Pending').length;
+
+  // Block-wise summary for Collector
+  const blockSummary = currentUser.block === null ? BLOCKS.map(blk => {
+    const bb = DB.beneficiaries.filter(b=>b.block===blk);
+    const bi = DB.issuances.filter(i=>i.block===blk);
+    return { blk, bens: bb.length, issued: bi.reduce((s,x)=>s+x.bags,0) };
+  }) : [];
 
   el.innerHTML = `
     <div class="page-header">
       <div>
         <div class="page-title">Dashboard</div>
-        <div class="page-sub">Cement Distribution Overview · ${new Date().toLocaleDateString('en-IN',{dateStyle:'full'})}</div>
+        <div class="page-sub">
+          ${currentUser.block
+            ? `<span style="background:var(--blue-light);color:var(--blue);padding:2px 10px;border-radius:10px;font-weight:600;font-size:12px">
+                <span class="material-icons-round" style="font-size:13px;vertical-align:middle">location_city</span>
+                ${currentUser.block} Block
+               </span> &nbsp;·&nbsp; ${currentUser.designation}`
+            : `All 5 Blocks · Mayiladuthurai District`}
+          &nbsp;·&nbsp; ${new Date().toLocaleDateString('en-IN',{dateStyle:'full'})}
+        </div>
       </div>
-      <button class="btn btn-primary" onclick="navigate('allotments')"><span class="material-icons-round">add</span> New Allotment</button>
+      <div style="display:flex;gap:8px">
+        ${currentUser.role==='admin' ? `<button class="btn btn-outlined" onclick="navigate('masterupload')"><span class="material-icons-round">upload_file</span> Master Upload</button>` : ''}
+        ${can('createAllotment') ? `<button class="btn btn-primary" onclick="navigate('allotments')"><span class="material-icons-round">add</span> New Allotment</button>` : ''}
+      </div>
     </div>
 
     ${pendingApprovals > 0 ? `<div class="alert alert-warn"><span class="material-icons-round">warning_amber</span><div><strong>${pendingApprovals} allotments</strong> pending approval. <a href="#" onclick="navigate('allotments');return false" style="color:inherit">Review now →</a></div></div>` : ''}
@@ -662,11 +1216,11 @@ function renderDashboard(el) {
     <div class="stat-grid">
       <div class="stat-card">
         <div class="stat-icon blue"><span class="material-icons-round">people</span></div>
-        <div><div class="stat-val">${total}</div><div class="stat-label">Total Beneficiaries</div><div class="stat-sub">Registered in system</div></div>
+        <div><div class="stat-val">${myBens.length}</div><div class="stat-label">Beneficiaries</div><div class="stat-sub">${currentUser.block||'District total'}</div></div>
       </div>
       <div class="stat-card">
         <div class="stat-icon yellow"><span class="material-icons-round">assignment</span></div>
-        <div><div class="stat-val">${allotted}</div><div class="stat-label">Allotments</div><div class="stat-sub">Approved orders</div></div>
+        <div><div class="stat-val">${myAllots.length}</div><div class="stat-label">Allotments</div><div class="stat-sub">All statuses</div></div>
       </div>
       <div class="stat-card">
         <div class="stat-icon green"><span class="material-icons-round">output</span></div>
@@ -678,9 +1232,34 @@ function renderDashboard(el) {
       </div>
       <div class="stat-card">
         <div class="stat-icon red"><span class="material-icons-round">fact_check</span></div>
-        <div><div class="stat-val">${verified}</div><div class="stat-label">Field Verified</div><div class="stat-sub">Photo confirmed</div></div>
+        <div><div class="stat-val">${myInsp.filter(i=>i.verified).length}</div><div class="stat-label">Field Verified</div><div class="stat-sub">Photo confirmed</div></div>
       </div>
     </div>
+
+    ${blockSummary.length ? `
+    <div class="card" style="margin-top:0">
+      <div class="section-title">Block-wise Summary</div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Block</th><th>Beneficiaries</th><th>Allotments</th><th>Bags Issued</th><th>Verified</th><th>Pending</th></tr></thead>
+          <tbody>
+            ${blockSummary.map(({blk,bens,issued})=>{
+              const allots = DB.allotments.filter(a=>a.block===blk);
+              const insp   = DB.inspections.filter(i=>i.block===blk&&i.verified).length;
+              const pend   = allots.filter(a=>a.status==='Pending').length;
+              return `<tr>
+                <td><strong>${blk}</strong></td>
+                <td>${bens}</td>
+                <td>${allots.length}</td>
+                <td><strong>${issued}</strong></td>
+                <td><span class="chip chip-verified">${insp}</span></td>
+                <td>${pend>0?`<span class="chip chip-pending">${pend}</span>`:'—'}</td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>` : ''}
 
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
       <div class="card">
@@ -717,7 +1296,7 @@ function renderAllotments(el) {
   el.innerHTML = `
     <div class="page-header">
       <div><div class="page-title">Cement Allotments</div><div class="page-sub">Create and manage allotment orders</div></div>
-      ${['admin','vao'].includes(currentUser.role) ? `<button class="btn btn-primary" onclick="openNewAllotment()"><span class="material-icons-round">add</span> New Allotment</button>` : ''}
+      ${can('createAllotment') ? `<button class="btn btn-primary" onclick="openNewAllotment()"><span class="material-icons-round">add</span> New Allotment</button>` : ''}
     </div>
     <div class="tab-bar">
       <button class="tab active" onclick="filterAllotments('all',this)">All</button>
@@ -767,13 +1346,27 @@ function renderAllotTable(data) {
       <td>${new Date(a.createdAt).toLocaleDateString('en-IN')}</td>
       <td style="display:flex;gap:6px;flex-wrap:wrap">
         <button class="btn btn-text btn-sm" onclick="viewAllotment('${a.id}')"><span class="material-icons-round">visibility</span></button>
-        ${a.status==='Pending' && currentUser.role==='admin' ? `<button class="btn btn-green btn-sm" onclick="approveAllotment('${a.id}')">Approve</button><button class="btn btn-danger btn-sm" onclick="rejectAllotment('${a.id}')">Reject</button>` : ''}
+        ${a.status==='Pending' && can('approveAllotment') ? `<button class="btn btn-green btn-sm" onclick="approveAllotment('${a.id}')">Approve</button><button class="btn btn-danger btn-sm" onclick="rejectAllotment('${a.id}')">Reject</button>` : ''}
         ${a.status==='Approved' ? `<button class="btn btn-outlined btn-sm" onclick="printSlip('${a.id}')"><span class="material-icons-round">print</span> Slip</button>` : ''}
       </td>
     </tr>`).join('');
 }
+
+function fillBenDetails() {
+  const sel = document.getElementById('aBen');
+  if (!sel) return;
+  const b = DB.beneficiaries.find(x=>x.id===sel.value);
+  if (!b) return;
+  document.getElementById('aHouseNo').value = b.houseNo;
+  document.getElementById('aScheme').value = b.scheme;
+  document.getElementById('aVillage').value = `${b.village} / ${b.block}`;
+  document.getElementById('aBags').value = b.sanctionedBags;
+}
+
 function openNewAllotment() {
-  const bOpts = DB.beneficiaries.map(b=>`<option value="${b.id}">${b.name} – ${b.village} (${b.scheme})</option>`).join('');
+  const myBens = scopedBeneficiaries();
+  const bOpts = myBens.map(b=>`<option value="${b.id}">${b.name} – ${b.village}, ${b.block} (${b.scheme})</option>`).join('');
+  if (!myBens.length) { showToast('No beneficiaries in your block yet','error'); return; }
   openModal('New Allotment Order', `
     <div class="form-grid">
       <div class="form-group" style="grid-column:1/-1">
@@ -798,16 +1391,6 @@ function openNewAllotment() {
   `, [{label:'Cancel',cls:'btn-outlined',fn:closeModal},{label:'Submit Allotment',cls:'btn-primary',fn:submitAllotment}]);
   setTimeout(fillBenDetails, 100);
 }
-function fillBenDetails() {
-  const sel = document.getElementById('aBen');
-  if (!sel) return;
-  const b = DB.beneficiaries.find(x=>x.id===sel.value);
-  if (!b) return;
-  document.getElementById('aHouseNo').value = b.houseNo;
-  document.getElementById('aScheme').value = b.scheme;
-  document.getElementById('aVillage').value = `${b.village} / ${b.block}`;
-  document.getElementById('aBags').value = b.sanctionedBags;
-}
 function submitAllotment() {
   const benId = document.getElementById('aBen').value;
   const b = DB.beneficiaries.find(x=>x.id===benId);
@@ -831,6 +1414,7 @@ function submitAllotment() {
     status: 'Pending',
     createdBy: currentUser.name,
     createdAt: new Date().toISOString(),
+    block: b.block,
     timeline: [{event:'Allotment Created', by: currentUser.name, at: new Date().toISOString(), note:''}]
   };
   DB.allotments.push(allotment);
@@ -890,7 +1474,7 @@ function renderIssuance(el) {
     <div class="page-header">
       <div><div class="page-title">Cement Issuance</div><div class="page-sub">Issue cement from store against approved allotments</div></div>
     </div>
-    ${currentUser.role !== 'store' && currentUser.role !== 'admin' ? `<div class="alert alert-info"><span class="material-icons-round">info</span> Only Store Keeper or Admin can issue cement.</div>` : ''}
+    ${!can('issueCement') ? `<div class="alert alert-warn"><span class="material-icons-round">lock</span> You do not have permission to issue cement. Only Store Keeper or Admin can issue.</div>` : ''}
     <div class="card" style="margin-bottom:16px">
       <div class="section-title">Approved & Ready to Issue</div>
       <div class="table-wrap">
@@ -905,7 +1489,7 @@ function renderIssuance(el) {
               <td><strong>${a.bags}</strong></td>
               <td>${a.cementType||'OPC 43'}</td>
               <td>
-                ${['store','admin'].includes(currentUser.role)?`<button class="btn btn-green btn-sm" onclick="openIssueModal('${a.id}')"><span class="material-icons-round">output</span> Issue</button>`:'<span style="color:var(--grey-500);font-size:12px">Restricted</span>'}
+                ${can('issueCement')?`<button class="btn btn-green btn-sm" onclick="openIssueModal('${a.id}')"><span class="material-icons-round">output</span> Issue</button>`:'<span style="color:var(--grey-500);font-size:12px">Restricted</span>'}
                 <button class="btn btn-outlined btn-sm" onclick="printSlip('${a.id}')"><span class="material-icons-round">print</span></button>
               </td>
             </tr>`).join('') || '<tr><td colspan="6"><div class="empty-state"><span class="material-icons-round">check_circle</span><p>All approved allotments have been issued</p></div></td></tr>'}
@@ -1355,7 +1939,7 @@ function renderInspection(el) {
   el.innerHTML = `
     <div class="page-header">
       <div><div class="page-title">Field Inspection</div><div class="page-sub">On-site construction progress verification</div></div>
-      <button class="btn btn-primary" onclick="openNewInspection()"><span class="material-icons-round">add</span> New Inspection</button>
+      ${can('fieldInspect') ? `<button class="btn btn-primary" onclick="openNewInspection()"><span class="material-icons-round">add</span> New Inspection</button>` : ''}
     </div>
     <div class="card">
       <div class="table-wrap">
@@ -1456,22 +2040,33 @@ function viewInspectionFull(id) {
 
 // ===== BENEFICIARIES =====
 function renderBeneficiaries(el) {
+  const blockOpts = currentUser.block ? ''
+    : BLOCKS.map(b=>`<option value="${b}">${b}</option>`).join('');
+
   el.innerHTML = `
     <div class="page-header">
-      <div><div class="page-title">Beneficiary Register</div><div class="page-sub">All registered beneficiaries</div></div>
-      ${currentUser.role==='admin'?`<button class="btn btn-primary" onclick="openAddBeneficiary()"><span class="material-icons-round">person_add</span> Add Beneficiary</button>`:''}
+      <div>
+        <div class="page-title">Beneficiary Register</div>
+        <div class="page-sub">${currentUser.block ? currentUser.block + ' Block' : 'All Blocks – District View'}</div>
+      </div>
+      <div style="display:flex;gap:8px">
+        ${currentUser.role==='admin'?`<button class="btn btn-outlined" onclick="navigate('masterupload')"><span class="material-icons-round">upload_file</span> Master Upload</button>`:''}
+        ${can('editBeneficiary')?`<button class="btn btn-primary" onclick="openAddBeneficiary()"><span class="material-icons-round">person_add</span> Add Beneficiary</button>`:''}
+      </div>
     </div>
     <div class="card">
       <div class="search-bar">
         <div class="search-input"><span class="material-icons-round">search</span><input id="benSearch" placeholder="Search by name, village, scheme..." oninput="filterBenTable()"></div>
-        <select class="form-control" style="width:180px" id="benSchemeFilter" onchange="filterBenTable()">
+        ${blockOpts?`<select class="form-control" style="width:160px" id="benBlockFilter" onchange="filterBenTable()"><option value="">All Blocks</option>${blockOpts}</select>`:''}
+        <select class="form-control" style="width:160px" id="benSchemeFilter" onchange="filterBenTable()">
           <option value="">All Schemes</option>
           ${SCHEMES.map(s=>`<option>${s}</option>`).join('')}
         </select>
       </div>
+      <div style="font-size:12px;color:var(--grey-500);margin-bottom:8px" id="benCount"></div>
       <div class="table-wrap">
         <table id="benTable">
-          <thead><tr><th>ID</th><th>Name</th><th>Aadhaar</th><th>Mobile</th><th>Village</th><th>Scheme</th><th>House No.</th><th>Sanctioned</th><th>Received</th><th>Actions</th></tr></thead>
+          <thead><tr><th>ID</th><th>Name</th><th>Aadhaar</th><th>Mobile</th><th>Block</th><th>Village</th><th>Scheme</th><th>House No.</th><th>Sanctioned</th><th>Received</th><th>Actions</th></tr></thead>
           <tbody id="benBody"></tbody>
         </table>
       </div>
@@ -1479,41 +2074,53 @@ function renderBeneficiaries(el) {
   filterBenTable();
 }
 function filterBenTable() {
-  const q = (document.getElementById('benSearch')?.value||'').toLowerCase();
+  const q      = (document.getElementById('benSearch')?.value||'').toLowerCase();
   const scheme = document.getElementById('benSchemeFilter')?.value||'';
-  let data = DB.beneficiaries;
-  if (q) data = data.filter(b=>JSON.stringify(b).toLowerCase().includes(q));
+  const block  = document.getElementById('benBlockFilter')?.value||'';
+  let data = scopedBeneficiaries();
+  if (q)      data = data.filter(b=>JSON.stringify(b).toLowerCase().includes(q));
   if (scheme) data = data.filter(b=>b.scheme===scheme);
+  if (block)  data = data.filter(b=>b.block===block);
   const body = document.getElementById('benBody');
+  const cnt  = document.getElementById('benCount');
+  if (cnt) cnt.textContent = data.length + ' beneficiaries';
   if (!body) return;
   body.innerHTML = data.map(b=>`
     <tr>
-      <td><strong>${b.id}</strong></td>
+      <td><strong style="font-size:11px">${b.id}</strong></td>
       <td>${b.name}</td>
-      <td>${b.aadhaar}</td>
-      <td>${b.mobile}</td>
-      <td>${b.village}</td>
-      <td><span class="chip chip-approved" style="font-size:10px">${b.scheme}</span></td>
-      <td>${b.houseNo}</td>
-      <td>${b.sanctionedBags}</td>
-      <td>${b.receivedBags||0} ${b.receivedBags>=b.sanctionedBags?'<span class="chip chip-verified" style="font-size:10px">Full</span>':''}</td>
+      <td style="font-size:11px">${b.aadhaar}</td>
+      <td style="font-size:11px">${b.mobile}</td>
+      <td><span class="chip chip-approved" style="font-size:10px">${b.block}</span></td>
+      <td style="font-size:12px">${b.village}</td>
+      <td><span class="chip" style="background:var(--blue-light);color:var(--blue);font-size:10px">${b.scheme}</span></td>
+      <td style="font-size:11px">${b.houseNo}</td>
+      <td style="text-align:right">${b.sanctionedBags}</td>
+      <td style="text-align:right">${b.receivedBags||0}
+        ${(b.receivedBags||0)>=b.sanctionedBags?'<span class="chip chip-verified" style="font-size:10px">Full</span>':''}
+      </td>
       <td>
         <button class="btn btn-text btn-sm" onclick="viewBeneficiary('${b.id}')"><span class="material-icons-round">visibility</span></button>
-        ${currentUser.role==='admin'?`<button class="btn btn-outlined btn-sm" onclick="openAllotForBen('${b.id}')">Allot</button>`:''}
+        ${can('createAllotment')?`<button class="btn btn-outlined btn-sm" onclick="openAllotForBen('${b.id}')">Allot</button>`:''}
       </td>
-    </tr>`).join('') || '<tr><td colspan="10"><div class="empty-state"><span class="material-icons-round">people</span><p>No beneficiaries found</p></div></td></tr>';
+    </tr>`).join('') || '<tr><td colspan="11"><div class="empty-state"><span class="material-icons-round">people</span><p>No beneficiaries found</p></div></td></tr>';
 }
 function openAddBeneficiary() {
+  const myBlocks = allowedBlocks();
+  const firstBlock = myBlocks[0];
+  const myVils = BLOCK_DATA[firstBlock]?.villages || [];
   openModal('Register New Beneficiary', `
     <div class="form-grid">
       <div class="form-group"><label class="form-label">Full Name *</label><input class="form-control" id="nbName" placeholder="Full name"></div>
       <div class="form-group"><label class="form-label">Aadhaar No. *</label><input class="form-control" id="nbAadhaar" placeholder="XXXX-XXXX-XXXX" maxlength="14"></div>
       <div class="form-group"><label class="form-label">Mobile *</label><input class="form-control" id="nbMobile" placeholder="10-digit" maxlength="10"></div>
-      <div class="form-group"><label class="form-label">Village *</label>
-        <select class="form-control" id="nbVillage">${VILLAGES.map(v=>`<option>${v}</option>`).join('')}</select>
+      <div class="form-group">
+        <label class="form-label">Block *</label>
+        <select class="form-control" id="nbBlock" onchange="updateVillageOptions()">${myBlocks.map(b=>`<option>${b}</option>`).join('')}</select>
       </div>
-      <div class="form-group"><label class="form-label">Block *</label>
-        <select class="form-control" id="nbBlock">${BLOCKS.map(b=>`<option>${b}</option>`).join('')}</select>
+      <div class="form-group">
+        <label class="form-label">Village *</label>
+        <select class="form-control" id="nbVillage">${myVils.map(v=>`<option>${v}</option>`).join('')}</select>
       </div>
       <div class="form-group"><label class="form-label">Scheme *</label>
         <select class="form-control" id="nbScheme">${SCHEMES.map(s=>`<option>${s}</option>`).join('')}</select>
@@ -1522,6 +2129,12 @@ function openAddBeneficiary() {
       <div class="form-group"><label class="form-label">Sanctioned Bags *</label><input class="form-control" type="number" id="nbBags" value="100" min="1"></div>
     </div>
   `, [{label:'Cancel',cls:'btn-outlined',fn:closeModal},{label:'Register',cls:'btn-primary',fn:addBeneficiary}]);
+}
+function updateVillageOptions() {
+  const blk = document.getElementById('nbBlock')?.value;
+  const vils = BLOCK_DATA[blk]?.villages || [];
+  const sel = document.getElementById('nbVillage');
+  if (sel) sel.innerHTML = vils.map(v=>`<option>${v}</option>`).join('');
 }
 function addBeneficiary() {
   const name = document.getElementById('nbName').value.trim();
@@ -1539,6 +2152,8 @@ function addBeneficiary() {
     sanctionedBags: parseInt(document.getElementById('nbBags').value)||100,
     receivedBags: 0,
     status: 'Active',
+    uploadedBy: currentUser.name,
+    uploadedAt: new Date().toISOString(),
     createdAt: new Date().toISOString()
   };
   DB.beneficiaries.push(b);
@@ -1589,7 +2204,7 @@ function renderStock(el) {
   el.innerHTML = `
     <div class="page-header">
       <div><div class="page-title">Stock Register</div><div class="page-sub">Cement warehouse ledger – running balance</div></div>
-      ${currentUser.role==='admin'?`<button class="btn btn-primary" onclick="openAddStock()"><span class="material-icons-round">add</span> Add Receipt</button>`:''}
+      ${can('addStock')?`<button class="btn btn-primary" onclick="openAddStock()"><span class="material-icons-round">add</span> Add Receipt</button>`:''}
     </div>
 
     ${s.balance<50?`<div class="alert alert-danger"><span class="material-icons-round">warning</span><strong>Critical stock!</strong> Only ${s.balance} bags remaining.</div>`:
@@ -1851,6 +2466,405 @@ function changePin() {
   showToast('Authorization PIN updated successfully');
 }
 
+// ===== MASTER UPLOAD PAGE (Collector only) =====
+function renderMasterUpload(el) {
+  if (currentUser.role !== 'admin') { showAccessDenied('masterupload'); return; }
+
+  const totalUploaded = DB.beneficiaries.filter(b=>b.uploadedBy).length;
+  const blockCounts   = BLOCKS.map(blk=>({blk, count: DB.beneficiaries.filter(b=>b.block===blk).length}));
+
+  el.innerHTML = `
+    <div class="page-header">
+      <div>
+        <div class="page-title">Master Beneficiary Upload</div>
+        <div class="page-sub">Collector-only · Upload beneficiary lists for all 5 blocks at once</div>
+      </div>
+    </div>
+
+    <!-- Block status summary -->
+    <div class="stat-grid" style="grid-template-columns:repeat(5,1fr);margin-bottom:20px">
+      ${blockCounts.map(({blk,count})=>`
+        <div class="stat-card" style="flex-direction:column;align-items:flex-start;gap:6px">
+          <div style="font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--grey-500)">${blk}</div>
+          <div style="font-size:28px;font-weight:700;color:${count>0?'var(--green)':'var(--grey-300)'}">${count}</div>
+          <div style="font-size:11px;color:var(--grey-700)">beneficiaries</div>
+        </div>`).join('')}
+    </div>
+
+    <!-- Method 1: CSV/Excel Upload -->
+    <div class="card" style="margin-bottom:16px">
+      <div class="section-title">Method 1 · Upload CSV / Excel File</div>
+      <div style="font-size:13px;color:var(--grey-700);margin-bottom:16px">
+        Upload a single file containing beneficiaries from all blocks. 
+        Required columns: <strong>Name, Aadhaar, Mobile, Block, Village, Scheme, HouseNo, SanctionedBags</strong>
+      </div>
+
+      <!-- Download template -->
+      <button class="btn btn-outlined btn-sm" style="margin-bottom:16px" onclick="downloadCSVTemplate()">
+        <span class="material-icons-round">download</span> Download CSV Template
+      </button>
+
+      <!-- Upload area -->
+      <div id="uploadDropzone" style="border:2px dashed var(--grey-300);border-radius:12px;padding:32px;text-align:center;cursor:pointer;transition:all .2s"
+        onclick="document.getElementById('masterFileInput').click()"
+        ondragover="event.preventDefault();this.style.borderColor='var(--blue)';this.style.background='var(--blue-light)'"
+        ondragleave="this.style.borderColor='var(--grey-300)';this.style.background=''"
+        ondrop="handleMasterDrop(event)">
+        <span class="material-icons-round" style="font-size:48px;color:var(--grey-300)">upload_file</span>
+        <div style="font-size:14px;font-weight:600;margin:8px 0 4px">Drop CSV or Excel file here</div>
+        <div style="font-size:12px;color:var(--grey-500)">or click to browse · Supports .csv and .xlsx</div>
+        <input type="file" id="masterFileInput" accept=".csv,.xlsx" style="display:none" onchange="handleMasterFileSelect(event)">
+      </div>
+
+      <!-- Preview table -->
+      <div id="uploadPreview" style="display:none;margin-top:16px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+          <div id="previewMeta" style="font-size:13px;font-weight:600"></div>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-danger btn-sm" onclick="clearUploadPreview()">Clear</button>
+            <button class="btn btn-green" onclick="commitMasterUpload()" id="commitBtn">
+              <span class="material-icons-round">cloud_upload</span> Confirm Upload
+            </button>
+          </div>
+        </div>
+        <div id="uploadErrors" style="display:none" class="alert alert-danger" style="margin-bottom:8px"></div>
+        <div class="table-wrap" style="max-height:320px;overflow-y:auto">
+          <table id="previewTable">
+            <thead><tr><th>#</th><th>Name</th><th>Aadhaar</th><th>Mobile</th><th>Block</th><th>Village</th><th>Scheme</th><th>House No.</th><th>Bags</th><th>Status</th></tr></thead>
+            <tbody id="previewBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Method 2: Manual block-wise entry -->
+    <div class="card">
+      <div class="section-title">Method 2 · Manual Entry by Block</div>
+      <div style="font-size:13px;color:var(--grey-700);margin-bottom:14px">Add individual beneficiaries one at a time, selecting the block.</div>
+      <div class="form-grid">
+        <div class="form-group"><label class="form-label">Full Name *</label><input class="form-control" id="muName" placeholder="Full name"></div>
+        <div class="form-group"><label class="form-label">Aadhaar No. *</label><input class="form-control" id="muAadhaar" placeholder="XXXX-XXXX-XXXX" maxlength="14"></div>
+        <div class="form-group"><label class="form-label">Mobile *</label><input class="form-control" id="muMobile" placeholder="10-digit" maxlength="10"></div>
+        <div class="form-group">
+          <label class="form-label">Block *</label>
+          <select class="form-control" id="muBlock" onchange="updateMUVillages()">
+            ${BLOCKS.map(b=>`<option>${b}</option>`).join('')}
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Village *</label>
+          <select class="form-control" id="muVillage">${(BLOCK_DATA[BLOCKS[0]]?.villages||[]).map(v=>`<option>${v}</option>`).join('')}</select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Scheme *</label>
+          <select class="form-control" id="muScheme">${SCHEMES.map(s=>`<option>${s}</option>`).join('')}</select>
+        </div>
+        <div class="form-group"><label class="form-label">House No. *</label><input class="form-control" id="muHouse" placeholder="e.g. MYL/2025001"></div>
+        <div class="form-group"><label class="form-label">Sanctioned Bags *</label><input class="form-control" type="number" id="muBags" value="100" min="1"></div>
+      </div>
+      <button class="btn btn-primary" style="margin-top:12px" onclick="addMasterBeneficiary()">
+        <span class="material-icons-round">person_add</span> Add Beneficiary
+      </button>
+    </div>
+
+    <!-- Existing list with delete -->
+    <div class="card" style="margin-top:16px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <div class="section-title" style="margin:0">All Uploaded Beneficiaries (${DB.beneficiaries.length})</div>
+        ${DB.beneficiaries.length>0?`<button class="btn btn-danger btn-sm" onclick="if(confirm('Clear ALL beneficiaries? This cannot be undone.')){DB.beneficiaries=[];saveDB();navigate('masterupload');}">
+          <span class="material-icons-round">delete_sweep</span> Clear All
+        </button>`:''}
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>ID</th><th>Name</th><th>Block</th><th>Village</th><th>Scheme</th><th>Bags</th><th>Uploaded By</th><th>Action</th></tr></thead>
+          <tbody>
+            ${DB.beneficiaries.map(b=>`
+            <tr>
+              <td style="font-size:11px">${b.id}</td>
+              <td><strong>${b.name}</strong></td>
+              <td><span class="chip chip-approved" style="font-size:10px">${b.block}</span></td>
+              <td style="font-size:12px">${b.village}</td>
+              <td style="font-size:12px">${b.scheme}</td>
+              <td>${b.sanctionedBags}</td>
+              <td style="font-size:11px;color:var(--grey-500)">${b.uploadedBy||'—'}</td>
+              <td>
+                <button class="btn btn-danger btn-sm" onclick="deleteBeneficiary('${b.id}')">
+                  <span class="material-icons-round">delete</span>
+                </button>
+              </td>
+            </tr>`).join('') || '<tr><td colspan="8"><div class="empty-state"><span class="material-icons-round">people</span><p>No beneficiaries uploaded yet</p></div></td></tr>'}
+          </tbody>
+        </table>
+      </div>
+    </div>`;
+}
+
+let _masterPreviewData = [];
+
+function downloadCSVTemplate() {
+  const header = 'Name,Aadhaar,Mobile,Block,Village,Scheme,HouseNo,SanctionedBags';
+  const sample = BLOCKS.flatMap(blk =>
+    (BLOCK_DATA[blk].villages.slice(0,2)).map((vil,j) =>
+      `Sample Name ${blk.slice(0,3)}${j+1},XXXX-XXXX-${String(1001+j)},94000${Math.floor(Math.random()*90000+10000)},${blk},${vil},PMAY-G,${blk.slice(0,3).toUpperCase()}/2025001,100`
+    )
+  ).join('\n');
+  const blob = new Blob([header + '\n' + sample], {type:'text/csv'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = 'beneficiary_template.csv'; a.click();
+  showToast('Template downloaded');
+}
+
+function handleMasterDrop(e) {
+  e.preventDefault();
+  document.getElementById('uploadDropzone').style.borderColor = 'var(--grey-300)';
+  document.getElementById('uploadDropzone').style.background = '';
+  const file = e.dataTransfer.files[0];
+  if (file) parseMasterFile(file);
+}
+function handleMasterFileSelect(e) {
+  const file = e.target.files[0];
+  if (file) parseMasterFile(file);
+}
+
+function parseMasterFile(file) {
+  const reader = new FileReader();
+  reader.onload = e => {
+    const text = e.target.result;
+    const lines = text.split('\n').map(l=>l.trim()).filter(l=>l);
+    const headers = lines[0].toLowerCase().split(',').map(h=>h.trim());
+    const col = k => headers.findIndex(h=>h.includes(k));
+    const iName=col('name'), iAad=col('aadh'), iMob=col('mob'),
+          iBlk=col('block'), iVil=col('vill'), iSch=col('scheme'),
+          iHouse=col('house'), iBags=col('bag');
+
+    _masterPreviewData = [];
+    const errors = [];
+    for (let i=1; i<lines.length; i++) {
+      const cols = lines[i].split(',').map(c=>c.trim());
+      const blk = cols[iBlk]?.trim();
+      const row = {
+        name: cols[iName]||'',
+        aadhaar: cols[iAad]||'',
+        mobile: cols[iMob]||'',
+        block: blk||'',
+        village: cols[iVil]||'',
+        scheme: cols[iSch]||'PMAY-G',
+        houseNo: cols[iHouse]||'',
+        sanctionedBags: parseInt(cols[iBags])||100,
+        _valid: true, _error: ''
+      };
+      if (!row.name) { row._valid=false; row._error='Missing name'; }
+      else if (!BLOCKS.includes(row.block)) { row._valid=false; row._error='Invalid block: '+row.block; }
+      else if (!row.houseNo) { row._valid=false; row._error='Missing house no.'; }
+      if (!row._valid) errors.push('Row ' + i + ': ' + row._error);
+      _masterPreviewData.push(row);
+    }
+
+    showUploadPreview(_masterPreviewData, errors);
+  };
+  reader.readAsText(file);
+}
+
+function showUploadPreview(data, errors) {
+  const preview = document.getElementById('uploadPreview');
+  const meta    = document.getElementById('previewMeta');
+  const errBox  = document.getElementById('uploadErrors');
+  const body    = document.getElementById('previewBody');
+  preview.style.display = 'block';
+
+  const valid = data.filter(r=>r._valid).length;
+  meta.innerHTML = `<span class="chip chip-verified">${valid} valid</span>&nbsp;
+    ${errors.length?`<span class="chip chip-rejected">${errors.length} errors</span>`:''}
+    &nbsp; out of ${data.length} rows`;
+
+  if (errors.length) {
+    errBox.style.display = 'block';
+    errBox.innerHTML = '<span class="material-icons-round">error</span> <div>' + errors.slice(0,5).join('<br>') + (errors.length>5?'<br>…and '+(errors.length-5)+' more':'') + '</div>';
+  } else {
+    errBox.style.display = 'none';
+  }
+
+  body.innerHTML = data.map((r,i)=>`
+    <tr style="background:${r._valid?'':'rgba(217,48,37,.05)'}">
+      <td>${i+1}</td>
+      <td>${r.name}</td>
+      <td style="font-size:11px">${r.aadhaar}</td>
+      <td style="font-size:11px">${r.mobile}</td>
+      <td>${r.block}</td>
+      <td>${r.village}</td>
+      <td>${r.scheme}</td>
+      <td>${r.houseNo}</td>
+      <td>${r.sanctionedBags}</td>
+      <td>${r._valid?'<span class="chip chip-verified">✓ OK</span>':'<span class="chip chip-rejected">✗ '+r._error+'</span>'}</td>
+    </tr>`).join('');
+}
+
+function clearUploadPreview() {
+  _masterPreviewData = [];
+  document.getElementById('uploadPreview').style.display = 'none';
+  document.getElementById('masterFileInput').value = '';
+}
+
+function commitMasterUpload() {
+  const valid = _masterPreviewData.filter(r=>r._valid);
+  if (!valid.length) { showToast('No valid rows to upload','error'); return; }
+  let added = 0;
+  valid.forEach(r => {
+    const exists = DB.beneficiaries.find(b=>b.houseNo===r.houseNo);
+    if (!exists) {
+      DB.beneficiaries.push({
+        id: 'B' + String(Date.now()+added).slice(-7),
+        name: r.name,
+        aadhaar: '****-****-' + String(r.aadhaar).slice(-4),
+        mobile: r.mobile,
+        block: r.block,
+        village: r.village,
+        scheme: r.scheme,
+        houseNo: r.houseNo,
+        sanctionedBags: r.sanctionedBags,
+        receivedBags: 0,
+        status: 'Active',
+        uploadedBy: currentUser.name,
+        uploadedAt: new Date().toISOString(),
+        createdAt: new Date().toISOString()
+      });
+      added++;
+    }
+  });
+  saveDB();
+  clearUploadPreview();
+  showToast(added + ' beneficiaries uploaded · ' + (valid.length-added) + ' duplicates skipped');
+  navigate('masterupload');
+}
+
+function updateMUVillages() {
+  const blk = document.getElementById('muBlock')?.value;
+  const vils = BLOCK_DATA[blk]?.villages||[];
+  const sel  = document.getElementById('muVillage');
+  if (sel) sel.innerHTML = vils.map(v=>`<option>${v}</option>`).join('');
+}
+
+function addMasterBeneficiary() {
+  const name    = document.getElementById('muName').value.trim();
+  const aadhaar = document.getElementById('muAadhaar').value.trim();
+  const mobile  = document.getElementById('muMobile').value.trim();
+  const houseNo = document.getElementById('muHouse').value.trim();
+  if (!name||!aadhaar||!mobile||!houseNo) { showToast('Fill all required fields','error'); return; }
+  const b = {
+    id: 'B' + String(Date.now()).slice(-7),
+    name, aadhaar: '****-****-' + aadhaar.slice(-4), mobile,
+    block:   document.getElementById('muBlock').value,
+    village: document.getElementById('muVillage').value,
+    scheme:  document.getElementById('muScheme').value,
+    houseNo,
+    sanctionedBags: parseInt(document.getElementById('muBags').value)||100,
+    receivedBags: 0, status: 'Active',
+    uploadedBy: currentUser.name,
+    uploadedAt: new Date().toISOString(),
+    createdAt: new Date().toISOString()
+  };
+  DB.beneficiaries.push(b);
+  saveDB();
+  pushToFirebase('beneficiaries', b.id, b);
+  showToast(b.name + ' added to ' + b.block + ' block');
+  navigate('masterupload');
+}
+
+function deleteBeneficiary(id) {
+  if (!confirm('Delete this beneficiary? This cannot be undone.')) return;
+  DB.beneficiaries = DB.beneficiaries.filter(b=>b.id!==id);
+  saveDB();
+  navigate('masterupload');
+}
+
+// ===== USER MANAGEMENT PAGE (admin only) =====
+function renderUsers(el) {
+  if (!can('manageUsers')) { showAccessDenied('users'); return; }
+  el.innerHTML = `
+    <div class="page-header">
+      <div><div class="page-title">User Management</div><div class="page-sub">All system users and their role permissions</div></div>
+    </div>
+    <div class="card">
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>User</th><th>Username</th><th>Role</th><th>Department</th><th>Mobile</th><th>Accessible Pages</th></tr></thead>
+          <tbody>
+            ${USERS.map(u => {
+              const rm = ROLE_META[u.role];
+              return `<tr>
+                <td>
+                  <div style="display:flex;align-items:center;gap:10px">
+                    <div class="u-avatar ${u.avatarColor}" style="width:36px;height:36px;border-radius:8px;font-size:16px">
+                      <span class="material-icons-round">${u.icon}</span>
+                    </div>
+                    <div>
+                      <div style="font-weight:600;font-size:13px">${u.name}</div>
+                      <div style="font-size:11px;color:var(--grey-500)">${u.email}</div>
+                    </div>
+                  </div>
+                </td>
+                <td><code style="background:var(--grey-100);padding:2px 8px;border-radius:4px;font-size:12px">${u.username}</code></td>
+                <td><span class="role-badge ${rm.badge}">${rm.label}</span></td>
+                <td style="font-size:12px">${u.dept}</td>
+                <td style="font-size:12px">${u.mobile}</td>
+                <td>
+                  <div style="display:flex;flex-wrap:wrap;gap:4px">
+                    ${u.pages.map(p => `<span class="chip chip-approved" style="font-size:10px">${PAGE_META[p]?.label||p}</span>`).join('')}
+                  </div>
+                </td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:16px">
+      <div class="section-title">Role Permissions Matrix</div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Permission</th>
+              <th><span class="role-badge rb-admin">Admin</span></th>
+              <th><span class="role-badge rb-bdo">BDO</span></th>
+              <th><span class="role-badge rb-overseer">Overseer</span></th>
+              <th><span class="role-badge rb-store">Store Keeper</span></th>
+              <th><span class="role-badge rb-inspector">Inspector</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            ${[
+              //                       Admin   BDO   Overseer  Store  Inspector
+              ['Create Allotment',    true, true,  true,  false, false],
+              ['Approve Allotment',   true, true,  false, false, false],
+              ['Reject Allotment',    true, true,  false, false, false],
+              ['Issue Cement',        true, false, false, true,  false],
+              ['Add Stock Receipt',   true, false, false, false, false],
+              ['View Stock Ledger',   true, false, false, true,  false],
+              ['Verify Collection',   true, true,  false, false, true ],
+              ['Field Inspection',    true, false, true,  false, true ],
+              ['View Beneficiaries',  true, true,  true,  false, false],
+              ['Add Beneficiary',     true, true,  false, false, false],
+              ['View Reports',        true, true,  false, false, false],
+              ['Manage Users',        true, false, false, false, false],
+              ['System Settings',     true, false, false, false, false],
+            ].map(([label,...vals]) => `
+              <tr>
+                <td style="font-size:13px;font-weight:500">${label}</td>
+                ${vals.map(v=>`<td style="text-align:center">
+                  <span class="material-icons-round" style="font-size:18px;color:${v?'var(--green)':'var(--grey-300)'}">
+                    ${v?'check_circle':'cancel'}
+                  </span>
+                </td>`).join('')}
+              </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>`;
+}
+
 function exportData() {
   const blob = new Blob([JSON.stringify(DB,null,2)], {type:'application/json'});
   const a = document.createElement('a');
@@ -1968,7 +2982,10 @@ function showToast(msg, type='success') {
 }
 
 // ===== INIT =====
-window.onload = () => { loadFirebaseSDK(); };
+window.onload = () => {
+  initLoginPage();
+  // Firebase loaded after user logs in (doLogin calls it)
+};
 </script>
 </body>
 </html>
