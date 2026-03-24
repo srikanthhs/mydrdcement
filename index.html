@@ -572,6 +572,13 @@ function loadFirebaseSDK() {
           firebaseReady = true;
           updateFirebaseIndicator(true);
           console.log('Firebase connected ✓');
+          // If user is already logged in (reconnect after offline), restart listener
+          if (currentUser) {
+            loadFromFirebase().then(() => {
+              refreshCurrentPage();
+              startFirestoreListener();
+            });
+          }
           return true;
         }
       } catch(e) { /* try next CDN */ }
@@ -954,18 +961,152 @@ function loadDB() {
   return false;
 }
 
-// ===== FIREBASE SYNC (graceful – never blocks UI) =====
-async function pushToFirebase(collection, docId, data) {
+// ===== FIREBASE SYNC =====
+// Architecture:
+//   All data lives in ONE Firestore document: drdData/main
+//   Every write merges the full DB into that document.
+//   A real-time onSnapshot listener on every device picks up
+//   changes written by OTHER devices within ~1 second.
+
+let _firestoreUnsubscribe = null;   // holds the onSnapshot cleanup fn
+let _lastLocalWrite = 0;            // timestamp of our own last write
+                                    // so we don't re-apply our own echo
+
+// ── Write: merge entire DB into Firestore ────────────────────────────
+async function pushToFirebase() {
   if (!firebaseReady || !db) return;
-  try { await db.collection(collection).doc(docId).set(data, { merge: true }); } catch(e) { /* silent */ }
+  _lastLocalWrite = Date.now();
+  try {
+    // Strip base64 photos before upload — they're too large for Firestore
+    const safe = JSON.parse(JSON.stringify(DB));
+    (safe.issuances||[]).forEach(i => { if (i.photos) i.photos = i.photos.map((_,n)=>'[photo_'+n+']'); if (i.signature) i.signature='[sig]'; });
+    (safe.inspections||[]).forEach(i => { if (i.photos) i.photos = i.photos.map((_,n)=>'[photo_'+n+']'); });
+    (safe.beneficiaries||[]).forEach(b => { delete b._photos; });
+    await db.collection('drdData').doc('main').set(safe, { merge: true });
+  } catch(e) { console.warn('Firestore write failed:', e); }
 }
+
+// ── Read: one-time pull on login ─────────────────────────────────────
 async function loadFromFirebase() {
   if (!firebaseReady || !db) return false;
   try {
     const snap = await db.collection('drdData').doc('main').get();
-    if (snap.exists) { DB = { ...DB, ...snap.data() }; saveDB(); return true; }
-  } catch(e) { /* offline */ }
+    if (snap.exists) {
+      const remote = snap.data();
+      mergeRemoteIntoDB(remote);
+      saveDB();
+      return true;
+    }
+  } catch(e) { console.warn('Firestore read failed:', e); }
   return false;
+}
+
+// ── Real-time listener: fires whenever ANY device writes ─────────────
+function startFirestoreListener() {
+  if (!firebaseReady || !db) return;
+  if (_firestoreUnsubscribe) _firestoreUnsubscribe(); // detach old listener
+
+  _firestoreUnsubscribe = db.collection('drdData').doc('main')
+    .onSnapshot(snap => {
+      if (!snap.exists) return;
+      // Ignore if we wrote this ourselves within the last 3 seconds
+      if (Date.now() - _lastLocalWrite < 3000) return;
+      const remote = snap.data();
+      mergeRemoteIntoDB(remote);
+      saveDB();
+      // Silently refresh the current page so the new data shows
+      refreshCurrentPage();
+      showSyncToast();
+    }, err => { console.warn('Firestore listener error:', err); });
+}
+
+// ── Merge strategy: remote wins for lists, local wins for photos ─────
+function mergeRemoteIntoDB(remote) {
+  if (!remote) return;
+
+  // Beneficiaries: merge by id
+  if (remote.beneficiaries) {
+    const localMap = {};
+    (DB.beneficiaries||[]).forEach(b => localMap[b.id] = b);
+    remote.beneficiaries.forEach(b => { localMap[b.id] = {...(localMap[b.id]||{}), ...b}; });
+    DB.beneficiaries = Object.values(localMap);
+  }
+
+  // Allotments: merge by id
+  if (remote.allotments) {
+    const localMap = {};
+    (DB.allotments||[]).forEach(a => localMap[a.id] = a);
+    remote.allotments.forEach(a => { localMap[a.id] = {...(localMap[a.id]||{}), ...a}; });
+    DB.allotments = Object.values(localMap);
+  }
+
+  // Issuances: merge by id, keep local photos (base64) if remote has placeholder
+  if (remote.issuances) {
+    const localMap = {};
+    (DB.issuances||[]).forEach(i => localMap[i.id] = i);
+    remote.issuances.forEach(ri => {
+      const local = localMap[ri.id] || {};
+      // Keep local photos/signature if remote has placeholder strings
+      const photos = (ri.photos||[]).some(p=>p.startsWith('[photo_'))
+        ? (local.photos || []) : ri.photos;
+      const signature = ri.signature === '[sig]' ? local.signature : ri.signature;
+      localMap[ri.id] = {...local, ...ri, photos, signature};
+    });
+    DB.issuances = Object.values(localMap);
+  }
+
+  // Inspections: merge by id, keep local photos
+  if (remote.inspections) {
+    const localMap = {};
+    (DB.inspections||[]).forEach(i => localMap[i.id] = i);
+    remote.inspections.forEach(ri => {
+      const local = localMap[ri.id] || {};
+      const photos = (ri.photos||[]).some(p=>p.startsWith('[photo_'))
+        ? (local.photos || []) : ri.photos;
+      localMap[ri.id] = {...local, ...ri, photos};
+    });
+    DB.inspections = Object.values(localMap);
+  }
+
+  // Stock + stockLedger: remote wins entirely
+  if (remote.stock)        DB.stock        = remote.stock;
+  if (remote.stockLedger)  DB.stockLedger  = remote.stockLedger;
+  if (remote.authPin)      DB.authPin      = remote.authPin;
+}
+
+// ── Silently refresh current page without losing scroll position ─────
+function refreshCurrentPage() {
+  const main = document.getElementById('mainContent');
+  if (!main || !currentPage) return;
+  const pages = {
+    dashboard: renderDashboard, allotments: renderAllotments,
+    issuance: renderIssuance, collection: renderCollection,
+    inspection: renderInspection, beneficiaries: renderBeneficiaries,
+    stock: renderStock, reports: renderReports,
+    alerts: renderAlerts, masterupload: renderMasterUpload,
+    users: renderUsers, settings: renderSettings
+  };
+  if (pages[currentPage]) {
+    const scrollY = main.scrollTop;
+    pages[currentPage](main);
+    updateBadges();
+    main.scrollTop = scrollY;
+  }
+}
+
+// ── Sync toast (subtle, non-intrusive) ───────────────────────────────
+let _syncToastTimer = null;
+function showSyncToast() {
+  const el = document.getElementById('syncIndicator');
+  if (!el) return;
+  el.style.opacity = '1';
+  clearTimeout(_syncToastTimer);
+  _syncToastTimer = setTimeout(() => { el.style.opacity = '0'; }, 2500);
+}
+
+// ── Save + push combined ─────────────────────────────────────────────
+function saveAndSync() {
+  saveAndSync();
 }
 
 // ===== LOGIN =====
@@ -1045,12 +1186,20 @@ function doLogin() {
   if (!loadDB()) seedData();
   buildSidebar();
   navigate('dashboard');
-  loadFirebaseSDK();
+  // Load Firebase, then pull latest data and start live listener
+  loadFirebaseSDK().then(async () => {
+    if (firebaseReady) {
+      await loadFromFirebase();   // one-time pull
+      refreshCurrentPage();       // re-render with fresh data
+      startFirestoreListener();   // start live sync
+    }
+  });
 }
 
 function doLogout() {
   currentUser = null;
   _loginAttempts = 0;
+  if (_firestoreUnsubscribe) { _firestoreUnsubscribe(); _firestoreUnsubscribe = null; }
   document.getElementById('mainApp').classList.add('hidden');
   document.getElementById('loginScreen').classList.remove('hidden');
   // Clear form cleanly
@@ -1418,8 +1567,7 @@ function submitAllotment() {
     timeline: [{event:'Allotment Created', by: currentUser.name, at: new Date().toISOString(), note:''}]
   };
   DB.allotments.push(allotment);
-  saveDB();
-  pushToFirebase('allotments', allotment.id, allotment);
+  saveAndSync();
   closeModal();
   showToast('Allotment submitted for approval');
   renderAllotTable(scopedAllotments());
@@ -1430,8 +1578,7 @@ function approveAllotment(id) {
   a.approvedBy = currentUser.name;
   a.approvedAt = new Date().toISOString();
   a.timeline.push({event:'Approved', by:currentUser.name, at:new Date().toISOString(), note:''});
-  saveDB();
-  pushToFirebase('allotments', id, a);
+  saveAndSync();
   showToast('Allotment approved ✓');
   filterAllotTable();
   updateBadges();
@@ -1801,14 +1948,7 @@ function confirmIssue(allotmentId) {
   DB.issuances.push(issuance);
   issPhotosData = [];
   sigData = null;
-  saveDB();
-  pushToFirebase('issuances', issuance.id, {
-    ...issuance,
-    photos: issuance.photos.map((_,i)=>'[photo_' + i + ']')  // don't upload base64
-  });
-  pushToFirebase('stock', 'current', DB.stock);
-  pushToFirebase('stockLedger', DB.stockLedger[DB.stockLedger.length-1].id,
-    DB.stockLedger[DB.stockLedger.length-1]);
+  saveAndSync();
 
   closeModal();
   showToast('✓ Authorized & Issued: ' + bags + ' bags · Balance: ' + closingBalanceForEntry);
@@ -2189,8 +2329,7 @@ function addBeneficiary() {
     createdAt: new Date().toISOString()
   };
   DB.beneficiaries.push(b);
-  saveDB();
-  pushToFirebase('beneficiaries', b.id, b);
+  saveAndSync();
   closeModal();
   showToast('Beneficiary registered: ' + b.name);
   filterBenTable();
@@ -2366,9 +2505,7 @@ function addStock() {
     remark: 'Stock receipt'
   };
   DB.stockLedger.push(ledgerEntry);
-  saveDB();
-  pushToFirebase('stock', 'current', DB.stock);
-  pushToFirebase('stockLedger', ledgerEntry.id, ledgerEntry);
+  saveAndSync();
   closeModal();
   showToast(bags + ' bags added · New balance: ' + closingBal);
   navigate('stock');
@@ -2490,8 +2627,7 @@ function changePin() {
   if (nw.length !== 4 || !/^\d{4}$/.test(nw)) { showToast('New PIN must be exactly 4 digits', 'error'); return; }
   if (nw !== conf) { showToast('PINs do not match', 'error'); return; }
   DB.authPin = nw;
-  saveDB();
-  pushToFirebase('settings', 'authPin', { pin: nw, updatedBy: currentUser.name, updatedAt: new Date().toISOString() });
+  saveAndSync();
   document.getElementById('curPin').value = '';
   document.getElementById('newPin').value = '';
   document.getElementById('confPin').value = '';
@@ -2803,8 +2939,7 @@ function addMasterBeneficiary() {
     createdAt: new Date().toISOString()
   };
   DB.beneficiaries.push(b);
-  saveDB();
-  pushToFirebase('beneficiaries', b.id, b);
+  saveAndSync();
   showToast(b.name + ' added to ' + b.block + ' block');
   navigate('masterupload');
 }
@@ -3020,6 +3155,22 @@ function showToast(msg, type='success') {
 }
 
 // ===== INIT =====
+// Re-sync when user returns to the tab (e.g. after using mobile)
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && firebaseReady && currentUser) {
+    loadFromFirebase().then(() => refreshCurrentPage());
+  }
+});
+// Re-sync when device comes back online
+window.addEventListener('online', () => {
+  if (firebaseReady && currentUser) {
+    loadFromFirebase().then(() => {
+      refreshCurrentPage();
+      startFirestoreListener();
+    });
+  }
+});
+
 window.onload = () => {
   initLoginPage();
   // Firebase loaded after user logs in (doLogin calls it)
