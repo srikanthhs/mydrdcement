@@ -443,10 +443,10 @@
           <span style="font-weight:600;grid-column:2/3;font-size:10px;letter-spacing:.5px;text-transform:uppercase;color:var(--grey-700)">Username</span>
           <span style="font-weight:600;grid-column:3/4;font-size:10px;letter-spacing:.5px;text-transform:uppercase;color:var(--grey-700)">Password</span>
           <span>District Collector</span><code style="background:#fff;padding:1px 6px;border-radius:4px;border:1px solid var(--grey-200)">collector</code><code style="background:#fff;padding:1px 6px;border-radius:4px;border:1px solid var(--grey-200)">admin2025</code>
-          <span>BDO</span><code style="background:#fff;padding:1px 6px;border-radius:4px;border:1px solid var(--grey-200)">bdo</code><code style="background:#fff;padding:1px 6px;border-radius:4px;border:1px solid var(--grey-200)">bdo2025</code>
-          <span>Works Overseer</span><code style="background:#fff;padding:1px 6px;border-radius:4px;border:1px solid var(--grey-200)">overseer</code><code style="background:#fff;padding:1px 6px;border-radius:4px;border:1px solid var(--grey-200)">overseer2025</code>
-          <span>Store Keeper</span><code style="background:#fff;padding:1px 6px;border-radius:4px;border:1px solid var(--grey-200)">storekeeper</code><code style="background:#fff;padding:1px 6px;border-radius:4px;border:1px solid var(--grey-200)">store2025</code>
-          <span>Field Inspector</span><code style="background:#fff;padding:1px 6px;border-radius:4px;border:1px solid var(--grey-200)">inspector</code><code style="background:#fff;padding:1px 6px;border-radius:4px;border:1px solid var(--grey-200)">inspect2025</code>
+          <span>BDO (Mayiladuthurai)</span><code style="background:#fff;padding:1px 6px;border-radius:4px;border:1px solid var(--grey-200)">bdo.myl</code><code style="background:#fff;padding:1px 6px;border-radius:4px;border:1px solid var(--grey-200)">bdo.myl2025</code>
+          <span>Overseer (Mayiladuthurai)</span><code style="background:#fff;padding:1px 6px;border-radius:4px;border:1px solid var(--grey-200)">overseer.myl</code><code style="background:#fff;padding:1px 6px;border-radius:4px;border:1px solid var(--grey-200)">over.myl2025</code>
+          <span>Store Keeper (Mayiladuthurai)</span><code style="background:#fff;padding:1px 6px;border-radius:4px;border:1px solid var(--grey-200)">store.myl</code><code style="background:#fff;padding:1px 6px;border-radius:4px;border:1px solid var(--grey-200)">store.myl2025</code>
+          <span>Field Inspector (Mayiladuthurai)</span><code style="background:#fff;padding:1px 6px;border-radius:4px;border:1px solid var(--grey-200)">inspector.myl</code><code style="background:#fff;padding:1px 6px;border-radius:4px;border:1px solid var(--grey-200)">insp.myl2025</code>
         </div>
       </details>
       <div style="margin-top:12px;font-size:11px;color:var(--grey-500);text-align:center;line-height:1.7">
@@ -652,7 +652,7 @@ const USERS = [
     name: 'P. Murugesan', designation: 'Store Keeper – Mayiladuthurai Depot',
     dept: 'Rural Development Dept, Mayiladuthurai', mobile: '9400001003',
     avatarColor: 'store', icon: 'warehouse',
-    pages: ['dashboard','issuance','stock','alerts']
+    pages: ['dashboard','issuance','stock','qrscan','alerts']
   },
   {
     id: 'U104', username: 'inspector.myl', password: 'insp.myl2025',
@@ -663,70 +663,70 @@ const USERS = [
     pages: ['dashboard','collection','inspection','alerts']
   },
 
-  // ── Block: Sirkazhi ───────────────────────────────────────────────────────
+  // ── Block: Sirkali ───────────────────────────────────────────────────────
   {
     id: 'U201', username: 'bdo.skz', password: 'bdo.skz2025',
-    role: 'bdo', block: 'Sirkazhi',
-    name: 'R. Ganesh', designation: 'BDO – Sirkazhi Block',
-    dept: 'Block Development Office, Sirkazhi', mobile: '9400002001',
+    role: 'bdo', block: 'Sirkali',
+    name: 'R. Ganesh', designation: 'BDO – Sirkali Block',
+    dept: 'Block Development Office, Sirkali', mobile: '9400002001',
     avatarColor: 'bdo', icon: 'account_balance',
     pages: ['dashboard','allotments','beneficiaries','collection','reports','alerts']
   },
   {
     id: 'U202', username: 'overseer.skz', password: 'over.skz2025',
-    role: 'overseer', block: 'Sirkazhi',
-    name: 'T. Vijayakumar', designation: 'Works Overseer – Sirkazhi',
-    dept: 'Rural Development Dept, Sirkazhi', mobile: '9400002002',
+    role: 'overseer', block: 'Sirkali',
+    name: 'T. Vijayakumar', designation: 'Works Overseer – Sirkali',
+    dept: 'Rural Development Dept, Sirkali', mobile: '9400002002',
     avatarColor: 'overseer', icon: 'engineering',
     pages: ['dashboard','allotments','beneficiaries','inspection','alerts']
   },
   {
     id: 'U203', username: 'store.skz', password: 'store.skz2025',
-    role: 'store', block: 'Sirkazhi',
-    name: 'A. Rajan', designation: 'Store Keeper – Sirkazhi Depot',
-    dept: 'Rural Development Dept, Sirkazhi', mobile: '9400002003',
+    role: 'store', block: 'Sirkali',
+    name: 'A. Rajan', designation: 'Store Keeper – Sirkali Depot',
+    dept: 'Rural Development Dept, Sirkali', mobile: '9400002003',
     avatarColor: 'store', icon: 'warehouse',
-    pages: ['dashboard','issuance','stock','alerts']
+    pages: ['dashboard','issuance','stock','qrscan','alerts']
   },
   {
     id: 'U204', username: 'inspector.skz', password: 'insp.skz2025',
-    role: 'inspector', block: 'Sirkazhi',
-    name: 'D. Lakshmi', designation: 'Field Inspector – Sirkazhi',
-    dept: 'Rural Development Dept, Sirkazhi', mobile: '9400002004',
+    role: 'inspector', block: 'Sirkali',
+    name: 'D. Lakshmi', designation: 'Field Inspector – Sirkali',
+    dept: 'Rural Development Dept, Sirkali', mobile: '9400002004',
     avatarColor: 'inspector', icon: 'fact_check',
     pages: ['dashboard','collection','inspection','alerts']
   },
 
-  // ── Block: Papanasam ──────────────────────────────────────────────────────
+  // ── Block: Sembanarkoil ───────────────────────────────────────────────────
   {
-    id: 'U301', username: 'bdo.ppn', password: 'bdo.ppn2025',
-    role: 'bdo', block: 'Papanasam',
-    name: 'V. Suresh', designation: 'BDO – Papanasam Block',
-    dept: 'Block Development Office, Papanasam', mobile: '9400003001',
+    id: 'U301', username: 'bdo.sbn', password: 'bdo.sbn2025',
+    role: 'bdo', block: 'Sembanarkoil',
+    name: 'V. Suresh', designation: 'BDO – Sembanarkoil Block',
+    dept: 'Block Development Office, Sembanarkoil', mobile: '9400003001',
     avatarColor: 'bdo', icon: 'account_balance',
     pages: ['dashboard','allotments','beneficiaries','collection','reports','alerts']
   },
   {
-    id: 'U302', username: 'overseer.ppn', password: 'over.ppn2025',
-    role: 'overseer', block: 'Papanasam',
-    name: 'N. Karthik', designation: 'Works Overseer – Papanasam',
-    dept: 'Rural Development Dept, Papanasam', mobile: '9400003002',
+    id: 'U302', username: 'overseer.sbn', password: 'over.sbn2025',
+    role: 'overseer', block: 'Sembanarkoil',
+    name: 'N. Karthik', designation: 'Works Overseer – Sembanarkoil',
+    dept: 'Rural Development Dept, Sembanarkoil', mobile: '9400003002',
     avatarColor: 'overseer', icon: 'engineering',
     pages: ['dashboard','allotments','beneficiaries','inspection','alerts']
   },
   {
-    id: 'U303', username: 'store.ppn', password: 'store.ppn2025',
-    role: 'store', block: 'Papanasam',
-    name: 'B. Mani', designation: 'Store Keeper – Papanasam Depot',
-    dept: 'Rural Development Dept, Papanasam', mobile: '9400003003',
+    id: 'U303', username: 'store.sbn', password: 'store.sbn2025',
+    role: 'store', block: 'Sembanarkoil',
+    name: 'B. Mani', designation: 'Store Keeper – Sembanarkoil Depot',
+    dept: 'Rural Development Dept, Sembanarkoil', mobile: '9400003003',
     avatarColor: 'store', icon: 'warehouse',
-    pages: ['dashboard','issuance','stock','alerts']
+    pages: ['dashboard','issuance','stock','qrscan','alerts']
   },
   {
-    id: 'U304', username: 'inspector.ppn', password: 'insp.ppn2025',
-    role: 'inspector', block: 'Papanasam',
-    name: 'C. Devika', designation: 'Field Inspector – Papanasam',
-    dept: 'Rural Development Dept, Papanasam', mobile: '9400003004',
+    id: 'U304', username: 'inspector.sbn', password: 'insp.sbn2025',
+    role: 'inspector', block: 'Sembanarkoil',
+    name: 'C. Devika', designation: 'Field Inspector – Sembanarkoil',
+    dept: 'Rural Development Dept, Sembanarkoil', mobile: '9400003004',
     avatarColor: 'inspector', icon: 'fact_check',
     pages: ['dashboard','collection','inspection','alerts']
   },
@@ -754,7 +754,7 @@ const USERS = [
     name: 'J. Arumugam', designation: 'Store Keeper – Kuthalam Depot',
     dept: 'Rural Development Dept, Kuthalam', mobile: '9400004003',
     avatarColor: 'store', icon: 'warehouse',
-    pages: ['dashboard','issuance','stock','alerts']
+    pages: ['dashboard','issuance','stock','qrscan','alerts']
   },
   {
     id: 'U404', username: 'inspector.ktl', password: 'insp.ktl2025',
@@ -765,36 +765,36 @@ const USERS = [
     pages: ['dashboard','collection','inspection','alerts']
   },
 
-  // ── Block: Seerkazhi ──────────────────────────────────────────────────────
+  // ── Block: Kollidam ──────────────────────────────────────────────────────
   {
-    id: 'U501', username: 'bdo.skl', password: 'bdo.skl2025',
-    role: 'bdo', block: 'Seerkazhi',
-    name: 'I. Balamurugan', designation: 'BDO – Seerkazhi Block',
-    dept: 'Block Development Office, Seerkazhi', mobile: '9400005001',
+    id: 'U501', username: 'bdo.kld', password: 'bdo.kld2025',
+    role: 'bdo', block: 'Kollidam',
+    name: 'I. Balamurugan', designation: 'BDO – Kollidam Block',
+    dept: 'Block Development Office, Kollidam', mobile: '9400005001',
     avatarColor: 'bdo', icon: 'account_balance',
     pages: ['dashboard','allotments','beneficiaries','collection','reports','alerts']
   },
   {
-    id: 'U502', username: 'overseer.skl', password: 'over.skl2025',
-    role: 'overseer', block: 'Seerkazhi',
-    name: 'E. Meenakshi', designation: 'Works Overseer – Seerkazhi',
-    dept: 'Rural Development Dept, Seerkazhi', mobile: '9400005002',
+    id: 'U502', username: 'overseer.kld', password: 'over.kld2025',
+    role: 'overseer', block: 'Kollidam',
+    name: 'E. Meenakshi', designation: 'Works Overseer – Kollidam',
+    dept: 'Rural Development Dept, Kollidam', mobile: '9400005002',
     avatarColor: 'overseer', icon: 'engineering',
     pages: ['dashboard','allotments','beneficiaries','inspection','alerts']
   },
   {
-    id: 'U503', username: 'store.skl', password: 'store.skl2025',
-    role: 'store', block: 'Seerkazhi',
-    name: 'L. Karuppaiah', designation: 'Store Keeper – Seerkazhi Depot',
-    dept: 'Rural Development Dept, Seerkazhi', mobile: '9400005003',
+    id: 'U503', username: 'store.kld', password: 'store.kld2025',
+    role: 'store', block: 'Kollidam',
+    name: 'L. Karuppaiah', designation: 'Store Keeper – Kollidam Depot',
+    dept: 'Rural Development Dept, Kollidam', mobile: '9400005003',
     avatarColor: 'store', icon: 'warehouse',
-    pages: ['dashboard','issuance','stock','alerts']
+    pages: ['dashboard','issuance','stock','qrscan','alerts']
   },
   {
-    id: 'U504', username: 'inspector.skl', password: 'insp.skl2025',
-    role: 'inspector', block: 'Seerkazhi',
-    name: 'O. Geetha', designation: 'Field Inspector – Seerkazhi',
-    dept: 'Rural Development Dept, Seerkazhi', mobile: '9400005004',
+    id: 'U504', username: 'inspector.kld', password: 'insp.kld2025',
+    role: 'inspector', block: 'Kollidam',
+    name: 'O. Geetha', designation: 'Field Inspector – Kollidam',
+    dept: 'Rural Development Dept, Kollidam', mobile: '9400005004',
     avatarColor: 'inspector', icon: 'fact_check',
     pages: ['dashboard','collection','inspection','alerts']
   }
@@ -822,7 +822,8 @@ const PAGE_META = {
   reports:       { label:'Reports',              icon:'bar_chart',        section:'records' },
   alerts:        { label:'Alerts',               icon:'warning_amber',    section:'system' },
   users:         { label:'User Management',      icon:'manage_accounts',  section:'system' },
-  settings:      { label:'Settings',             icon:'settings',         section:'system' }
+  settings:      { label:'Settings',             icon:'settings',         section:'system' },
+  qrscan:        { label:'QR Scan (Challan)',     icon:'qr_code_scanner',  section:'main' }
 };
 
 // ── Block-scoped data filter ─────────────────────────────────────────────────
@@ -866,30 +867,30 @@ let DB = {
 };
 
 // ===== DISTRICT STRUCTURE =====
-const SCHEMES = ['PMAY-G', 'IAY', 'CM Housing', 'Weaker Section Housing', 'SC/ST Housing'];
+const SCHEMES = ['KKI-2025-26', 'KKI-2025-26 Additional Allocation', 'MVMT-2025-26', 'PMAY(G) - 2024-25', 'PMAY(G) - Spill over houses'];
 const CEMENT_TYPES = ['OPC 43 Grade', 'OPC 53 Grade', 'PPC Cement', 'PSC Cement'];
 
-// The 5 blocks of Mayiladuthurai district with their villages
+// The 5 blocks of Mayiladuthurai district with their panchayat/villages
 const BLOCK_DATA = {
   'Mayiladuthurai': {
     hq: 'Mayiladuthurai',
-    villages: ['Mayiladuthurai', 'Poompuhar', 'Kollidam', 'Sembanarkoil', 'Thirukadaiyur', 'Koothanallur']
-  },
-  'Sirkazhi': {
-    hq: 'Sirkazhi',
-    villages: ['Sirkazhi', 'Chidambaram Road', 'Tharangambadi', 'Kollidam North', 'Thiruvenkadu']
-  },
-  'Papanasam': {
-    hq: 'Papanasam',
-    villages: ['Papanasam', 'Kumbakonam Road', 'Nachiyarkoil', 'Thiruvidaimarudur', 'Vallam']
+    villages: ['Mayiladuthurai', 'Poompuhar', 'Thirukadaiyur', 'Koothanallur', 'Thalainayar', 'Sirkazhi']
   },
   'Kuthalam': {
     hq: 'Kuthalam',
-    villages: ['Kuthalam', 'Vaimedu', 'Puthur', 'Thiruvarur Road', 'Manakkal']
+    villages: ['Kuthalam', 'Vaimedu', 'Puthur', 'Thiruvarur Road', 'Manakkal', 'Aduthurai']
   },
-  'Seerkazhi': {
-    hq: 'Seerkazhi',
-    villages: ['Seerkazhi', 'Vedaranyam Road', 'Poigainallur', 'Vailankanni', 'Nagore']
+  'Sembanarkoil': {
+    hq: 'Sembanarkoil',
+    villages: ['Sembanarkoil', 'Veppancheri', 'Mathur', 'Kilvelur', 'Nannilam', 'Thirumarugal']
+  },
+  'Sirkali': {
+    hq: 'Sirkali',
+    villages: ['Sirkali', 'Chidambaram Road', 'Tharangambadi', 'Thiruvenkadu', 'Poompuhar North', 'Kollidam East']
+  },
+  'Kollidam': {
+    hq: 'Kollidam',
+    villages: ['Kollidam', 'Sirkazhi North', 'Vailankanni', 'Nagore', 'Poigainallur', 'Vedaranyam Road']
   }
 };
 const BLOCKS   = Object.keys(BLOCK_DATA);
@@ -901,10 +902,10 @@ function seedData() {
   // Seed 3 beneficiaries per block = 15 total, each with correct village
   const perBlock = [
     { block:'Mayiladuthurai', names:['Murugan R','Lakshmi D','Selvam K'] },
-    { block:'Sirkazhi',       names:['Geetha P','Rajan M','Vijaya S'] },
-    { block:'Papanasam',      names:['Arumugam T','Kamala N','Pandi V'] },
-    { block:'Kuthalam',       names:['Saraswathi A','Karuppaiah B','Meenakshi C'] },
-    { block:'Seerkazhi',      names:['Suresh G','Devika H','Balamurugan J'] },
+    { block:'Kuthalam',       names:['Geetha P','Rajan M','Vijaya S'] },
+    { block:'Sembanarkoil',   names:['Arumugam T','Kamala N','Pandi V'] },
+    { block:'Sirkali',        names:['Saraswathi A','Karuppaiah B','Meenakshi C'] },
+    { block:'Kollidam',       names:['Suresh G','Devika H','Balamurugan J'] },
   ];
   let idx = 0;
   DB.beneficiaries = perBlock.flatMap(({block, names}) =>
@@ -920,7 +921,10 @@ function seedData() {
         block,
         scheme: SCHEMES[idx % SCHEMES.length],
         houseNo: block.slice(0,3).toUpperCase() + '/' + String(2025001+idx),
+        workId: 'TNRD/' + block.slice(0,3).toUpperCase() + '/' + String(1000+idx),
+        year: '2025-26',
         sanctionedBags: [50,75,100,120][idx%4],
+        issuedBags: 0,
         receivedBags: 0,
         status: 'Active',
         uploadedBy: 'Collector',
@@ -947,6 +951,7 @@ function seedData() {
   DB.allotments = [];
   DB.issuances = [];
   DB.inspections = [];
+  DB.challanCounter = 10000;
   saveDB();
 }
 
@@ -1084,7 +1089,8 @@ function refreshCurrentPage() {
     inspection: renderInspection, beneficiaries: renderBeneficiaries,
     stock: renderStock, reports: renderReports,
     alerts: renderAlerts, masterupload: renderMasterUpload,
-    users: renderUsers, settings: renderSettings
+    users: renderUsers, settings: renderSettings,
+    qrscan: renderStoreQRScan
   };
   if (pages[currentPage]) {
     const scrollY = main.scrollTop;
@@ -1269,7 +1275,8 @@ function navigate(page) {
     reports:       renderReports,
     alerts:        renderAlerts,
     users:         renderUsers,
-    settings:      renderSettings
+    settings:      renderSettings,
+    qrscan:        renderStoreQRScan
   };
   if (pages[page]) pages[page](main);
   updateBadges();
@@ -1499,8 +1506,32 @@ function renderDashboard(el) {
     </div>`;
 }
 
+// ===== CHALLAN NUMBER GENERATION =====
+function generateChallanNumber(block) {
+  if (!DB.challanCounter) DB.challanCounter = 10000;
+  DB.challanCounter++;
+  const prefix = block.slice(0, 3).toUpperCase();
+  const num = String(DB.challanCounter).padStart(5, '0');
+  const now = new Date();
+  const dd   = String(now.getDate()).padStart(2,'0');
+  const mm   = String(now.getMonth()+1).padStart(2,'0');
+  const yyyy = now.getFullYear();
+  const hh   = String(now.getHours()).padStart(2,'0');
+  const min  = String(now.getMinutes()).padStart(2,'0');
+  return `${prefix}-${num}-${dd}${mm}${yyyy}/${hh}:${min}`;
+}
+
 // ===== ALLOTMENTS =====
 function renderAllotments(el) {
+  const isAdmin = currentUser.role === 'admin';
+  const isBDO   = currentUser.role === 'bdo';
+
+  // Unique years and schemes from beneficiaries for filter
+  const allBens  = scopedBeneficiaries();
+  const yearOpts = [...new Set(allBens.map(b=>b.year).filter(Boolean))].map(y=>`<option value="${y}">${y}</option>`).join('');
+  const schemeOpts = [...new Set(allBens.map(b=>b.scheme).filter(Boolean))].map(s=>`<option value="${s}">${s}</option>`).join('');
+  const blockOpts  = currentUser.block ? '' : BLOCKS.map(b=>`<option value="${b}">${b}</option>`).join('');
+
   el.innerHTML = `
     <div class="page-header">
       <div><div class="page-title">Cement Allotments</div><div class="page-sub">Create and manage allotment orders</div></div>
@@ -1513,12 +1544,27 @@ function renderAllotments(el) {
       <button class="tab" onclick="filterAllotments('Rejected',this)">❌ Rejected</button>
     </div>
     <div class="card">
-      <div class="search-bar">
-        <div class="search-input"><span class="material-icons-round">search</span><input id="allotSearch" placeholder="Search by name, village, scheme..." oninput="filterAllotTable()"></div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;align-items:flex-end">
+        <div class="search-input" style="flex:1;min-width:180px"><span class="material-icons-round">search</span><input id="allotSearch" placeholder="Search by name, challan, work ID..." oninput="filterAllotTable()"></div>
+        ${blockOpts ? `<select class="form-control" style="width:150px" id="allotBlockF" onchange="filterAllotTable()"><option value="">All Blocks</option>${blockOpts}</select>` : ''}
+        <select class="form-control" style="width:150px" id="allotSchemeF" onchange="filterAllotTable()"><option value="">All Schemes</option>${schemeOpts}</select>
+        <select class="form-control" style="width:120px" id="allotYearF" onchange="filterAllotTable()"><option value="">All Years</option>${yearOpts}</select>
       </div>
       <div class="table-wrap">
         <table id="allotTable">
-          <thead><tr><th>Allotment ID</th><th>Beneficiary</th><th>Village</th><th>Scheme</th><th>Bags</th><th>Status</th><th>Date</th><th>Actions</th></tr></thead>
+          <thead><tr>
+            <th>Allotment ID</th>
+            <th>TNRD Work ID</th>
+            <th>Beneficiary</th>
+            <th>Year</th>
+            <th>Scheme</th>
+            <th style="text-align:right">Sanctioned</th>
+            <th style="text-align:right">Issued</th>
+            <th style="text-align:right">To Be Issued</th>
+            <th>Challan No.</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr></thead>
           <tbody id="allotBody"></tbody>
         </table>
       </div>
@@ -1533,31 +1579,45 @@ function filterAllotments(f, btn) {
   filterAllotTable();
 }
 function filterAllotTable() {
-  const q = (document.getElementById('allotSearch')?.value||'').toLowerCase();
+  const q      = (document.getElementById('allotSearch')?.value||'').toLowerCase();
+  const block  = document.getElementById('allotBlockF')?.value||'';
+  const scheme = document.getElementById('allotSchemeF')?.value||'';
+  const year   = document.getElementById('allotYearF')?.value||'';
   let data = scopedAllotments();
   if (allotFilter !== 'all') data = data.filter(a=>a.status===allotFilter);
-  if (q) data = data.filter(a=>JSON.stringify(a).toLowerCase().includes(q));
+  if (block)  data = data.filter(a=>a.block===block);
+  if (scheme) data = data.filter(a=>a.scheme===scheme);
+  if (year)   data = data.filter(a=>a.year===year);
+  if (q)      data = data.filter(a=>(JSON.stringify(a)+(a.challanNumber||'')+(a.workId||'')).toLowerCase().includes(q));
   renderAllotTable(data);
 }
 function renderAllotTable(data) {
   const body = document.getElementById('allotBody');
   if (!body) return;
-  if (!data.length) { body.innerHTML = `<tr><td colspan="8"><div class="empty-state"><span class="material-icons-round">assignment</span><p>No allotments found</p></div></td></tr>`; return; }
-  body.innerHTML = data.map(a=>`
+  if (!data.length) { body.innerHTML = `<tr><td colspan="11"><div class="empty-state"><span class="material-icons-round">assignment</span><p>No allotments found</p></div></td></tr>`; return; }
+  body.innerHTML = data.map(a=>{
+    const ben = DB.beneficiaries.find(b=>b.id===a.beneficiaryId)||{};
+    const issuedBags = DB.issuances.filter(i=>i.beneficiaryId===a.beneficiaryId).reduce((s,i)=>s+i.bags,0);
+    const sanctioned = ben.sanctionedBags || a.bags;
+    const toBeIssued = Math.max(0, sanctioned - issuedBags);
+    return `
     <tr>
-      <td><strong>${a.id}</strong></td>
-      <td>${a.beneficiaryName}<br><small style="color:var(--grey-500)">${a.beneficiaryId}</small></td>
-      <td>${a.village}</td>
-      <td>${a.scheme}</td>
-      <td><strong>${a.bags}</strong></td>
+      <td><strong>${a.id}</strong><br><small style="color:var(--grey-500)">${new Date(a.createdAt).toLocaleDateString('en-IN')}</small></td>
+      <td style="font-size:11px;font-family:monospace">${ben.workId||a.workId||'—'}</td>
+      <td>${a.beneficiaryName}<br><small style="color:var(--grey-500)">${a.village}, ${a.block}</small></td>
+      <td>${a.year||ben.year||'—'}</td>
+      <td style="font-size:12px">${a.scheme}</td>
+      <td style="text-align:right"><strong>${sanctioned}</strong></td>
+      <td style="text-align:right;color:var(--green)">${issuedBags}</td>
+      <td style="text-align:right;color:${toBeIssued>0?'var(--blue)':'var(--grey-500)'};font-weight:600">${toBeIssued}</td>
+      <td style="font-size:11px;font-family:monospace">${a.challanNumber||'—'}</td>
       <td><span class="chip chip-${a.status.toLowerCase()}">${a.status}</span></td>
-      <td>${new Date(a.createdAt).toLocaleDateString('en-IN')}</td>
       <td style="display:flex;gap:6px;flex-wrap:wrap">
         <button class="btn btn-text btn-sm" onclick="viewAllotment('${a.id}')"><span class="material-icons-round">visibility</span></button>
         ${a.status==='Pending' && can('approveAllotment') && (currentUser.role==='admin' || a.createdBy !== currentUser.name) ? `<button class="btn btn-green btn-sm" onclick="approveAllotment('${a.id}')">Approve</button><button class="btn btn-danger btn-sm" onclick="rejectAllotment('${a.id}')">Reject</button>` : (a.status==='Pending' && a.createdBy===currentUser.name ? '<span style="font-size:11px;color:var(--grey-500)">Awaiting approval</span>' : '')}
         ${a.status==='Approved' ? `<button class="btn btn-outlined btn-sm" onclick="printSlip('${a.id}')"><span class="material-icons-round">print</span> Slip</button>` : ''}
       </td>
-    </tr>`).join('');
+    </tr>`}).join('');
 }
 
 function fillBenDetails() {
@@ -1565,22 +1625,62 @@ function fillBenDetails() {
   if (!sel) return;
   const b = DB.beneficiaries.find(x=>x.id===sel.value);
   if (!b) return;
-  document.getElementById('aHouseNo').value = b.houseNo;
-  document.getElementById('aScheme').value = b.scheme;
-  document.getElementById('aVillage').value = `${b.village} / ${b.block}`;
-  document.getElementById('aBags').value = b.sanctionedBags;
+  document.getElementById('aHouseNo').value  = b.houseNo;
+  document.getElementById('aScheme').value   = b.scheme;
+  document.getElementById('aVillage').value  = `${b.village} / ${b.block}`;
+  const workIdEl = document.getElementById('aWorkId');
+  if (workIdEl) workIdEl.value = b.workId || '—';
+
+  // Calculate balance bags
+  const totalIssued = DB.issuances.filter(i=>i.beneficiaryId===b.id).reduce((s,i)=>s+i.bags,0);
+  const balanceBags = Math.max(0, (b.sanctionedBags||0) - totalIssued);
+  const bagsEl = document.getElementById('aBags');
+  if (bagsEl) { bagsEl.value = balanceBags; bagsEl.max = balanceBags; }
+
+  // Show issued history
+  const histEl = document.getElementById('aIssuedHistory');
+  if (histEl) {
+    const prevIssuances = DB.issuances.filter(i=>i.beneficiaryId===b.id);
+    if (prevIssuances.length > 0) {
+      histEl.innerHTML = `
+        <div style="background:var(--yellow-light);border-radius:8px;padding:12px 16px;margin:12px 0">
+          <div style="font-size:12px;font-weight:700;color:#9c6e00;margin-bottom:8px">⚠ Previously Issued Cement</div>
+          ${prevIssuances.map(i=>`
+            <div style="display:flex;justify-content:space-between;font-size:12px;padding:4px 0;border-bottom:1px dashed rgba(0,0,0,.1)">
+              <span>${new Date(i.issuedAt).toLocaleString('en-IN',{dateStyle:'short',timeStyle:'short'})}</span>
+              <strong>${i.bags} bags</strong>
+            </div>`).join('')}
+          <div style="margin-top:8px;font-size:13px;font-weight:700;color:var(--blue)">
+            Balance remaining: <strong>${balanceBags} bags</strong>
+            (Sanctioned: ${b.sanctionedBags} – Issued: ${totalIssued})
+          </div>
+        </div>`;
+      histEl.style.display = 'block';
+    } else {
+      histEl.innerHTML = `<div style="background:var(--green-light);border-radius:8px;padding:10px 14px;margin:12px 0;font-size:12px;color:var(--green)">✓ No cement issued yet. Full sanctioned quantity of <strong>${b.sanctionedBags} bags</strong> available.</div>`;
+      histEl.style.display = 'block';
+    }
+  }
 }
 
 function openNewAllotment() {
   const myBens = scopedBeneficiaries();
-  const bOpts = myBens.map(b=>`<option value="${b.id}">${b.name} – ${b.village}, ${b.block} (${b.scheme})</option>`).join('');
   if (!myBens.length) { showToast('No beneficiaries in your block yet','error'); return; }
+
+  // Build options showing name + work ID + balance
+  const bOpts = myBens.map(b=>{
+    const issued = DB.issuances.filter(i=>i.beneficiaryId===b.id).reduce((s,i)=>s+i.bags,0);
+    const bal    = Math.max(0, (b.sanctionedBags||0) - issued);
+    return `<option value="${b.id}">${b.name} [${b.workId||'—'}] – Bal: ${bal} bags</option>`;
+  }).join('');
+
   openModal('New Allotment Order', `
     <div class="form-grid">
       <div class="form-group" style="grid-column:1/-1">
-        <label class="form-label">Beneficiary *</label>
+        <label class="form-label">Beneficiary * (Name [Work ID] – Balance)</label>
         <select class="form-control" id="aBen" onchange="fillBenDetails()">${bOpts}</select>
       </div>
+      <div class="form-group"><label class="form-label">TNRD Work ID</label><input class="form-control" id="aWorkId" readonly style="background:var(--grey-50)"></div>
       <div class="form-group"><label class="form-label">House No.</label><input class="form-control" id="aHouseNo" readonly></div>
       <div class="form-group"><label class="form-label">Scheme</label><input class="form-control" id="aScheme" readonly></div>
       <div class="form-group"><label class="form-label">Village / Block</label><input class="form-control" id="aVillage" readonly></div>
@@ -1588,7 +1688,7 @@ function openNewAllotment() {
         <label class="form-label">Cement Type *</label>
         <select class="form-control" id="aCType">${CEMENT_TYPES.map(t=>`<option>${t}</option>`).join('')}</select>
       </div>
-      <div class="form-group"><label class="form-label">Bags Requested *</label><input class="form-control" type="number" id="aBags" min="1" max="200" value="50"></div>
+      <div class="form-group"><label class="form-label">Bags to Allot * (Balance only)</label><input class="form-control" type="number" id="aBags" min="1" max="200" value="0"></div>
       <div class="form-group"><label class="form-label">Intended Use *</label>
         <select class="form-control" id="aUse">
           <option>Foundation</option><option>Walls</option><option>Roof Slab</option><option>Flooring</option><option>Complete Construction</option>
@@ -1596,15 +1696,40 @@ function openNewAllotment() {
       </div>
       <div class="form-group" style="grid-column:1/-1"><label class="form-label">Remarks</label><input class="form-control" id="aRemark" placeholder="Additional notes..."></div>
     </div>
+
+    <!-- Issued history injected by fillBenDetails -->
+    <div id="aIssuedHistory" style="display:none"></div>
+
+    <!-- Data verification checkbox -->
+    <div style="background:var(--blue-light);border-radius:8px;padding:12px 16px;margin-top:16px;display:flex;align-items:flex-start;gap:12px">
+      <input type="checkbox" id="aVerifyCheck" style="width:18px;height:18px;margin-top:2px;cursor:pointer">
+      <label for="aVerifyCheck" style="font-size:13px;font-weight:600;cursor:pointer;color:var(--blue)">
+        ✓ I have verified all the above data and confirm the details are accurate before submission.
+      </label>
+    </div>
   `, [{label:'Cancel',cls:'btn-outlined',fn:closeModal},{label:'Submit Allotment',cls:'btn-primary',fn:submitAllotment}]);
-  setTimeout(fillBenDetails, 100);
+  // Auto-select first beneficiary immediately
+  setTimeout(()=>{ const sel=document.getElementById('aBen'); if(sel){ sel.selectedIndex=0; fillBenDetails(); } }, 100);
 }
 function submitAllotment() {
   const benId = document.getElementById('aBen').value;
   const b = DB.beneficiaries.find(x=>x.id===benId);
   const bags = parseInt(document.getElementById('aBags').value);
+
+  // Verification checkbox check
+  const verifyCheck = document.getElementById('aVerifyCheck');
+  if (verifyCheck && !verifyCheck.checked) {
+    showToast('Please tick the data verification checkbox before submitting','error'); return;
+  }
+
   if (!bags || bags < 1) { showToast('Enter valid bags count','error'); return; }
+
+  // Check balance bags
+  const totalIssued = DB.issuances.filter(i=>i.beneficiaryId===benId).reduce((s,i)=>s+i.bags,0);
+  const balanceBags = Math.max(0, (b.sanctionedBags||0) - totalIssued);
+  if (bags > balanceBags) { showToast(`Only ${balanceBags} balance bags available for this beneficiary`,'error'); return; }
   if (bags > DB.stock.balance) { showToast('Insufficient stock! Balance: ' + DB.stock.balance + ' bags','error'); return; }
+
   const allotment = {
     id: 'ALT' + Date.now(),
     beneficiaryId: benId,
@@ -1615,6 +1740,9 @@ function submitAllotment() {
     houseNo: b.houseNo,
     mobile: b.mobile,
     aadhaar: b.aadhaar,
+    workId: b.workId || '—',
+    year: b.year || '—',
+    sanctionedBags: b.sanctionedBags,
     cementType: document.getElementById('aCType').value,
     bags: bags,
     use: document.getElementById('aUse').value,
@@ -1622,7 +1750,6 @@ function submitAllotment() {
     status: 'Pending',
     createdBy: currentUser.name,
     createdAt: new Date().toISOString(),
-    block: b.block,
     timeline: [{event:'Allotment Created', by: currentUser.name, at: new Date().toISOString(), note:''}]
   };
   DB.allotments.push(allotment);
@@ -1636,9 +1763,13 @@ function approveAllotment(id) {
   a.status = 'Approved';
   a.approvedBy = currentUser.name;
   a.approvedAt = new Date().toISOString();
-  a.timeline.push({event:'Approved', by:currentUser.name, at:new Date().toISOString(), note:''});
+  // Generate challan number on approval
+  if (!a.challanNumber) {
+    a.challanNumber = generateChallanNumber(a.block);
+  }
+  a.timeline.push({event:'Approved', by:currentUser.name, at:new Date().toISOString(), note:'Challan: ' + a.challanNumber});
   saveAndSync();
-  showToast('Allotment approved ✓');
+  showToast('Allotment approved ✓  Challan: ' + a.challanNumber);
   filterAllotTable();
   updateBadges();
 }
@@ -2267,6 +2398,12 @@ function renderBeneficiaries(el) {
   const blockOpts = currentUser.block ? ''
     : BLOCKS.map(b=>`<option value="${b}">${b}</option>`).join('');
 
+  // Dynamic filter options from uploaded beneficiary data
+  const allBens = scopedBeneficiaries();
+  const dynSchemes = [...new Set(allBens.map(b=>b.scheme).filter(Boolean))];
+  const dynYears   = [...new Set(allBens.map(b=>b.year).filter(Boolean))];
+  const dynBlocks  = currentUser.block ? [] : [...new Set(allBens.map(b=>b.block).filter(Boolean))];
+
   el.innerHTML = `
     <div class="page-header">
       <div>
@@ -2279,18 +2416,22 @@ function renderBeneficiaries(el) {
       </div>
     </div>
     <div class="card">
-      <div class="search-bar">
-        <div class="search-input"><span class="material-icons-round">search</span><input id="benSearch" placeholder="Search by name, village, scheme..." oninput="filterBenTable()"></div>
-        ${blockOpts?`<select class="form-control" style="width:160px" id="benBlockFilter" onchange="filterBenTable()"><option value="">All Blocks</option>${blockOpts}</select>`:''}
-        <select class="form-control" style="width:160px" id="benSchemeFilter" onchange="filterBenTable()">
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px;align-items:flex-end">
+        <div class="search-input" style="flex:1;min-width:180px"><span class="material-icons-round">search</span><input id="benSearch" placeholder="Search name, work ID, house no..." oninput="filterBenTable()"></div>
+        ${dynBlocks.length ? `<select class="form-control" style="width:160px" id="benBlockFilter" onchange="filterBenTable()"><option value="">All Blocks</option>${dynBlocks.map(b=>`<option>${b}</option>`).join('')}</select>` : ''}
+        <select class="form-control" style="width:180px" id="benSchemeFilter" onchange="filterBenTable()">
           <option value="">All Schemes</option>
-          ${SCHEMES.map(s=>`<option>${s}</option>`).join('')}
+          ${dynSchemes.map(s=>`<option>${s}</option>`).join('')}
+        </select>
+        <select class="form-control" style="width:120px" id="benYearFilter" onchange="filterBenTable()">
+          <option value="">All Years</option>
+          ${dynYears.map(y=>`<option>${y}</option>`).join('')}
         </select>
       </div>
       <div style="font-size:12px;color:var(--grey-500);margin-bottom:8px" id="benCount"></div>
       <div class="table-wrap">
         <table id="benTable">
-          <thead><tr><th>ID</th><th>Name</th><th>Aadhaar</th><th>Mobile</th><th>Block</th><th>Village</th><th>Scheme</th><th>House No.</th><th>Sanctioned</th><th>Received</th><th>Actions</th></tr></thead>
+          <thead><tr><th>S.No.</th><th>Work ID</th><th>Name</th><th>Block</th><th>Village</th><th>Scheme</th><th>Year</th><th>House No.</th><th style="text-align:right">Sanctioned</th><th style="text-align:right">Issued</th><th style="text-align:right">Balance</th><th>Actions</th></tr></thead>
           <tbody id="benBody"></tbody>
         </table>
       </div>
@@ -2301,33 +2442,38 @@ function filterBenTable() {
   const q      = (document.getElementById('benSearch')?.value||'').toLowerCase();
   const scheme = document.getElementById('benSchemeFilter')?.value||'';
   const block  = document.getElementById('benBlockFilter')?.value||'';
+  const year   = document.getElementById('benYearFilter')?.value||'';
   let data = scopedBeneficiaries();
   if (q)      data = data.filter(b=>JSON.stringify(b).toLowerCase().includes(q));
   if (scheme) data = data.filter(b=>b.scheme===scheme);
   if (block)  data = data.filter(b=>b.block===block);
+  if (year)   data = data.filter(b=>b.year===year);
   const body = document.getElementById('benBody');
   const cnt  = document.getElementById('benCount');
   if (cnt) cnt.textContent = data.length + ' beneficiaries';
   if (!body) return;
-  body.innerHTML = data.map(b=>`
+  body.innerHTML = data.map((b,idx)=>{
+    const issuedBags = DB.issuances.filter(i=>i.beneficiaryId===b.id).reduce((s,i)=>s+i.bags,0);
+    const balBags    = Math.max(0,(b.sanctionedBags||0)-issuedBags);
+    return `
     <tr>
-      <td><strong style="font-size:11px">${b.id}</strong></td>
-      <td>${b.name}</td>
-      <td style="font-size:11px">${b.aadhaar}</td>
-      <td style="font-size:11px">${b.mobile}</td>
+      <td style="color:var(--grey-500)">${idx+1}</td>
+      <td style="font-size:11px;font-family:monospace">${b.workId||'—'}</td>
+      <td><strong>${b.name}</strong><br><small style="color:var(--grey-500)">${b.aadhaar} · ${b.mobile}</small></td>
       <td><span class="chip chip-approved" style="font-size:10px">${b.block}</span></td>
       <td style="font-size:12px">${b.village}</td>
       <td><span class="chip" style="background:var(--blue-light);color:var(--blue);font-size:10px">${b.scheme}</span></td>
+      <td style="font-size:12px">${b.year||'—'}</td>
       <td style="font-size:11px">${b.houseNo}</td>
       <td style="text-align:right">${b.sanctionedBags}</td>
-      <td style="text-align:right">${b.receivedBags||0}
-        ${(b.receivedBags||0)>=b.sanctionedBags?'<span class="chip chip-verified" style="font-size:10px">Full</span>':''}
-      </td>
+      <td style="text-align:right;color:var(--green);font-weight:600">${issuedBags}</td>
+      <td style="text-align:right;color:${balBags>0?'var(--blue)':'var(--grey-400)'};font-weight:600">${balBags}</td>
       <td>
         <button class="btn btn-text btn-sm" onclick="viewBeneficiary('${b.id}')"><span class="material-icons-round">visibility</span></button>
         ${can('createAllotment')?`<button class="btn btn-outlined btn-sm" onclick="openAllotForBen('${b.id}')">Allot</button>`:''}
       </td>
-    </tr>`).join('') || '<tr><td colspan="11"><div class="empty-state"><span class="material-icons-round">people</span><p>No beneficiaries found</p></div></td></tr>';
+    </tr>`;
+  }).join('') || '<tr><td colspan="12"><div class="empty-state"><span class="material-icons-round">people</span><p>No beneficiaries found</p></div></td></tr>';
 }
 function openAddBeneficiary() {
   const myBlocks = allowedBlocks();
@@ -2423,6 +2569,7 @@ function openAllotForBen(id) {
 }
 
 // ===== STOCK REGISTER =====
+let stockSelectedBlock = '';
 function renderStock(el) {
   const s = DB.stock;
   if (!DB.stockLedger) DB.stockLedger = [];
@@ -2431,34 +2578,30 @@ function renderStock(el) {
   const totalIssued   = ledger.filter(l=>l.type==='ISSUE').reduce((t,l)=>t+l.bags,0);
   const pct = s.total ? Math.round((s.issued||0)/s.total*100) : 0;
 
+  // Block-wise issued
+  const blockStats = BLOCKS.map(blk=>{
+    const blkIss = DB.issuances.filter(i=>i.block===blk).reduce((t,i)=>t+i.bags,0);
+    const blkBens = DB.beneficiaries.filter(b=>b.block===blk);
+    const blkSanc = blkBens.reduce((t,b)=>t+(b.sanctionedBags||0),0);
+    return {blk, issued: blkIss, sanctioned: blkSanc, bens: blkBens.length,
+            bal: Math.max(0, blkSanc - blkIss) };
+  });
+
   el.innerHTML = `
     <div class="page-header">
-      <div><div class="page-title">Stock Register</div><div class="page-sub">Cement warehouse ledger – running balance</div></div>
+      <div><div class="page-title">Stock Register</div><div class="page-sub">Block-wise Cement Stock & Panchayat Details</div></div>
       ${can('addStock')?`<button class="btn btn-primary" onclick="openAddStock()"><span class="material-icons-round">add</span> Add Receipt</button>`:''}
     </div>
 
     ${s.balance<50?`<div class="alert alert-danger"><span class="material-icons-round">warning</span><strong>Critical stock!</strong> Only ${s.balance} bags remaining.</div>`:
       s.balance<150?`<div class="alert alert-warn"><span class="material-icons-round">warning_amber</span><strong>Low stock warning.</strong> ${s.balance} bags remaining.</div>`:''}
 
+    <!-- Dashboard stats -->
     <div class="stat-grid" style="grid-template-columns:repeat(auto-fit,minmax(160px,1fr));margin-bottom:16px">
-      <div class="stat-card">
-        <div class="stat-icon blue"><span class="material-icons-round">inventory_2</span></div>
-        <div><div class="stat-val">${s.total}</div><div class="stat-label">Total Received</div><div class="stat-sub">All receipts</div></div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-icon green"><span class="material-icons-round">output</span></div>
-        <div><div class="stat-val">${s.issued||0}</div><div class="stat-label">Total Issued</div><div class="stat-sub">Debited</div></div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-icon ${s.balance<100?'red':s.balance<300?'yellow':'green'}">
-          <span class="material-icons-round">balance</span>
-        </div>
-        <div><div class="stat-val">${s.balance}</div><div class="stat-label">Current Balance</div><div class="stat-sub">${pct}% utilized</div></div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-icon purple"><span class="material-icons-round">receipt_long</span></div>
-        <div><div class="stat-val">${ledger.length}</div><div class="stat-label">Ledger Entries</div><div class="stat-sub">All movements</div></div>
-      </div>
+      <div class="stat-card"><div class="stat-icon blue"><span class="material-icons-round">inventory_2</span></div><div><div class="stat-val">${s.total}</div><div class="stat-label">Total Received</div><div class="stat-sub">All receipts</div></div></div>
+      <div class="stat-card"><div class="stat-icon green"><span class="material-icons-round">output</span></div><div><div class="stat-val">${s.issued||0}</div><div class="stat-label">Total Issued</div><div class="stat-sub">Debited</div></div></div>
+      <div class="stat-card"><div class="stat-icon ${s.balance<100?'red':s.balance<300?'yellow':'green'}"><span class="material-icons-round">balance</span></div><div><div class="stat-val">${s.balance}</div><div class="stat-label">Current Balance</div><div class="stat-sub">${pct}% utilized</div></div></div>
+      <div class="stat-card"><div class="stat-icon purple"><span class="material-icons-round">receipt_long</span></div><div><div class="stat-val">${ledger.length}</div><div class="stat-label">Ledger Entries</div><div class="stat-sub">All movements</div></div></div>
     </div>
 
     <div class="card" style="margin-bottom:16px">
@@ -2469,62 +2612,153 @@ function renderStock(el) {
       <div class="progress-bar" style="height:10px">
         <div class="progress-fill" style="width:${pct}%;background:${pct>85?'var(--red)':pct>60?'var(--yellow)':'var(--blue)'}"></div>
       </div>
-      <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--grey-500);margin-top:6px">
+      <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--grey-500);margin-top:6px;flex-wrap:wrap;gap:8px">
         <span>Opening Balance: <strong>${s.openingBalance||s.total}</strong> bags</span>
         <span>Type: <strong>${s.type||'OPC 43 Grade'}</strong></span>
         <span>Updated: ${s.lastUpdated?new Date(s.lastUpdated).toLocaleString('en-IN'):'—'}</span>
       </div>
     </div>
 
+    <!-- Block-wise Summary -->
+    <div class="card" style="margin-bottom:16px">
+      <div class="section-title">Block-wise Stock Summary</div>
+      <div style="font-size:12px;color:var(--grey-500);margin-bottom:12px">Click a block to view panchayat-wise details below</div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Block</th><th style="text-align:right">Beneficiaries</th><th style="text-align:right">Total Sanctioned</th><th style="text-align:right">Issued</th><th style="text-align:right">Balance</th><th>Progress</th><th>Action</th></tr></thead>
+          <tbody>
+            ${blockStats.map(({blk,issued,sanctioned,bens,bal})=>{
+              const pctBlk = sanctioned ? Math.round(issued/sanctioned*100) : 0;
+              return `<tr>
+                <td><strong>${blk}</strong></td>
+                <td style="text-align:right">${bens}</td>
+                <td style="text-align:right">${sanctioned}</td>
+                <td style="text-align:right;color:var(--green);font-weight:600">${issued}</td>
+                <td style="text-align:right;color:${bal>0?'var(--blue)':'var(--grey-400)'};font-weight:600">${bal}</td>
+                <td style="min-width:100px"><div class="progress-bar"><div class="progress-fill" style="width:${pctBlk}%"></div></div><div style="font-size:10px;color:var(--grey-500);margin-top:2px">${pctBlk}%</div></td>
+                <td><button class="btn btn-outlined btn-sm" onclick="showPanchayatStock('${blk}')">
+                  <span class="material-icons-round">visibility</span> View Panchayats
+                </button></td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Panchayat-wise details (shown when block selected) -->
+    <div id="panchayatStockSection" style="display:none" class="card" style="margin-bottom:16px"></div>
+
+    <!-- Ledger table -->
     <div class="card">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
         <div class="section-title" style="margin:0">Stock Ledger – All Movements</div>
-        <div style="display:flex;gap:8px">
+        <div style="display:flex;gap:8px;align-items:center">
+          <select class="form-control" style="width:160px" id="ledgerBlockFilter" onchange="renderStockLedger()">
+            <option value="">All Blocks</option>
+            ${BLOCKS.map(b=>`<option>${b}</option>`).join('')}
+          </select>
           <span class="chip chip-verified">▲ Receipt</span>
           <span class="chip chip-rejected">▼ Issue</span>
         </div>
       </div>
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>#</th><th>Date & Time</th><th>Type</th><th>Details</th>
-              <th style="text-align:right">In (bags)</th>
-              <th style="text-align:right">Out (bags)</th>
-              <th style="text-align:right">Opening Bal</th>
-              <th style="text-align:right">Closing Bal</th>
-              <th>By</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${ledger.map((l, idx)=>`
-            <tr style="background:${l.type==='RECEIPT'?'rgba(30,142,62,.04)':'rgba(217,48,37,.03)'}">
-              <td style="color:var(--grey-500);font-size:11px">${ledger.length-idx}</td>
-              <td style="font-size:12px">${new Date(l.date).toLocaleString('en-IN',{dateStyle:'short',timeStyle:'short'})}</td>
-              <td>${l.type==='RECEIPT'
-                  ?'<span class="chip chip-verified" style="font-size:10px">▲ RECEIPT</span>'
-                  :'<span class="chip chip-rejected" style="font-size:10px">▼ ISSUE</span>'}</td>
-              <td style="max-width:200px;font-size:12px">
-                ${l.type==='RECEIPT'
-                  ?`<strong>${l.supplier||'—'}</strong><br><span style="color:var(--grey-500)">GRN: ${l.grn||'—'}</span>`
-                  :`<strong>${l.beneficiaryName||'—'}</strong><br><span style="color:var(--grey-500)">${l.houseNo||''} · Veh: ${l.vehicle||'—'}</span>`}
-              </td>
-              <td style="text-align:right;font-weight:700;color:var(--green)">${l.type==='RECEIPT'?'+'+l.bags:'—'}</td>
-              <td style="text-align:right;font-weight:700;color:var(--red)">${l.type==='ISSUE'?'-'+l.bags:'—'}</td>
-              <td style="text-align:right">${l.openingBalance}</td>
-              <td style="text-align:right;font-weight:700;color:${l.closingBalance<100?'var(--red)':l.closingBalance<300?'var(--yellow)':'inherit'}">${l.closingBalance}</td>
-              <td style="font-size:12px">${l.addedBy||l.issuedBy||'—'}</td>
-            </tr>`).join('')||'<tr><td colspan="9"><div class="empty-state"><span class="material-icons-round">inventory_2</span><p>No ledger entries yet</p></div></td></tr>'}
-            ${ledger.length?`<tr style="background:var(--grey-100);font-weight:700">
-              <td colspan="4" style="text-align:right;padding:10px 14px">TOTALS</td>
-              <td style="text-align:right;color:var(--green)">+${totalReceipts}</td>
-              <td style="text-align:right;color:var(--red)">-${totalIssued}</td>
-              <td></td><td style="text-align:right">${s.balance}</td><td></td>
-            </tr>`:''}
-          </tbody>
-        </table>
+      <div class="table-wrap" id="stockLedgerTable">
       </div>
     </div>`;
+
+  renderStockLedger();
+}
+
+function renderStockLedger() {
+  const s = DB.stock;
+  if (!DB.stockLedger) DB.stockLedger = [];
+  const blkF = document.getElementById('ledgerBlockFilter')?.value||'';
+  let ledger = DB.stockLedger.slice().sort((a,b)=>new Date(b.date)-new Date(a.date));
+  if (blkF) ledger = ledger.filter(l=>l.type==='RECEIPT' || l.block===blkF || (l.beneficiaryId && DB.issuances.find(i=>i.id===l.issuanceId)?.block===blkF));
+  const totalReceipts = ledger.filter(l=>l.type==='RECEIPT').reduce((t,l)=>t+l.bags,0);
+  const totalIssued   = ledger.filter(l=>l.type==='ISSUE').reduce((t,l)=>t+l.bags,0);
+  const tbl = document.getElementById('stockLedgerTable');
+  if (!tbl) return;
+  tbl.innerHTML = `<table>
+    <thead><tr>
+      <th>#</th><th>Date & Time</th><th>Type</th><th>Details</th>
+      <th style="text-align:right">In (bags)</th>
+      <th style="text-align:right">Out (bags)</th>
+      <th style="text-align:right">Opening Bal</th>
+      <th style="text-align:right">Closing Bal</th>
+      <th>By</th>
+    </tr></thead>
+    <tbody>
+      ${ledger.map((l, idx)=>`
+      <tr style="background:${l.type==='RECEIPT'?'rgba(30,142,62,.04)':'rgba(217,48,37,.03)'}">
+        <td style="color:var(--grey-500);font-size:11px">${ledger.length-idx}</td>
+        <td style="font-size:12px">${new Date(l.date).toLocaleString('en-IN',{dateStyle:'short',timeStyle:'short'})}</td>
+        <td>${l.type==='RECEIPT'?'<span class="chip chip-verified" style="font-size:10px">▲ RECEIPT</span>':'<span class="chip chip-rejected" style="font-size:10px">▼ ISSUE</span>'}</td>
+        <td style="max-width:200px;font-size:12px">
+          ${l.type==='RECEIPT'?`<strong>${l.supplier||'—'}</strong><br><span style="color:var(--grey-500)">GRN: ${l.grn||'—'}</span>`:`<strong>${l.beneficiaryName||'—'}</strong><br><span style="color:var(--grey-500)">${l.houseNo||''} · Veh: ${l.vehicle||'—'}</span>`}
+        </td>
+        <td style="text-align:right;font-weight:700;color:var(--green)">${l.type==='RECEIPT'?'+'+l.bags:'—'}</td>
+        <td style="text-align:right;font-weight:700;color:var(--red)">${l.type==='ISSUE'?'-'+l.bags:'—'}</td>
+        <td style="text-align:right">${l.openingBalance}</td>
+        <td style="text-align:right;font-weight:700;color:${l.closingBalance<100?'var(--red)':l.closingBalance<300?'var(--yellow)':'inherit'}">${l.closingBalance}</td>
+        <td style="font-size:12px">${l.addedBy||l.issuedBy||'—'}</td>
+      </tr>`).join('')||'<tr><td colspan="9"><div class="empty-state"><span class="material-icons-round">inventory_2</span><p>No ledger entries yet</p></div></td></tr>'}
+      ${ledger.length?`<tr style="background:var(--grey-100);font-weight:700">
+        <td colspan="4" style="text-align:right;padding:10px 14px">TOTALS</td>
+        <td style="text-align:right;color:var(--green)">+${totalReceipts}</td>
+        <td style="text-align:right;color:var(--red)">-${totalIssued}</td>
+        <td></td><td style="text-align:right">${s.balance}</td><td></td>
+      </tr>`:''}
+    </tbody>
+  </table>`;
+}
+
+function showPanchayatStock(block) {
+  const sec = document.getElementById('panchayatStockSection');
+  if (!sec) return;
+  const villages = BLOCK_DATA[block]?.villages || [];
+  const panchData = villages.map(vil=>{
+    const vilBens = DB.beneficiaries.filter(b=>b.block===block && b.village===vil);
+    const vilIss  = DB.issuances.filter(i=>i.block===block && i.village===vil);
+    const sanctioned = vilBens.reduce((t,b)=>t+(b.sanctionedBags||0),0);
+    const issued     = vilIss.reduce((t,i)=>t+i.bags,0);
+    return {vil, bens: vilBens.length, sanctioned, issued, bal: Math.max(0,sanctioned-issued)};
+  });
+  sec.style.display = 'block';
+  sec.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <div class="section-title" style="margin:0">${block} – Panchayat / Village-wise Details</div>
+      <button class="btn btn-text btn-sm" onclick="document.getElementById('panchayatStockSection').style.display='none'">
+        <span class="material-icons-round">close</span>
+      </button>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Panchayat / Village</th><th style="text-align:right">Beneficiaries</th><th style="text-align:right">Sanctioned Bags</th><th style="text-align:right">Issued Bags</th><th style="text-align:right">Balance Bags</th><th>Progress</th></tr></thead>
+        <tbody>
+          ${panchData.map(({vil,bens,sanctioned,issued,bal})=>{
+            const pctV = sanctioned ? Math.round(issued/sanctioned*100) : 0;
+            return `<tr>
+              <td><strong>${vil}</strong></td>
+              <td style="text-align:right">${bens}</td>
+              <td style="text-align:right">${sanctioned}</td>
+              <td style="text-align:right;color:var(--green);font-weight:600">${issued}</td>
+              <td style="text-align:right;color:${bal>0?'var(--blue)':'var(--grey-400)'};font-weight:600">${bal}</td>
+              <td style="min-width:100px"><div class="progress-bar"><div class="progress-fill" style="width:${pctV}%"></div></div><div style="font-size:10px;color:var(--grey-500);margin-top:2px">${pctV}%</div></td>
+            </tr>`;
+          }).join('')}
+          <tr style="background:var(--blue-light);font-weight:700">
+            <td>TOTAL</td>
+            <td style="text-align:right">${panchData.reduce((t,p)=>t+p.bens,0)}</td>
+            <td style="text-align:right">${panchData.reduce((t,p)=>t+p.sanctioned,0)}</td>
+            <td style="text-align:right;color:var(--green)">${panchData.reduce((t,p)=>t+p.issued,0)}</td>
+            <td style="text-align:right;color:var(--blue)">${panchData.reduce((t,p)=>t+p.bal,0)}</td>
+            <td></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>`;
+  sec.scrollIntoView({behavior:'smooth', block:'start'});
 }
 function openAddStock() {
   openModal('Add Cement Stock', `
@@ -3042,9 +3276,11 @@ function renderMasterUpload(el) {
     <!-- Method 1: CSV/Excel Upload -->
     <div class="card" style="margin-bottom:16px">
       <div class="section-title">Method 1 · Upload CSV / Excel File</div>
-      <div style="font-size:13px;color:var(--grey-700);margin-bottom:16px">
-        Upload a single file containing beneficiaries from all blocks. 
-        Required columns: <strong>Name, Aadhaar, Mobile, Block, Village, Scheme, HouseNo, SanctionedBags</strong>
+      <div style="font-size:13px;color:var(--grey-700);margin-bottom:8px">
+        Required columns (exact order):
+      </div>
+      <div style="background:var(--grey-50);border:1px solid var(--grey-200);border-radius:8px;padding:10px 14px;font-family:monospace;font-size:12px;margin-bottom:16px;color:var(--blue)">
+        S.No. | Block | Village | Scheme | Year | Work ID No. | Name | Sanctioned Bags | Issued Bags | Balance Bags
       </div>
 
       <!-- Download template -->
@@ -3075,10 +3311,10 @@ function renderMasterUpload(el) {
             </button>
           </div>
         </div>
-        <div id="uploadErrors" style="display:none" class="alert alert-danger" style="margin-bottom:8px"></div>
+        <div id="uploadErrors" style="display:none" class="alert alert-danger"></div>
         <div class="table-wrap" style="max-height:320px;overflow-y:auto">
           <table id="previewTable">
-            <thead><tr><th>#</th><th>Name</th><th>Aadhaar</th><th>Mobile</th><th>Block</th><th>Village</th><th>Scheme</th><th>House No.</th><th>Bags</th><th>Status</th></tr></thead>
+            <thead><tr><th>S.No.</th><th>Block</th><th>Village</th><th>Scheme</th><th>Year</th><th>Work ID No.</th><th>Name</th><th style="text-align:right">Sanctioned</th><th style="text-align:right">Issued</th><th style="text-align:right">Balance</th><th>Status</th></tr></thead>
             <tbody id="previewBody"></tbody>
           </table>
         </div>
@@ -3091,6 +3327,7 @@ function renderMasterUpload(el) {
       <div style="font-size:13px;color:var(--grey-700);margin-bottom:14px">Add individual beneficiaries one at a time, selecting the block.</div>
       <div class="form-grid">
         <div class="form-group"><label class="form-label">Full Name *</label><input class="form-control" id="muName" placeholder="Full name"></div>
+        <div class="form-group"><label class="form-label">TNRD Work ID No. *</label><input class="form-control" id="muWorkId" placeholder="e.g. TNRD/MYL/1001"></div>
         <div class="form-group"><label class="form-label">Aadhaar No. *</label><input class="form-control" id="muAadhaar" placeholder="XXXX-XXXX-XXXX" maxlength="14"></div>
         <div class="form-group"><label class="form-label">Mobile *</label><input class="form-control" id="muMobile" placeholder="10-digit" maxlength="10"></div>
         <div class="form-group">
@@ -3107,6 +3344,7 @@ function renderMasterUpload(el) {
           <label class="form-label">Scheme *</label>
           <select class="form-control" id="muScheme">${SCHEMES.map(s=>`<option>${s}</option>`).join('')}</select>
         </div>
+        <div class="form-group"><label class="form-label">Year *</label><input class="form-control" id="muYear" placeholder="e.g. 2025-26" value="2025-26"></div>
         <div class="form-group"><label class="form-label">House No. *</label><input class="form-control" id="muHouse" placeholder="e.g. MYL/2025001"></div>
         <div class="form-group"><label class="form-label">Sanctioned Bags *</label><input class="form-control" type="number" id="muBags" value="100" min="1"></div>
       </div>
@@ -3115,7 +3353,7 @@ function renderMasterUpload(el) {
       </button>
     </div>
 
-    <!-- Existing list with delete -->
+    <!-- Existing list with Edit + Delete -->
     <div class="card" style="margin-top:16px">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
         <div class="section-title" style="margin:0">All Uploaded Beneficiaries (${DB.beneficiaries.length})</div>
@@ -3125,23 +3363,33 @@ function renderMasterUpload(el) {
       </div>
       <div class="table-wrap">
         <table>
-          <thead><tr><th>ID</th><th>Name</th><th>Block</th><th>Village</th><th>Scheme</th><th>Bags</th><th>Uploaded By</th><th>Action</th></tr></thead>
+          <thead><tr><th>S.No.</th><th>Work ID No.</th><th>Name</th><th>Block</th><th>Village</th><th>Scheme</th><th>Year</th><th style="text-align:right">Sanctioned Bags</th><th style="text-align:right">Issued Bags</th><th style="text-align:right">Balance Bags</th><th>Uploaded By</th><th>Action</th></tr></thead>
           <tbody>
-            ${DB.beneficiaries.map(b=>`
+            ${DB.beneficiaries.map((b,idx)=>{
+              const issuedBags = DB.issuances.filter(i=>i.beneficiaryId===b.id).reduce((s,i)=>s+i.bags,0);
+              const balBags    = Math.max(0,(b.sanctionedBags||0)-issuedBags);
+              return `
             <tr>
-              <td style="font-size:11px">${b.id}</td>
-              <td><strong>${b.name}</strong></td>
+              <td style="color:var(--grey-500)">${idx+1}</td>
+              <td style="font-size:11px;font-family:monospace">${b.workId||'—'}</td>
+              <td><strong>${b.name}</strong><br><small style="color:var(--grey-500)">${b.aadhaar}</small></td>
               <td><span class="chip chip-approved" style="font-size:10px">${b.block}</span></td>
               <td style="font-size:12px">${b.village}</td>
-              <td style="font-size:12px">${b.scheme}</td>
-              <td>${b.sanctionedBags}</td>
+              <td style="font-size:11px">${b.scheme}</td>
+              <td style="font-size:12px">${b.year||'—'}</td>
+              <td style="text-align:right">${b.sanctionedBags}</td>
+              <td style="text-align:right;color:var(--green);font-weight:600">${issuedBags}</td>
+              <td style="text-align:right;color:${balBags>0?'var(--blue)':'var(--grey-400)'};font-weight:600">${balBags}</td>
               <td style="font-size:11px;color:var(--grey-500)">${b.uploadedBy||'—'}</td>
-              <td>
-                <button class="btn btn-danger btn-sm" onclick="deleteBeneficiary('${b.id}')">
+              <td style="display:flex;gap:6px">
+                <button class="btn btn-outlined btn-sm" onclick="editBeneficiaryInline('${b.id}')" title="Edit">
+                  <span class="material-icons-round">edit</span>
+                </button>
+                <button class="btn btn-danger btn-sm" onclick="deleteBeneficiary('${b.id}')" title="Delete">
                   <span class="material-icons-round">delete</span>
                 </button>
               </td>
-            </tr>`).join('') || '<tr><td colspan="8"><div class="empty-state"><span class="material-icons-round">people</span><p>No beneficiaries uploaded yet</p></div></td></tr>'}
+            </tr>`;}).join('') || '<tr><td colspan="12"><div class="empty-state"><span class="material-icons-round">people</span><p>No beneficiaries uploaded yet</p></div></td></tr>'}
           </tbody>
         </table>
       </div>
@@ -3151,11 +3399,12 @@ function renderMasterUpload(el) {
 let _masterPreviewData = [];
 
 function downloadCSVTemplate() {
-  const header = 'Name,Aadhaar,Mobile,Block,Village,Scheme,HouseNo,SanctionedBags';
-  const sample = BLOCKS.flatMap(blk =>
-    (BLOCK_DATA[blk].villages.slice(0,2)).map((vil,j) =>
-      `Sample Name ${blk.slice(0,3)}${j+1},XXXX-XXXX-${String(1001+j)},94000${Math.floor(Math.random()*90000+10000)},${blk},${vil},PMAY-G,${blk.slice(0,3).toUpperCase()}/2025001,100`
-    )
+  const header = 'S.No.,Block,Village,Scheme,Year,Work ID No.,Name,Sanctioned Bags,Issued Bags,Balance Bags';
+  const sample = BLOCKS.flatMap((blk,bi) =>
+    (BLOCK_DATA[blk].villages.slice(0,2)).map((vil,j) => {
+      const sno = bi*2+j+1;
+      return `${sno},${blk},${vil},${SCHEMES[0]},2025-26,TNRD/${blk.slice(0,3).toUpperCase()}/${String(1001+sno)},Sample Name ${sno},100,0,100`;
+    })
   ).join('\n');
   const blob = new Blob([header + '\n' + sample], {type:'text/csv'});
   const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
@@ -3182,29 +3431,42 @@ function parseMasterFile(file) {
     const lines = text.split('\n').map(l=>l.trim()).filter(l=>l);
     const headers = lines[0].toLowerCase().split(',').map(h=>h.trim());
     const col = k => headers.findIndex(h=>h.includes(k));
-    const iName=col('name'), iAad=col('aadh'), iMob=col('mob'),
-          iBlk=col('block'), iVil=col('vill'), iSch=col('scheme'),
-          iHouse=col('house'), iBags=col('bag');
+
+    // New column mapping: S.No., Block, Village, Scheme, Year, Work ID No., Name, Sanctioned Bags, Issued Bags, Balance Bags
+    const iSno    = col('s.no') !== -1 ? col('s.no') : col('sno') !== -1 ? col('sno') : 0;
+    const iBlk    = col('block');
+    const iVil    = col('village') !== -1 ? col('village') : col('vill');
+    const iSch    = col('scheme');
+    const iYear   = col('year');
+    const iWorkId = col('work id') !== -1 ? col('work id') : col('workid') !== -1 ? col('workid') : col('work');
+    const iName   = col('name');
+    const iSancBags = col('sanctioned');
+    const iIssBags  = col('issued');
+    const iBalBags  = col('balance');
 
     _masterPreviewData = [];
     const errors = [];
     for (let i=1; i<lines.length; i++) {
       const cols = lines[i].split(',').map(c=>c.trim());
-      const blk = cols[iBlk]?.trim();
+      const blk  = (iBlk>=0 ? cols[iBlk] : '')||'';
       const row = {
-        name: cols[iName]||'',
-        aadhaar: cols[iAad]||'',
-        mobile: cols[iMob]||'',
-        block: blk||'',
-        village: cols[iVil]||'',
-        scheme: cols[iSch]||'PMAY-G',
-        houseNo: cols[iHouse]||'',
-        sanctionedBags: parseInt(cols[iBags])||100,
+        sno:          iSno>=0 ? (cols[iSno]||String(i)) : String(i),
+        block:        blk,
+        village:      (iVil>=0 ? cols[iVil] : '')||'',
+        scheme:       (iSch>=0 ? cols[iSch] : '')||SCHEMES[0],
+        year:         (iYear>=0 ? cols[iYear] : '')||'2025-26',
+        workId:       (iWorkId>=0 ? cols[iWorkId] : '')||'',
+        name:         (iName>=0 ? cols[iName] : '')||'',
+        sanctionedBags: parseInt(iSancBags>=0 ? cols[iSancBags] : '100')||100,
+        issuedBags:   parseInt(iIssBags>=0 ? cols[iIssBags] : '0')||0,
+        balanceBags:  parseInt(iBalBags>=0 ? cols[iBalBags] : '100')||0,
+        // Auto-generate houseNo from workId or sno
+        houseNo:      (iWorkId>=0 ? cols[iWorkId] : '')||blk.slice(0,3).toUpperCase()+'/'+String(2025000+i),
         _valid: true, _error: ''
       };
-      if (!row.name) { row._valid=false; row._error='Missing name'; }
+      if (!row.name)  { row._valid=false; row._error='Missing name'; }
       else if (!BLOCKS.includes(row.block)) { row._valid=false; row._error='Invalid block: '+row.block; }
-      else if (!row.houseNo) { row._valid=false; row._error='Missing house no.'; }
+      else if (!row.workId) { row._valid=false; row._error='Missing Work ID No.'; }
       if (!row._valid) errors.push('Row ' + i + ': ' + row._error);
       _masterPreviewData.push(row);
     }
@@ -3235,15 +3497,16 @@ function showUploadPreview(data, errors) {
 
   body.innerHTML = data.map((r,i)=>`
     <tr style="background:${r._valid?'':'rgba(217,48,37,.05)'}">
-      <td>${i+1}</td>
-      <td>${r.name}</td>
-      <td style="font-size:11px">${r.aadhaar}</td>
-      <td style="font-size:11px">${r.mobile}</td>
+      <td>${r.sno||i+1}</td>
       <td>${r.block}</td>
       <td>${r.village}</td>
-      <td>${r.scheme}</td>
-      <td>${r.houseNo}</td>
-      <td>${r.sanctionedBags}</td>
+      <td style="font-size:11px">${r.scheme}</td>
+      <td>${r.year}</td>
+      <td style="font-family:monospace;font-size:11px">${r.workId}</td>
+      <td><strong>${r.name}</strong></td>
+      <td style="text-align:right">${r.sanctionedBags}</td>
+      <td style="text-align:right;color:var(--green)">${r.issuedBags}</td>
+      <td style="text-align:right;color:var(--blue)">${r.balanceBags}</td>
       <td>${r._valid?'<span class="chip chip-verified">✓ OK</span>':'<span class="chip chip-rejected">✗ '+r._error+'</span>'}</td>
     </tr>`).join('');
 }
@@ -3257,32 +3520,49 @@ function clearUploadPreview() {
 function commitMasterUpload() {
   const valid = _masterPreviewData.filter(r=>r._valid);
   if (!valid.length) { showToast('No valid rows to upload','error'); return; }
-  let added = 0;
+  let added = 0, updated = 0;
   valid.forEach(r => {
-    const exists = DB.beneficiaries.find(b=>b.houseNo===r.houseNo);
-    if (!exists) {
+    // Deduplicate by workId
+    const existing = DB.beneficiaries.find(b=>b.workId===r.workId);
+    if (!existing) {
       DB.beneficiaries.push({
         id: 'B' + String(Date.now()+added).slice(-7),
         name: r.name,
-        aadhaar: '****-****-' + String(r.aadhaar).slice(-4),
-        mobile: r.mobile,
+        aadhaar: '****-****-XXXX',
+        mobile: '—',
         block: r.block,
         village: r.village,
         scheme: r.scheme,
-        houseNo: r.houseNo,
+        year: r.year,
+        workId: r.workId,
+        houseNo: r.houseNo || r.workId,
         sanctionedBags: r.sanctionedBags,
-        receivedBags: 0,
+        issuedBags: r.issuedBags,
+        receivedBags: r.issuedBags,
+        balanceBags: r.balanceBags,
         status: 'Active',
         uploadedBy: currentUser.name,
         uploadedAt: new Date().toISOString(),
         createdAt: new Date().toISOString()
       });
       added++;
+    } else {
+      // Update existing record with latest data
+      existing.name = r.name;
+      existing.block = r.block;
+      existing.village = r.village;
+      existing.scheme = r.scheme;
+      existing.year = r.year;
+      existing.sanctionedBags = r.sanctionedBags;
+      existing.issuedBags = r.issuedBags;
+      existing.receivedBags = r.issuedBags;
+      existing.balanceBags = r.balanceBags;
+      updated++;
     }
   });
   saveDB();
   clearUploadPreview();
-  showToast(added + ' beneficiaries uploaded · ' + (valid.length-added) + ' duplicates skipped');
+  showToast(added + ' beneficiaries added · ' + updated + ' updated · ' + (valid.length-added-updated) + ' skipped');
   navigate('masterupload');
 }
 
@@ -3295,25 +3575,26 @@ function updateMUVillages() {
 
 function addMasterBeneficiary() {
   const name    = document.getElementById('muName').value.trim();
+  const workId  = document.getElementById('muWorkId').value.trim();
   const aadhaar = document.getElementById('muAadhaar').value.trim();
   const mobile  = document.getElementById('muMobile').value.trim();
   const houseNo = document.getElementById('muHouse').value.trim();
-  const aadhaarCleanMU = aadhaar.replace(/[-\s]/g,'');
   if (!name)   { showToast('Beneficiary name is required','error'); return; }
-  if (aadhaarCleanMU.length !== 12 || !/^\d+$/.test(aadhaarCleanMU)) {
-    showToast('Aadhaar must be exactly 12 digits','error'); return; }
-  if (!/^[6-9]\d{9}$/.test(mobile)) {
-    showToast('Enter a valid 10-digit mobile number','error'); return; }
+  if (!workId) { showToast('TNRD Work ID is required','error'); return; }
   if (!houseNo) { showToast('House number is required','error'); return; }
   const b = {
     id: 'B' + String(Date.now()).slice(-7),
-    name, aadhaar: '****-****-' + aadhaar.slice(-4), mobile,
+    name,
+    workId,
+    aadhaar: aadhaar ? '****-****-' + aadhaar.slice(-4) : '—',
+    mobile: mobile || '—',
     block:   document.getElementById('muBlock').value,
     village: document.getElementById('muVillage').value,
     scheme:  document.getElementById('muScheme').value,
+    year:    document.getElementById('muYear').value || '2025-26',
     houseNo,
     sanctionedBags: parseInt(document.getElementById('muBags').value)||100,
-    receivedBags: 0, status: 'Active',
+    issuedBags: 0, receivedBags: 0, status: 'Active',
     uploadedBy: currentUser.name,
     uploadedAt: new Date().toISOString(),
     createdAt: new Date().toISOString()
@@ -3322,6 +3603,61 @@ function addMasterBeneficiary() {
   saveAndSync();
   showToast(b.name + ' added to ' + b.block + ' block');
   navigate('masterupload');
+}
+
+function editBeneficiaryInline(id) {
+  const b = DB.beneficiaries.find(x=>x.id===id);
+  if (!b) return;
+  openModal('Edit Beneficiary – ' + (b.name), `
+    <div class="form-grid">
+      <div class="form-group"><label class="form-label">Full Name *</label><input class="form-control" id="ebName" value="${b.name}"></div>
+      <div class="form-group"><label class="form-label">TNRD Work ID No. *</label><input class="form-control" id="ebWorkId" value="${b.workId||''}"></div>
+      <div class="form-group"><label class="form-label">House No. *</label><input class="form-control" id="ebHouseNo" value="${b.houseNo||''}"></div>
+      <div class="form-group">
+        <label class="form-label">Block *</label>
+        <select class="form-control" id="ebBlock" onchange="updateEBVillages()">
+          ${BLOCKS.map(blk=>`<option value="${blk}" ${blk===b.block?'selected':''}>${blk}</option>`).join('')}
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Village *</label>
+        <select class="form-control" id="ebVillage">
+          ${(BLOCK_DATA[b.block]?.villages||[]).map(v=>`<option value="${v}" ${v===b.village?'selected':''}>${v}</option>`).join('')}
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Scheme *</label>
+        <select class="form-control" id="ebScheme">
+          ${SCHEMES.map(s=>`<option value="${s}" ${s===b.scheme?'selected':''}>${s}</option>`).join('')}
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label">Year</label><input class="form-control" id="ebYear" value="${b.year||'2025-26'}"></div>
+      <div class="form-group"><label class="form-label">Sanctioned Bags</label><input class="form-control" type="number" id="ebBags" value="${b.sanctionedBags||100}" min="1"></div>
+    </div>
+  `, [
+    {label:'Cancel', cls:'btn-outlined', fn:closeModal},
+    {label:'Save Changes', cls:'btn-primary', fn:()=>{
+      b.name          = document.getElementById('ebName').value.trim()||b.name;
+      b.workId        = document.getElementById('ebWorkId').value.trim()||b.workId;
+      b.houseNo       = document.getElementById('ebHouseNo').value.trim()||b.houseNo;
+      b.block         = document.getElementById('ebBlock').value;
+      b.village       = document.getElementById('ebVillage').value;
+      b.scheme        = document.getElementById('ebScheme').value;
+      b.year          = document.getElementById('ebYear').value.trim()||b.year;
+      b.sanctionedBags= parseInt(document.getElementById('ebBags').value)||b.sanctionedBags;
+      saveAndSync();
+      closeModal();
+      showToast('Beneficiary updated');
+      navigate('masterupload');
+    }}
+  ]);
+}
+
+function updateEBVillages() {
+  const blk = document.getElementById('ebBlock')?.value;
+  const vils = BLOCK_DATA[blk]?.villages||[];
+  const sel = document.getElementById('ebVillage');
+  if (sel) sel.innerHTML = vils.map(v=>`<option>${v}</option>`).join('');
 }
 
 function deleteBeneficiary(id) {
@@ -3515,14 +3851,192 @@ function exportData() {
   a.click();
 }
 
+// ===== QR CODE HELPER (using Google Charts API) =====
+function qrCodeImg(data, size=120) {
+  const encoded = encodeURIComponent(data);
+  return `<img src="https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encoded}" width="${size}" height="${size}" alt="QR Code" style="display:block">`;
+}
+
 // ===== PRINT SLIP =====
 function printSlip(allotmentId) {
   const a = DB.allotments.find(x=>x.id===allotmentId);
   if (!a) return;
-  const slipHTML = generateAllotmentSlip(a);
-  const w = window.open('','_blank','width=600,height=800');
-  w.document.write(`<html><head><title>Allotment Slip</title><link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet"><style>*{box-sizing:border-box;margin:0;padding:0;}body{font-family:'Roboto',sans-serif;background:#f5f5f5;display:flex;justify-content:center;padding:20px;}@media print{body{background:#fff;padding:0;}}</style></head><body>${slipHTML}<br><div style="text-align:center;margin-top:12px"><button onclick="window.print()" style="padding:10px 24px;background:#1a73e8;color:#fff;border:none;border-radius:8px;font-size:14px;cursor:pointer">Print / Save PDF</button></div></body></html>`);
+  const ben = DB.beneficiaries.find(b=>b.id===a.beneficiaryId)||{};
+
+  // Build QR data — full beneficiary details for Store Keeper scan
+  const qrData = JSON.stringify({
+    challan: a.challanNumber||'',
+    allotmentId: a.id,
+    name: a.beneficiaryName,
+    workId: a.workId||ben.workId||'—',
+    houseNo: a.houseNo,
+    village: a.village,
+    block: a.block,
+    scheme: a.scheme,
+    year: a.year||ben.year||'—',
+    bags: a.bags,
+    sanctioned: ben.sanctionedBags||a.bags,
+    mobile: a.mobile,
+    aadhaar: a.aadhaar,
+    approvedBy: a.approvedBy||'—',
+    approvedAt: a.approvedAt||a.createdAt
+  });
+
+  const slip = generateAllotmentSlipHTML(a, ben, qrData);
+
+  const w = window.open('','_blank','width=1100,height=700');
+  w.document.write(`<html><head><title>Cement Allotment Order – ${a.challanNumber||a.id}</title>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing:border-box; margin:0; padding:0; }
+    body { font-family:'Roboto',sans-serif; background:#f5f5f5; padding:12px; }
+    @page { size: A4 landscape; margin: 10mm; }
+    @media print {
+      body { background:#fff; padding:0; }
+      .no-print { display:none !important; }
+      .slip-page { page-break-after: avoid; }
+    }
+    .slips-row { display:flex; gap:8px; justify-content:center; flex-wrap:nowrap; }
+    .slip-box { width:calc(33.33% - 6px); min-width:0; border:1.5px solid #ccc; border-radius:8px; padding:12px; background:#fff; position:relative; flex-shrink:0; }
+    .slip-copy-label { position:absolute; top:6px; right:8px; font-size:9px; font-weight:700; letter-spacing:1px; color:#999; text-transform:uppercase; }
+    .slip-header { text-align:center; border-bottom:1.5px dashed #ccc; padding-bottom:8px; margin-bottom:8px; }
+    .slip-dept { font-size:8px; font-weight:700; letter-spacing:1.5px; color:#999; text-transform:uppercase; }
+    .slip-title { font-size:13px; font-weight:700; color:#1a73e8; margin:3px 0; }
+    .slip-challan { font-size:9px; font-family:monospace; color:#333; margin-top:2px; font-weight:700; }
+    table.slip-table { width:100%; font-size:10px; border-collapse:collapse; margin:8px 0; }
+    table.slip-table td { padding:3px 0; vertical-align:top; }
+    table.slip-table td:first-child { color:#666; width:42%; }
+    table.slip-table td:last-child { font-weight:600; color:#111; }
+    .slip-bags-box { background:#e8f0fe; border-radius:6px; text-align:center; padding:8px 4px; margin:8px 0; }
+    .slip-bags-num { font-size:26px; font-weight:700; color:#1a73e8; line-height:1; }
+    .slip-bags-lbl { font-size:9px; color:#555; }
+    .slip-qr { text-align:center; margin:6px 0; }
+    .slip-qr img { width:80px; height:80px; }
+    .slip-sign { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:12px; }
+    .slip-sign-line { border-top:1px solid #333; padding-top:3px; font-size:8px; color:#555; margin-top:28px; text-align:center; }
+    .slip-footer { text-align:center; font-size:8px; color:#1e8e3e; font-weight:700; letter-spacing:1.5px; margin-top:6px; }
+    .slip-barcode { font-family:monospace; font-size:7px; letter-spacing:2px; color:#bbb; text-align:center; margin-top:4px; }
+  </style>
+  </head><body>
+  <div class="no-print" style="text-align:center;margin-bottom:12px">
+    <button onclick="window.print()" style="padding:10px 28px;background:#1a73e8;color:#fff;border:none;border-radius:8px;font-size:14px;cursor:pointer;margin-right:8px">
+      🖨 Print A4 Landscape (3 Slips)
+    </button>
+    <span style="font-size:12px;color:#666">Challan: <strong>${a.challanNumber||'—'}</strong></span>
+  </div>
+  <div class="slips-row">
+    ${slip}${slip}${slip}
+  </div>
+  </body></html>`);
   w.document.close();
+}
+
+function generateAllotmentSlipHTML(a, ben, qrData) {
+  const challan = a.challanNumber || '—';
+  const qr = qrCodeImg(qrData || challan, 80);
+  const issuedBags = DB.issuances.filter(i=>i.beneficiaryId===a.beneficiaryId).reduce((s,i)=>s+i.bags,0);
+  const balBags = Math.max(0,(ben.sanctionedBags||a.bags)-issuedBags);
+  return `
+  <div class="slip-box">
+    <div class="slip-header">
+      <div class="slip-dept">Rural Development Department · Mayiladuthurai District</div>
+      <div class="slip-title">CEMENT ALLOTMENT ORDER</div>
+      <div class="slip-challan">Challan: ${challan}</div>
+    </div>
+    <table class="slip-table">
+      <tr><td>Beneficiary</td><td>${a.beneficiaryName}</td></tr>
+      <tr><td>Work ID (TNRD)</td><td>${a.workId||ben.workId||'—'}</td></tr>
+      <tr><td>House No.</td><td>${a.houseNo}</td></tr>
+      <tr><td>Village / Block</td><td>${a.village} / ${a.block}</td></tr>
+      <tr><td>Scheme / Year</td><td>${a.scheme} · ${a.year||ben.year||'—'}</td></tr>
+      <tr><td>Aadhaar</td><td>${a.aadhaar}</td></tr>
+      <tr><td>Mobile</td><td>${a.mobile}</td></tr>
+      <tr><td>Cement Type</td><td>${a.cementType||'OPC 43 Grade'}</td></tr>
+      <tr><td>Sanctioned</td><td>${ben.sanctionedBags||a.bags} bags</td></tr>
+      <tr><td>Already Issued</td><td>${issuedBags} bags</td></tr>
+      <tr><td>Approved By</td><td>${a.approvedBy||'—'}</td></tr>
+    </table>
+    <div class="slip-bags-box">
+      <div class="slip-bags-num">${a.bags}</div>
+      <div class="slip-bags-lbl">Bags Allotted (50 kg each)</div>
+    </div>
+    <div class="slip-qr">
+      ${qr}
+      <div style="font-size:8px;color:#666;margin-top:2px">Scan QR at Store</div>
+    </div>
+    <div class="slip-sign">
+      <div class="slip-sign-line">Beneficiary Signature</div>
+      <div class="slip-sign-line">BDO / VAO</div>
+    </div>
+    <div class="slip-footer">✓ APPROVED ORDER</div>
+    <div class="slip-barcode">${a.id}|${challan}</div>
+  </div>`;
+}
+
+// ===== STORE KEEPER QR SCAN =====
+function renderStoreQRScan(el) {
+  el.innerHTML = `
+    <div class="page-header">
+      <div><div class="page-title">QR Code Scanner</div><div class="page-sub">Scan Challan QR to view beneficiary details</div></div>
+    </div>
+    <div class="card" style="max-width:520px">
+      <div class="section-title">Scan or Enter Challan Details</div>
+      <div style="margin-bottom:16px">
+        <label class="form-label">Paste QR Data or Challan Number</label>
+        <textarea class="form-control" id="qrScanInput" rows="4" placeholder="Paste scanned QR code data here, or type challan number..."></textarea>
+      </div>
+      <button class="btn btn-primary" onclick="processQRScan()"><span class="material-icons-round">qr_code_scanner</span> Look Up Beneficiary</button>
+      <div id="qrScanResult" style="margin-top:16px"></div>
+    </div>`;
+}
+
+function processQRScan() {
+  const raw = (document.getElementById('qrScanInput')?.value||'').trim();
+  if (!raw) { showToast('Enter QR data or Challan number','error'); return; }
+  const res = document.getElementById('qrScanResult');
+
+  let data = null;
+  try { data = JSON.parse(raw); } catch(e) {
+    // Try to find by challan number
+    const allot = DB.allotments.find(a=>a.challanNumber===raw||a.id===raw);
+    if (allot) {
+      const ben = DB.beneficiaries.find(b=>b.id===allot.beneficiaryId)||{};
+      data = { challan: allot.challanNumber, allotmentId: allot.id, name: allot.beneficiaryName,
+        workId: ben.workId||'—', houseNo: allot.houseNo, village: allot.village, block: allot.block,
+        scheme: allot.scheme, year: allot.year||ben.year||'—', bags: allot.bags,
+        sanctioned: ben.sanctionedBags||allot.bags, mobile: allot.mobile, aadhaar: allot.aadhaar };
+    }
+  }
+  if (!data) { res.innerHTML = '<div class="alert alert-danger"><span class="material-icons-round">error</span> No matching record found for this QR / Challan.</div>'; return; }
+
+  const issuedBags = DB.issuances.filter(i=>i.beneficiaryId===(DB.allotments.find(a=>a.id===data.allotmentId)?.beneficiaryId||'')).reduce((s,i)=>s+i.bags,0);
+  const allot = DB.allotments.find(a=>a.id===data.allotmentId||a.challanNumber===data.challan);
+
+  res.innerHTML = `
+    <div style="border:2px solid var(--green);border-radius:12px;padding:16px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+        <span class="material-icons-round" style="color:var(--green);font-size:28px">verified</span>
+        <div>
+          <div style="font-weight:700;font-size:15px">${data.name}</div>
+          <div style="font-size:11px;color:var(--grey-500)">Challan: <strong style="font-family:monospace">${data.challan||'—'}</strong></div>
+        </div>
+      </div>
+      <div class="info-row"><span class="info-key">TNRD Work ID</span><span class="info-val">${data.workId||'—'}</span></div>
+      <div class="info-row"><span class="info-key">House No.</span><span class="info-val">${data.houseNo}</span></div>
+      <div class="info-row"><span class="info-key">Village / Block</span><span class="info-val">${data.village} / ${data.block}</span></div>
+      <div class="info-row"><span class="info-key">Scheme / Year</span><span class="info-val">${data.scheme} · ${data.year||'—'}</span></div>
+      <div class="info-row"><span class="info-key">Aadhaar</span><span class="info-val">${data.aadhaar||'—'}</span></div>
+      <div class="info-row"><span class="info-key">Mobile</span><span class="info-val">${data.mobile||'—'}</span></div>
+      <div class="info-row"><span class="info-key">Sanctioned Bags</span><span class="info-val">${data.sanctioned||data.bags}</span></div>
+      <div class="info-row"><span class="info-key">Already Issued</span><span class="info-val">${issuedBags} bags</span></div>
+      <div style="background:var(--blue-light);border-radius:8px;padding:10px 14px;margin-top:8px;text-align:center">
+        <div style="font-size:28px;font-weight:700;color:var(--blue)">${data.bags}</div>
+        <div style="font-size:12px;color:var(--grey-700)">Bags to be Issued this Order</div>
+      </div>
+      ${allot && allot.status==='Approved' ? `<button class="btn btn-green" style="width:100%;justify-content:center;margin-top:12px" onclick="navigate('issuance')">
+        <span class="material-icons-round">output</span> Proceed to Issue
+      </button>` : `<div class="alert alert-warn" style="margin-top:8px"><span class="material-icons-round">warning_amber</span> Status: ${allot?.status||'Unknown'}</div>`}
+    </div>`;
 }
 
 function printIssuanceSlip(issuance) {
@@ -3530,39 +4044,6 @@ function printIssuanceSlip(issuance) {
   const w = window.open('','_blank','width=600,height=900');
   w.document.write(`<html><head><title>Issuance Slip</title><link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet"><style>*{box-sizing:border-box;margin:0;padding:0;}body{font-family:'Roboto',sans-serif;background:#f5f5f5;display:flex;flex-direction:column;align-items:center;padding:20px;}@media print{body{background:#fff;padding:0;}}</style></head><body>${slipHTML}<br><div style="text-align:center;margin-top:12px"><button onclick="window.print()" style="padding:10px 24px;background:#1e8e3e;color:#fff;border:none;border-radius:8px;font-size:14px;cursor:pointer">Print Slip</button></div></body></html>`);
   w.document.close();
-}
-
-function generateAllotmentSlip(a) {
-  return `<div style="max-width:520px;border:2px solid #ddd;border-radius:12px;padding:24px;background:#fff;font-family:Roboto,sans-serif">
-    <div style="text-align:center;border-bottom:2px dashed #ddd;padding-bottom:16px;margin-bottom:16px">
-      
-      <div style="font-size:10px;color:#999">Rural Development Department · Mayiladuthurai District</div>
-      <div style="font-size:18px;font-weight:700;color:#1a73e8;margin:8px 0">CEMENT ALLOTMENT ORDER</div>
-      <div style="font-size:11px;color:#666">This is an official order. Subject to availability of stock.</div>
-    </div>
-    <div style="font-size:11px;color:#999;text-align:right;margin-top:-8px;margin-bottom:12px">ID: ${a.id}</div>
-    <table style="width:100%;font-size:13px;border-collapse:collapse">
-      <tr><td style="padding:6px 0;color:#666;width:40%">Beneficiary Name</td><td style="font-weight:700">${a.beneficiaryName}</td></tr>
-      <tr><td style="padding:6px 0;color:#666">House No.</td><td style="font-weight:600">${a.houseNo}</td></tr>
-      <tr><td style="padding:6px 0;color:#666">Village / Block</td><td>${a.village} / ${a.block}</td></tr>
-      <tr><td style="padding:6px 0;color:#666">Aadhaar</td><td>${a.aadhaar}</td></tr>
-      <tr><td style="padding:6px 0;color:#666">Mobile</td><td>${a.mobile}</td></tr>
-      <tr><td style="padding:6px 0;color:#666">Scheme</td><td>${a.scheme}</td></tr>
-      <tr><td style="padding:6px 0;color:#666">Cement Type</td><td>${a.cementType||'OPC 43 Grade'}</td></tr>
-      <tr><td style="padding:6px 0;color:#666">Intended Use</td><td>${a.use||'—'}</td></tr>
-    </table>
-    <div style="background:#e8f0fe;border-radius:8px;text-align:center;padding:16px;margin:16px 0">
-      <div style="font-size:36px;font-weight:700;color:#1a73e8">${a.bags}</div>
-      <div style="font-size:12px;color:#666">Bags of Cement (50 kg each) Allotted</div>
-    </div>
-    <div style="display:flex;justify-content:space-between;margin-top:32px">
-      <div style="text-align:center;flex:1"><div style="border-top:1px solid #333;padding-top:4px;font-size:11px;color:#555;margin-top:40px">Beneficiary Signature</div></div>
-      <div style="text-align:center;flex:1"><div style="border-top:1px solid #333;padding-top:4px;font-size:11px;color:#555;margin-top:40px">Issuing Officer</div></div>
-      <div style="text-align:center;flex:1"><div style="border-top:1px solid #333;padding-top:4px;font-size:11px;color:#555;margin-top:40px">BDO / VAO</div></div>
-    </div>
-    <div style="text-align:center;margin-top:16px;font-family:monospace;font-size:10px;letter-spacing:3px;color:#bbb">${a.id}|${a.beneficiaryId}|${new Date(a.createdAt).toLocaleDateString()}</div>
-    <div style="text-align:center;font-size:10px;color:#1e8e3e;font-weight:700;letter-spacing:2px;margin-top:4px">APPROVED ORDER</div>
-  </div>`;
 }
 
 function generateIssuanceSlip(i) {
