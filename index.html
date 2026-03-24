@@ -444,9 +444,10 @@
           <span style="font-weight:600;grid-column:3/4;font-size:10px;letter-spacing:.5px;text-transform:uppercase;color:var(--grey-700)">Password</span>
           <span>District Collector</span><code style="background:#fff;padding:1px 6px;border-radius:4px;border:1px solid var(--grey-200)">collector</code><code style="background:#fff;padding:1px 6px;border-radius:4px;border:1px solid var(--grey-200)">admin2025</code>
           <span>BDO (Mayiladuthurai)</span><code style="background:#fff;padding:1px 6px;border-radius:4px;border:1px solid var(--grey-200)">bdo.myl</code><code style="background:#fff;padding:1px 6px;border-radius:4px;border:1px solid var(--grey-200)">bdo.myl2025</code>
-          <span>Overseer (Mayiladuthurai)</span><code style="background:#fff;padding:1px 6px;border-radius:4px;border:1px solid var(--grey-200)">overseer.myl</code><code style="background:#fff;padding:1px 6px;border-radius:4px;border:1px solid var(--grey-200)">over.myl2025</code>
+          <span>Overseer – MYL (R.Kayalvizhi)</span><code style="background:#fff;padding:1px 6px;border-radius:4px;border:1px solid var(--grey-200)">r.kayalvizhi</code><code style="background:#fff;padding:1px 6px;border-radius:4px;border:1px solid var(--grey-200)">kayalvizhi2025</code>
+          <span>Overseer – Sirkali (R.Kala)</span><code style="background:#fff;padding:1px 6px;border-radius:4px;border:1px solid var(--grey-200)">r.kala</code><code style="background:#fff;padding:1px 6px;border-radius:4px;border:1px solid var(--grey-200)">kala2025</code>
+          <span>Overseer – Kuthalam (C.Muthu)</span><code style="background:#fff;padding:1px 6px;border-radius:4px;border:1px solid var(--grey-200)">c.muthu</code><code style="background:#fff;padding:1px 6px;border-radius:4px;border:1px solid var(--grey-200)">muthu2025</code>
           <span>Store Keeper (Mayiladuthurai)</span><code style="background:#fff;padding:1px 6px;border-radius:4px;border:1px solid var(--grey-200)">store.myl</code><code style="background:#fff;padding:1px 6px;border-radius:4px;border:1px solid var(--grey-200)">store.myl2025</code>
-          <span>Field Inspector (Mayiladuthurai)</span><code style="background:#fff;padding:1px 6px;border-radius:4px;border:1px solid var(--grey-200)">inspector.myl</code><code style="background:#fff;padding:1px 6px;border-radius:4px;border:1px solid var(--grey-200)">insp.myl2025</code>
         </div>
       </details>
       <div style="margin-top:12px;font-size:11px;color:var(--grey-500);text-align:center;line-height:1.7">
@@ -621,7 +622,7 @@ const USERS = [
   // ── District Level ─────────────────────────────────────────────────────────
   {
     id: 'U001', username: 'collector', password: 'admin2025',
-    role: 'admin', block: null,   // null = all blocks
+    role: 'admin', block: null, panchayats: null,
     name: 'District Collector', designation: 'District Collector, Mayiladuthurai',
     dept: 'Collectorate, Mayiladuthurai', mobile: '9400000001',
     avatarColor: 'admin', icon: 'admin_panel_settings',
@@ -629,175 +630,286 @@ const USERS = [
             'beneficiaries','stock','reports','alerts','settings','users']
   },
 
-  // ── Block: Mayiladuthurai ──────────────────────────────────────────────────
-  {
-    id: 'U101', username: 'bdo.myl', password: 'bdo.myl2025',
-    role: 'bdo', block: 'Mayiladuthurai',
-    name: 'S. Ravikumar', designation: 'BDO – Mayiladuthurai Block',
-    dept: 'Block Development Office, Mayiladuthurai', mobile: '9400001001',
-    avatarColor: 'bdo', icon: 'account_balance',
-    pages: ['dashboard','allotments','beneficiaries','collection','reports','alerts']
-  },
-  {
-    id: 'U102', username: 'overseer.myl', password: 'over.myl2025',
-    role: 'overseer', block: 'Mayiladuthurai',
-    name: 'K. Anbazhagan', designation: 'Works Overseer – Mayiladuthurai',
-    dept: 'Rural Development Dept, Mayiladuthurai', mobile: '9400001002',
-    avatarColor: 'overseer', icon: 'engineering',
-    pages: ['dashboard','allotments','beneficiaries','inspection','alerts']
-  },
-  {
-    id: 'U103', username: 'store.myl', password: 'store.myl2025',
-    role: 'store', block: 'Mayiladuthurai',
-    name: 'P. Murugesan', designation: 'Store Keeper – Mayiladuthurai Depot',
-    dept: 'Rural Development Dept, Mayiladuthurai', mobile: '9400001003',
-    avatarColor: 'store', icon: 'warehouse',
-    pages: ['dashboard','issuance','stock','qrscan','alerts']
-  },
-  {
-    id: 'U104', username: 'inspector.myl', password: 'insp.myl2025',
-    role: 'inspector', block: 'Mayiladuthurai',
-    name: 'M. Selvaraj', designation: 'Field Inspector – Mayiladuthurai',
-    dept: 'Rural Development Dept, Mayiladuthurai', mobile: '9400001004',
-    avatarColor: 'inspector', icon: 'fact_check',
-    pages: ['dashboard','collection','inspection','alerts']
-  },
+  // ── Block: Mayiladuthurai – BDO + Store + Inspector ─────────────────────────
+  { id:'U101', username:'bdo.myl', password:'bdo.myl2025', role:'bdo', block:'Mayiladuthurai', panchayats:null,
+    name:'S. Ravikumar', designation:'BDO – Mayiladuthurai Block',
+    dept:'Block Development Office, Mayiladuthurai', mobile:'9400001001',
+    avatarColor:'bdo', icon:'account_balance',
+    pages:['dashboard','allotments','beneficiaries','collection','reports','alerts'] },
+  { id:'U103', username:'store.myl', password:'store.myl2025', role:'store', block:'Mayiladuthurai', panchayats:null,
+    name:'P. Murugesan', designation:'Store Keeper – Mayiladuthurai Depot',
+    dept:'Rural Development Dept, Mayiladuthurai', mobile:'9400001003',
+    avatarColor:'store', icon:'warehouse',
+    pages:['dashboard','issuance','stock','qrscan','alerts'] },
+  { id:'U104', username:'inspector.myl', password:'insp.myl2025', role:'inspector', block:'Mayiladuthurai', panchayats:null,
+    name:'M. Selvaraj', designation:'Field Inspector – Mayiladuthurai',
+    dept:'Rural Development Dept, Mayiladuthurai', mobile:'9400001004',
+    avatarColor:'inspector', icon:'fact_check',
+    pages:['dashboard','collection','inspection','alerts'] },
 
-  // ── Block: Sirkali ───────────────────────────────────────────────────────
-  {
-    id: 'U201', username: 'bdo.skz', password: 'bdo.skz2025',
-    role: 'bdo', block: 'Sirkali',
-    name: 'R. Ganesh', designation: 'BDO – Sirkali Block',
-    dept: 'Block Development Office, Sirkali', mobile: '9400002001',
-    avatarColor: 'bdo', icon: 'account_balance',
-    pages: ['dashboard','allotments','beneficiaries','collection','reports','alerts']
-  },
-  {
-    id: 'U202', username: 'overseer.skz', password: 'over.skz2025',
-    role: 'overseer', block: 'Sirkali',
-    name: 'T. Vijayakumar', designation: 'Works Overseer – Sirkali',
-    dept: 'Rural Development Dept, Sirkali', mobile: '9400002002',
-    avatarColor: 'overseer', icon: 'engineering',
-    pages: ['dashboard','allotments','beneficiaries','inspection','alerts']
-  },
-  {
-    id: 'U203', username: 'store.skz', password: 'store.skz2025',
-    role: 'store', block: 'Sirkali',
-    name: 'A. Rajan', designation: 'Store Keeper – Sirkali Depot',
-    dept: 'Rural Development Dept, Sirkali', mobile: '9400002003',
-    avatarColor: 'store', icon: 'warehouse',
-    pages: ['dashboard','issuance','stock','qrscan','alerts']
-  },
-  {
-    id: 'U204', username: 'inspector.skz', password: 'insp.skz2025',
-    role: 'inspector', block: 'Sirkali',
-    name: 'D. Lakshmi', designation: 'Field Inspector – Sirkali',
-    dept: 'Rural Development Dept, Sirkali', mobile: '9400002004',
-    avatarColor: 'inspector', icon: 'fact_check',
-    pages: ['dashboard','collection','inspection','alerts']
-  },
+  // ── Mayiladuthurai Overseers ────────────────────────────────────────────────
+  { id:'MYL-OV1', username:'r.kayalvizhi', password:'kayalvizhi2025', role:'overseer', block:'Mayiladuthurai',
+    panchayats:['AGARAKEERANGUDI','ANAIMELAGARAM','MARAIYUR','MAYILADUTHURAI RURAL','MOOVALUR','NALLATHUKUDI','PATTAMANGALAM','SOLAMPETTAI','SITHARKADU'],
+    name:'R.Kayalvizhi', designation:'Works Overseer – Mayiladuthurai',
+    dept:'Rural Development Dept, Mayiladuthurai', mobile:'',
+    avatarColor:'overseer', icon:'engineering',
+    pages:['dashboard','allotments','beneficiaries','inspection','alerts'] },
+  { id:'MYL-OV2', username:'k.oosainayagi', password:'oosainayagi2025', role:'overseer', block:'Mayiladuthurai',
+    panchayats:['ANATHANDAVAPURAM','KADAKKAM','KADUVANGUDI','KEELAMARUTHANTHANALLUR','KIZHAI','KURICHI','MUDIKANDANALLUR','SITHAMALLI','VILLIYANALLUR'],
+    name:'K.Oosainayagi', designation:'Works Overseer – Mayiladuthurai',
+    dept:'Rural Development Dept, Mayiladuthurai', mobile:'',
+    avatarColor:'overseer', icon:'engineering',
+    pages:['dashboard','allotments','beneficiaries','inspection','alerts'] },
+  { id:'MYL-OV3', username:'g.tamilselvi', password:'tamilselvi2025', role:'overseer', block:'Mayiladuthurai',
+    panchayats:['ARUNMOZHIDEVAN','IVANALLUR','KANGANAMPUTHUR','KESINGAN','NEEDUR','PANDUR','PONNUR','THALANCHERY','THIRUENTHALUR'],
+    name:'G.Tamilselvi', designation:'Works Overseer – Mayiladuthurai',
+    dept:'Rural Development Dept, Mayiladuthurai', mobile:'',
+    avatarColor:'overseer', icon:'engineering',
+    pages:['dashboard','allotments','beneficiaries','inspection','alerts'] },
+  { id:'MYL-OV4', username:'k.praveen', password:'praveen2025', role:'overseer', block:'Mayiladuthurai',
+    panchayats:['ARUVAPADI','ELANTHOPPU','KORKAI','MAHARAJAPURAM','MAPPADUGAI','MELANALLUR','PATTAVARTHI','SETHUR','THALAINAYAR'],
+    name:'K.Praveen', designation:'Works Overseer – Mayiladuthurai',
+    dept:'Rural Development Dept, Mayiladuthurai', mobile:'',
+    avatarColor:'overseer', icon:'engineering',
+    pages:['dashboard','allotments','beneficiaries','inspection','alerts'] },
+  { id:'MYL-OV5', username:'r.anbazhagan', password:'anbazhagan2025', role:'overseer', block:'Mayiladuthurai',
+    panchayats:['AATHUR','BOOTHANGUDI','KADALANGUDI','KALI','MURUGAMANGALAM','NAMASIVAYAPURAM','THIRUCHITRAMPALAM','THIRUMANGALAM','VARADHAMPATTU'],
+    name:'R.Anbazhagan', designation:'Works Overseer – Mayiladuthurai',
+    dept:'Rural Development Dept, Mayiladuthurai', mobile:'',
+    avatarColor:'overseer', icon:'engineering',
+    pages:['dashboard','allotments','beneficiaries','inspection','alerts'] },
+  { id:'MYL-OV6', username:'d.praveena', password:'praveena2025', role:'overseer', block:'Mayiladuthurai',
+    panchayats:['DHARMATHANAPURAM','KODANGUDI','KULICHAR','MANAKUDI','MANNAMPANDAL','MOZHAIYUR','SERUTHIYUR','ULUTHUKUPPAI','VALLALAGARAM'],
+    name:'D.Praveena', designation:'Works Overseer – Mayiladuthurai',
+    dept:'Rural Development Dept, Mayiladuthurai', mobile:'',
+    avatarColor:'overseer', icon:'engineering',
+    pages:['dashboard','allotments','beneficiaries','inspection','alerts'] },
 
-  // ── Block: Sembanarkoil ───────────────────────────────────────────────────
-  {
-    id: 'U301', username: 'bdo.sbn', password: 'bdo.sbn2025',
-    role: 'bdo', block: 'Sembanarkoil',
-    name: 'V. Suresh', designation: 'BDO – Sembanarkoil Block',
-    dept: 'Block Development Office, Sembanarkoil', mobile: '9400003001',
-    avatarColor: 'bdo', icon: 'account_balance',
-    pages: ['dashboard','allotments','beneficiaries','collection','reports','alerts']
-  },
-  {
-    id: 'U302', username: 'overseer.sbn', password: 'over.sbn2025',
-    role: 'overseer', block: 'Sembanarkoil',
-    name: 'N. Karthik', designation: 'Works Overseer – Sembanarkoil',
-    dept: 'Rural Development Dept, Sembanarkoil', mobile: '9400003002',
-    avatarColor: 'overseer', icon: 'engineering',
-    pages: ['dashboard','allotments','beneficiaries','inspection','alerts']
-  },
-  {
-    id: 'U303', username: 'store.sbn', password: 'store.sbn2025',
-    role: 'store', block: 'Sembanarkoil',
-    name: 'B. Mani', designation: 'Store Keeper – Sembanarkoil Depot',
-    dept: 'Rural Development Dept, Sembanarkoil', mobile: '9400003003',
-    avatarColor: 'store', icon: 'warehouse',
-    pages: ['dashboard','issuance','stock','qrscan','alerts']
-  },
-  {
-    id: 'U304', username: 'inspector.sbn', password: 'insp.sbn2025',
-    role: 'inspector', block: 'Sembanarkoil',
-    name: 'C. Devika', designation: 'Field Inspector – Sembanarkoil',
-    dept: 'Rural Development Dept, Sembanarkoil', mobile: '9400003004',
-    avatarColor: 'inspector', icon: 'fact_check',
-    pages: ['dashboard','collection','inspection','alerts']
-  },
+  // ── Block: Sirkali – BDO + Store + Inspector ─────────────────────────────
+  { id:'U201', username:'bdo.skz', password:'bdo.skz2025', role:'bdo', block:'Sirkali', panchayats:null,
+    name:'R. Ganesh', designation:'BDO – Sirkali Block',
+    dept:'Block Development Office, Sirkali', mobile:'9400002001',
+    avatarColor:'bdo', icon:'account_balance',
+    pages:['dashboard','allotments','beneficiaries','collection','reports','alerts'] },
+  { id:'U203', username:'store.skz', password:'store.skz2025', role:'store', block:'Sirkali', panchayats:null,
+    name:'A. Rajan', designation:'Store Keeper – Sirkali Depot',
+    dept:'Rural Development Dept, Sirkali', mobile:'9400002003',
+    avatarColor:'store', icon:'warehouse',
+    pages:['dashboard','issuance','stock','qrscan','alerts'] },
+  { id:'U204', username:'inspector.skz', password:'insp.skz2025', role:'inspector', block:'Sirkali', panchayats:null,
+    name:'D. Lakshmi', designation:'Field Inspector – Sirkali',
+    dept:'Rural Development Dept, Sirkali', mobile:'9400002004',
+    avatarColor:'inspector', icon:'fact_check',
+    pages:['dashboard','collection','inspection','alerts'] },
 
-  // ── Block: Kuthalam ───────────────────────────────────────────────────────
-  {
-    id: 'U401', username: 'bdo.ktl', password: 'bdo.ktl2025',
-    role: 'bdo', block: 'Kuthalam',
-    name: 'G. Pandi', designation: 'BDO – Kuthalam Block',
-    dept: 'Block Development Office, Kuthalam', mobile: '9400004001',
-    avatarColor: 'bdo', icon: 'account_balance',
-    pages: ['dashboard','allotments','beneficiaries','collection','reports','alerts']
-  },
-  {
-    id: 'U402', username: 'overseer.ktl', password: 'over.ktl2025',
-    role: 'overseer', block: 'Kuthalam',
-    name: 'H. Saravanan', designation: 'Works Overseer – Kuthalam',
-    dept: 'Rural Development Dept, Kuthalam', mobile: '9400004002',
-    avatarColor: 'overseer', icon: 'engineering',
-    pages: ['dashboard','allotments','beneficiaries','inspection','alerts']
-  },
-  {
-    id: 'U403', username: 'store.ktl', password: 'store.ktl2025',
-    role: 'store', block: 'Kuthalam',
-    name: 'J. Arumugam', designation: 'Store Keeper – Kuthalam Depot',
-    dept: 'Rural Development Dept, Kuthalam', mobile: '9400004003',
-    avatarColor: 'store', icon: 'warehouse',
-    pages: ['dashboard','issuance','stock','qrscan','alerts']
-  },
-  {
-    id: 'U404', username: 'inspector.ktl', password: 'insp.ktl2025',
-    role: 'inspector', block: 'Kuthalam',
-    name: 'F. Kamala', designation: 'Field Inspector – Kuthalam',
-    dept: 'Rural Development Dept, Kuthalam', mobile: '9400004004',
-    avatarColor: 'inspector', icon: 'fact_check',
-    pages: ['dashboard','collection','inspection','alerts']
-  },
+  // ── Sirkali Overseers ──────────────────────────────────────────────────────
+  { id:'SIR-OV1', username:'m.umamaheshwari', password:'umamaheshwari2025', role:'overseer', block:'Sirkali',
+    panchayats:['AGANI','ATHIYUR','MARUTHANGUDI','NEMMELI','PUNGANUR','SATTANATHAPURAM','VALLUVAKUDI','VILANTHIDASAMUTHIRAM'],
+    name:'M.Umamaheshwari', designation:'Works Overseer – Sirkali',
+    dept:'Rural Development Dept, Sirkali', mobile:'',
+    avatarColor:'overseer', icon:'engineering',
+    pages:['dashboard','allotments','beneficiaries','inspection','alerts'] },
+  { id:'SIR-OV2', username:'r.kala', password:'kala2025', role:'overseer', block:'Sirkali',
+    panchayats:['EDAKUDIVADAPATHY','KATHIRUPPU','KAVERIPOOMPATTINAM','MANIGRAMAM','POOMBUHAR','THIRUVENGADU','VANAGIRI'],
+    name:'R.Kala', designation:'Works Overseer – Sirkali',
+    dept:'Rural Development Dept, Sirkali', mobile:'',
+    avatarColor:'overseer', icon:'engineering',
+    pages:['dashboard','allotments','beneficiaries','inspection','alerts'] },
+  { id:'SIR-OV3', username:'m.govindharaj', password:'govindharaj2025', role:'overseer', block:'Sirkali',
+    panchayats:['KANNIYAKUDI','KARKOIL','KATHIRAMANGALAM','KONDAL','PERUMANGALAM','SEMMANGUDI','THIRUPUNGOORE'],
+    name:'M.Govindharaj', designation:'Works Overseer – Sirkali',
+    dept:'Rural Development Dept, Sirkali', mobile:'',
+    avatarColor:'overseer', icon:'engineering',
+    pages:['dashboard','allotments','beneficiaries','inspection','alerts'] },
+  { id:'SIR-OV4', username:'m.amalarani', password:'amalarani2025', role:'overseer', block:'Sirkali',
+    panchayats:['KARAIMEDU','KEELASATTANATHAPURAM','PERUNTHOTTAM','PUDUTHURAI','RADHANALLUR','SEMBATHANIRUPPU','THILLAIVIDANGAN','THIRUVALI','THITTAI'],
+    name:'M.Amalarani', designation:'Works Overseer – Sirkali',
+    dept:'Rural Development Dept, Sirkali', mobile:'',
+    avatarColor:'overseer', icon:'engineering',
+    pages:['dashboard','allotments','beneficiaries','inspection','alerts'] },
+  { id:'SIR-OV5', username:'m.kavitha.skz', password:'kavitha.skz2025', role:'overseer', block:'Sirkali',
+    panchayats:['MANGAIMADAM','NANGOORE','NEPPATHUR','THENNAMPATTINAM','THIRUNAGARI'],
+    name:'M.Kavitha', designation:'Works Overseer – Sirkali',
+    dept:'Rural Development Dept, Sirkali', mobile:'',
+    avatarColor:'overseer', icon:'engineering',
+    pages:['dashboard','allotments','beneficiaries','inspection','alerts'] },
 
-  // ── Block: Kollidam ──────────────────────────────────────────────────────
-  {
-    id: 'U501', username: 'bdo.kld', password: 'bdo.kld2025',
-    role: 'bdo', block: 'Kollidam',
-    name: 'I. Balamurugan', designation: 'BDO – Kollidam Block',
-    dept: 'Block Development Office, Kollidam', mobile: '9400005001',
-    avatarColor: 'bdo', icon: 'account_balance',
-    pages: ['dashboard','allotments','beneficiaries','collection','reports','alerts']
-  },
-  {
-    id: 'U502', username: 'overseer.kld', password: 'over.kld2025',
-    role: 'overseer', block: 'Kollidam',
-    name: 'E. Meenakshi', designation: 'Works Overseer – Kollidam',
-    dept: 'Rural Development Dept, Kollidam', mobile: '9400005002',
-    avatarColor: 'overseer', icon: 'engineering',
-    pages: ['dashboard','allotments','beneficiaries','inspection','alerts']
-  },
-  {
-    id: 'U503', username: 'store.kld', password: 'store.kld2025',
-    role: 'store', block: 'Kollidam',
-    name: 'L. Karuppaiah', designation: 'Store Keeper – Kollidam Depot',
-    dept: 'Rural Development Dept, Kollidam', mobile: '9400005003',
-    avatarColor: 'store', icon: 'warehouse',
-    pages: ['dashboard','issuance','stock','qrscan','alerts']
-  },
-  {
-    id: 'U504', username: 'inspector.kld', password: 'insp.kld2025',
-    role: 'inspector', block: 'Kollidam',
-    name: 'O. Geetha', designation: 'Field Inspector – Kollidam',
-    dept: 'Rural Development Dept, Kollidam', mobile: '9400005004',
-    avatarColor: 'inspector', icon: 'fact_check',
-    pages: ['dashboard','collection','inspection','alerts']
-  }
+  // ── Block: Sembanarkoil – BDO + Store + Inspector ─────────────────────────
+  { id:'U301', username:'bdo.sbn', password:'bdo.sbn2025', role:'bdo', block:'Sembanarkoil', panchayats:null,
+    name:'V. Suresh', designation:'BDO – Sembanarkoil Block',
+    dept:'Block Development Office, Sembanarkoil', mobile:'9400003001',
+    avatarColor:'bdo', icon:'account_balance',
+    pages:['dashboard','allotments','beneficiaries','collection','reports','alerts'] },
+  { id:'U303', username:'store.sbn', password:'store.sbn2025', role:'store', block:'Sembanarkoil', panchayats:null,
+    name:'B. Mani', designation:'Store Keeper – Sembanarkoil Depot',
+    dept:'Rural Development Dept, Sembanarkoil', mobile:'9400003003',
+    avatarColor:'store', icon:'warehouse',
+    pages:['dashboard','issuance','stock','qrscan','alerts'] },
+  { id:'U304', username:'inspector.sbn', password:'insp.sbn2025', role:'inspector', block:'Sembanarkoil', panchayats:null,
+    name:'C. Devika', designation:'Field Inspector – Sembanarkoil',
+    dept:'Rural Development Dept, Sembanarkoil', mobile:'9400003004',
+    avatarColor:'inspector', icon:'fact_check',
+    pages:['dashboard','collection','inspection','alerts'] },
+
+  // ── Sembanarkoil Overseers ─────────────────────────────────────────────────
+  { id:'SBN-OV1', username:'u.rajalakshmi', password:'rajalakshmi2025', role:'overseer', block:'Sembanarkoil',
+    panchayats:['AKKUR','KEELAPERUMPALLAM','KIDANGAL','MADAPURAM','MELAPERUMPALLAM','MUDIKANDANALLUR','SEMBANARKOIL'],
+    name:'U.Rajalakshmi', designation:'Works Overseer – Sembanarkoil',
+    dept:'Rural Development Dept, Sembanarkoil', mobile:'',
+    avatarColor:'overseer', icon:'engineering',
+    pages:['dashboard','allotments','beneficiaries','inspection','alerts'] },
+  { id:'SBN-OV2', username:'n.akila', password:'akila2025', role:'overseer', block:'Sembanarkoil',
+    panchayats:['ALAVELI','KALAHASTHINATHAPURAM','KONDATHUR','MELAIYUR','NADUKARAI','NATTHAM','SEMANGALAM'],
+    name:'N.Akila', designation:'Works Overseer – Sembanarkoil',
+    dept:'Rural Development Dept, Sembanarkoil', mobile:'',
+    avatarColor:'overseer', icon:'engineering',
+    pages:['dashboard','allotments','beneficiaries','inspection','alerts'] },
+  { id:'SBN-OV3', username:'v.manimaran', password:'manimaran2025', role:'overseer', block:'Sembanarkoil',
+    panchayats:['ANNAVASAL','ELAIYALUR','NALLADAI','VILAGAM','VISALUR'],
+    name:'V.Manimaran', designation:'Works Overseer – Sembanarkoil',
+    dept:'Rural Development Dept, Sembanarkoil', mobile:'',
+    avatarColor:'overseer', icon:'engineering',
+    pages:['dashboard','allotments','beneficiaries','inspection','alerts'] },
+  { id:'SBN-OV4', username:'r.balaji', password:'balaji2025', role:'overseer', block:'Sembanarkoil',
+    panchayats:['ARASUR','ARUPATHY','ECHANGUDI','ERAVANCHERI','GUDALOORE','KEEZHMATHUR','NARASINGANATHAM','THIRUVILAIYATTAM'],
+    name:'R.Balaji', designation:'Works Overseer – Sembanarkoil',
+    dept:'Rural Development Dept, Sembanarkoil', mobile:'',
+    avatarColor:'overseer', icon:'engineering',
+    pages:['dashboard','allotments','beneficiaries','inspection','alerts'] },
+  { id:'SBN-OV5', username:'k.bharathi', password:'bharathi2025', role:'overseer', block:'Sembanarkoil',
+    panchayats:['CHANDRAPADI','EDUTHUKATTI','ELUPPUR','KATTUCHERI','T MANALMEDU','THILLAIYADI','THIRUKALACHERY','UTHIRANGUDI'],
+    name:'K.Bharathi', designation:'Works Overseer – Sembanarkoil',
+    dept:'Rural Development Dept, Sembanarkoil', mobile:'',
+    avatarColor:'overseer', icon:'engineering',
+    pages:['dashboard','allotments','beneficiaries','inspection','alerts'] },
+  { id:'SBN-OV6', username:'k.keerthana', password:'keerthana2025', role:'overseer', block:'Sembanarkoil',
+    panchayats:['KALAMANALLUR','KAZHIYAPPANALLUR','MANIKAPANGU','MARUTHAMPALLAM','NEDUVASAL','PILLAIPERUMANALLUR','THIRUVIDAIKAZHI'],
+    name:'K.Keerthana', designation:'Works Overseer – Sembanarkoil',
+    dept:'Rural Development Dept, Sembanarkoil', mobile:'',
+    avatarColor:'overseer', icon:'engineering',
+    pages:['dashboard','allotments','beneficiaries','inspection','alerts'] },
+  { id:'SBN-OV7', username:'n.babu', password:'babu2025', role:'overseer', block:'Sembanarkoil',
+    panchayats:['KANJANAGARAM','KARUVAZHAKARAI','KEELAIYUR','KIDARANKONDAN','MAMAKUDI','PAGASALAI','THALAIYUDAIYAVARKOILPATHU'],
+    name:'N.Babu', designation:'Works Overseer – Sembanarkoil',
+    dept:'Rural Development Dept, Sembanarkoil', mobile:'',
+    avatarColor:'overseer', icon:'engineering',
+    pages:['dashboard','allotments','beneficiaries','inspection','alerts'] },
+  { id:'SBN-OV8', username:'j.saravanan', password:'saravanan2025', role:'overseer', block:'Sembanarkoil',
+    panchayats:['KILLIYUR','KOTHANGUDI','MATHUR','MEMATHUR','MUKKARUMBUR','PARASALUR','THIRUCHAMPALLI','THIRUKADAIYUR'],
+    name:'J.Saravanan', designation:'Works Overseer – Sembanarkoil',
+    dept:'Rural Development Dept, Sembanarkoil', mobile:'',
+    avatarColor:'overseer', icon:'engineering',
+    pages:['dashboard','allotments','beneficiaries','inspection','alerts'] },
+
+  // ── Block: Kuthalam – BDO + Store + Inspector ─────────────────────────────
+  { id:'U401', username:'bdo.ktl', password:'bdo.ktl2025', role:'bdo', block:'Kuthalam', panchayats:null,
+    name:'G. Pandi', designation:'BDO – Kuthalam Block',
+    dept:'Block Development Office, Kuthalam', mobile:'9400004001',
+    avatarColor:'bdo', icon:'account_balance',
+    pages:['dashboard','allotments','beneficiaries','collection','reports','alerts'] },
+  { id:'U403', username:'store.ktl', password:'store.ktl2025', role:'store', block:'Kuthalam', panchayats:null,
+    name:'J. Arumugam', designation:'Store Keeper – Kuthalam Depot',
+    dept:'Rural Development Dept, Kuthalam', mobile:'9400004003',
+    avatarColor:'store', icon:'warehouse',
+    pages:['dashboard','issuance','stock','qrscan','alerts'] },
+  { id:'U404', username:'inspector.ktl', password:'insp.ktl2025', role:'inspector', block:'Kuthalam', panchayats:null,
+    name:'F. Kamala', designation:'Field Inspector – Kuthalam',
+    dept:'Rural Development Dept, Kuthalam', mobile:'9400004004',
+    avatarColor:'inspector', icon:'fact_check',
+    pages:['dashboard','collection','inspection','alerts'] },
+
+  // ── Kuthalam Overseers ─────────────────────────────────────────────────────
+  { id:'KTL-OV1', username:'c.muthu', password:'muthu2025', role:'overseer', block:'Kuthalam',
+    panchayats:['Alangudi','Asikkadu','Kadalangudi','Sethirabalapuram','Thirumanacheri','Vanathirajapuram','Villiyanallur'],
+    name:'C.Muthu', designation:'Works Overseer – Kuthalam',
+    dept:'Rural Development Dept, Kuthalam', mobile:'',
+    avatarColor:'overseer', icon:'engineering',
+    pages:['dashboard','allotments','beneficiaries','inspection','alerts'] },
+  { id:'KTL-OV2', username:'k.nagendira', password:'nagendira2025', role:'overseer', block:'Kuthalam',
+    panchayats:['Gangatharapuram','Kazhanivasal','Manganallur','Pandaravadai','Porumbur','Vazhuvur','Mathirimangalam','Thiruvalangadu','Thirvavaduthurai'],
+    name:'K.Nagendira', designation:'Works Overseer – Kuthalam',
+    dept:'Rural Development Dept, Kuthalam', mobile:'',
+    avatarColor:'overseer', icon:'engineering',
+    pages:['dashboard','allotments','beneficiaries','inspection','alerts'] },
+  { id:'KTL-OV3', username:'k.prasanna', password:'prasanna2025', role:'overseer', block:'Kuthalam',
+    panchayats:['Arivalur','Thathangudi','Edakudi','Kadakkam','Kiliyanur','Kodavilagam','Muthur','Perambur','Peruncheri','Sethur'],
+    name:'K.Prasanna', designation:'Works Overseer – Kuthalam',
+    dept:'Rural Development Dept, Kuthalam', mobile:'',
+    avatarColor:'overseer', icon:'engineering',
+    pages:['dashboard','allotments','beneficiaries','inspection','alerts'] },
+  { id:'KTL-OV4', username:'r.chandrasekar', password:'chandrasekar2025', role:'overseer', block:'Kuthalam',
+    panchayats:['Anandhanallur','Kappur','Kanjivoy','Komal','Kothangudi','Maruthur','Palaiyur','Karuppur','Peravur'],
+    name:'R.Chandrasekar', designation:'Works Overseer – Kuthalam',
+    dept:'Rural Development Dept, Kuthalam', mobile:'',
+    avatarColor:'overseer', icon:'engineering',
+    pages:['dashboard','allotments','beneficiaries','inspection','alerts'] },
+  { id:'KTL-OV5', username:'s.gowri', password:'gowri2025', role:'overseer', block:'Kuthalam',
+    panchayats:['Therazhandur','Kokkur','Kozhaiyur','Melaiyur','Palayakoodalur','Perumalkoil','Tholuthalangudi','Senniannallur','Mekkirimangalam'],
+    name:'S.Gowri', designation:'Works Overseer – Kuthalam',
+    dept:'Rural Development Dept, Kuthalam', mobile:'',
+    avatarColor:'overseer', icon:'engineering',
+    pages:['dashboard','allotments','beneficiaries','inspection','alerts'] },
+  { id:'KTL-OV6', username:'s.manisangar', password:'manisangar2025', role:'overseer', block:'Kuthalam',
+    panchayats:['Ezhumagalur','Kodimangalam','Konerirajapuram','Manthai','Nakkambadi','Paruthikudi','Sivanaragaram'],
+    name:'S.Manisangar', designation:'Works Overseer – Kuthalam',
+    dept:'Rural Development Dept, Kuthalam', mobile:'',
+    avatarColor:'overseer', icon:'engineering',
+    pages:['dashboard','allotments','beneficiaries','inspection','alerts'] },
+
+  // ── Block: Kollidam – BDO + Store + Inspector ─────────────────────────────
+  { id:'U501', username:'bdo.kld', password:'bdo.kld2025', role:'bdo', block:'Kollidam', panchayats:null,
+    name:'I. Balamurugan', designation:'BDO – Kollidam Block',
+    dept:'Block Development Office, Kollidam', mobile:'9400005001',
+    avatarColor:'bdo', icon:'account_balance',
+    pages:['dashboard','allotments','beneficiaries','collection','reports','alerts'] },
+  { id:'U503', username:'store.kld', password:'store.kld2025', role:'store', block:'Kollidam', panchayats:null,
+    name:'L. Karuppaiah', designation:'Store Keeper – Kollidam Depot',
+    dept:'Rural Development Dept, Kollidam', mobile:'9400005003',
+    avatarColor:'store', icon:'warehouse',
+    pages:['dashboard','issuance','stock','qrscan','alerts'] },
+  { id:'U504', username:'inspector.kld', password:'insp.kld2025', role:'inspector', block:'Kollidam', panchayats:null,
+    name:'O. Geetha', designation:'Field Inspector – Kollidam',
+    dept:'Rural Development Dept, Kollidam', mobile:'9400005004',
+    avatarColor:'inspector', icon:'fact_check',
+    pages:['dashboard','collection','inspection','alerts'] },
+
+  // ── Kollidam Overseers ─────────────────────────────────────────────────────
+  { id:'KLD-OV1', username:'thiruselvan', password:'thiruselvan2025', role:'overseer', block:'Kollidam',
+    panchayats:['Achalpuram','Alakkudi','Kattur','Kodiyampalayam','Mahendrapalli','Pachaiperumanallur','Palayapalyam'],
+    name:'Thiruselvan', designation:'Works Overseer – Kollidam',
+    dept:'Rural Development Dept, Kollidam', mobile:'',
+    avatarColor:'overseer', icon:'engineering',
+    pages:['dashboard','allotments','beneficiaries','inspection','alerts'] },
+  { id:'KLD-OV2', username:'a.shruthi', password:'shruthi2025', role:'overseer', block:'Kollidam',
+    panchayats:['Agaraelathur','Arappallam','Arasur','Erukkur','Keelamathur','Olaiyanputhur','Puthur'],
+    name:'A.Shruthi', designation:'Works Overseer – Kollidam',
+    dept:'Rural Development Dept, Kollidam', mobile:'',
+    avatarColor:'overseer', icon:'engineering',
+    pages:['dashboard','allotments','beneficiaries','inspection','alerts'] },
+  { id:'KLD-OV3', username:'d.vijayakanth', password:'vijayakanth2025', role:'overseer', block:'Kollidam',
+    panchayats:['Agaravattaram','Alangadu','Pannangudi','Pudupattinam','Puliyanthurai','Thandavankulam','Thirumullaivasal','Vettangudi'],
+    name:'D.Vijayakanth', designation:'Works Overseer – Kollidam',
+    dept:'Rural Development Dept, Kollidam', mobile:'',
+    avatarColor:'overseer', icon:'engineering',
+    pages:['dashboard','allotments','beneficiaries','inspection','alerts'] },
+  { id:'KLD-OV4', username:'biruntha', password:'biruntha2025', role:'overseer', block:'Kollidam',
+    panchayats:['Alalasundaram','Arppakkam','Nallavinayagapuram','Othavanthangudi','Anaikkaranchatti'],
+    name:'Biruntha', designation:'Works Overseer – Kollidam',
+    dept:'Rural Development Dept, Kollidam', mobile:'',
+    avatarColor:'overseer', icon:'engineering',
+    pages:['dashboard','allotments','beneficiaries','inspection','alerts'] },
+  { id:'KLD-OV5', username:'aruldoss', password:'aruldoss2025', role:'overseer', block:'Kollidam',
+    panchayats:['Edamanal','Kadavasal','Maharajapuram','Thirukarukavoore','Umaiyalpathi','Vadagal'],
+    name:'Aruldoss', designation:'Works Overseer – Kollidam',
+    dept:'Rural Development Dept, Kollidam', mobile:'',
+    avatarColor:'overseer', icon:'engineering',
+    pages:['dashboard','allotments','beneficiaries','inspection','alerts'] },
+  { id:'KLD-OV6', username:'s.priya', password:'priya2025', role:'overseer', block:'Kollidam',
+    panchayats:['Gopalasamuthiram','Koothiyampeetai','Kunnam','Mathirivellur','Muthalimedu','Sheeyalam','Sothiyakudi','Vadarangam'],
+    name:'S.Priya', designation:'Works Overseer – Kollidam',
+    dept:'Rural Development Dept, Kollidam', mobile:'',
+    avatarColor:'overseer', icon:'engineering',
+    pages:['dashboard','allotments','beneficiaries','inspection','alerts'] }
 ];
 
 // Role → display metadata
@@ -829,9 +941,20 @@ const PAGE_META = {
 // ── Block-scoped data filter ─────────────────────────────────────────────────
 // Returns only records belonging to the current user's block.
 // Collector (block:null) always gets everything.
+// Returns the panchayats assigned to the current user (null = all panchayats in their block/district)
+function userPanchayats() {
+  return currentUser.panchayats || null;
+}
+
 function scopedBeneficiaries() {
   if (!currentUser.block) return DB.beneficiaries;
-  return DB.beneficiaries.filter(b => b.block === currentUser.block);
+  let bens = DB.beneficiaries.filter(b => b.block === currentUser.block);
+  const panch = userPanchayats();
+  if (panch) {
+    const pset = new Set(panch.map(p => p.toUpperCase()));
+    bens = bens.filter(b => pset.has((b.village||'').toUpperCase()));
+  }
+  return bens;
 }
 function scopedAllotments() {
   const bens = new Set(scopedBeneficiaries().map(b => b.id));
@@ -840,19 +963,41 @@ function scopedAllotments() {
 }
 function scopedIssuances() {
   if (!currentUser.block) return DB.issuances;
-  return DB.issuances.filter(i => i.block === currentUser.block);
+  let iss = DB.issuances.filter(i => i.block === currentUser.block);
+  const panch = userPanchayats();
+  if (panch) {
+    const pset = new Set(panch.map(p => p.toUpperCase()));
+    iss = iss.filter(i => pset.has((i.village||'').toUpperCase()));
+  }
+  return iss;
 }
 function scopedInspections() {
   if (!currentUser.block) return DB.inspections;
-  return DB.inspections.filter(i => i.block === currentUser.block);
+  let ins = DB.inspections.filter(i => i.block === currentUser.block);
+  const panch = userPanchayats();
+  if (panch) {
+    const pset = new Set(panch.map(p => p.toUpperCase()));
+    ins = ins.filter(i => pset.has((i.village||'').toUpperCase()));
+  }
+  return ins;
 }
 function blockVillages() {
   if (!currentUser.block) return VILLAGES;
+  const panch = userPanchayats();
+  if (panch) return panch;
   return BLOCK_DATA[currentUser.block]?.villages || VILLAGES;
 }
 function allowedBlocks() {
   if (!currentUser.block) return BLOCKS;
   return [currentUser.block];
+}
+// Helper: get the overseer name for a given village+block (used in beneficiary/allotment display)
+function overseerForVillage(block, village) {
+  const overseers = BLOCK_DATA[block]?.overseers || {};
+  for (const [name, vils] of Object.entries(overseers)) {
+    if (vils.some(v => v.toUpperCase() === (village||'').toUpperCase())) return name;
+  }
+  return '—';
 }
 
 // ===== APP STATE =====
@@ -870,27 +1015,110 @@ let DB = {
 const SCHEMES = ['KKI-2025-26', 'KKI-2025-26 Additional Allocation', 'MVMT-2025-26', 'PMAY(G) - 2024-25', 'PMAY(G) - Spill over houses'];
 const CEMENT_TYPES = ['OPC 43 Grade', 'OPC 53 Grade', 'PPC Cement', 'PSC Cement'];
 
-// The 5 blocks of Mayiladuthurai district with their panchayat/villages
+// The 5 blocks with all real panchayats and overseer assignments from official records
 const BLOCK_DATA = {
   'Mayiladuthurai': {
     hq: 'Mayiladuthurai',
-    villages: ['Mayiladuthurai', 'Poompuhar', 'Thirukadaiyur', 'Koothanallur', 'Thalainayar', 'Sirkazhi']
+    villages: [
+      'AGARAKEERANGUDI','ANAIMELAGARAM','MARAIYUR','MAYILADUTHURAI RURAL','MOOVALUR',
+      'NALLATHUKUDI','PATTAMANGALAM','SOLAMPETTAI','SITHARKADU',
+      'ANATHANDAVAPURAM','KADAKKAM','KADUVANGUDI','KEELAMARUTHANTHANALLUR','KIZHAI',
+      'KURICHI','MUDIKANDANALLUR','SITHAMALLI','VILLIYANALLUR',
+      'ARUNMOZHIDEVAN','IVANALLUR','KANGANAMPUTHUR','KESINGAN','NEEDUR',
+      'PANDUR','PONNUR','THALANCHERY','THIRUENTHALUR',
+      'ARUVAPADI','ELANTHOPPU','KORKAI','MAHARAJAPURAM','MAPPADUGAI',
+      'MELANALLUR','PATTAVARTHI','SETHUR','THALAINAYAR',
+      'AATHUR','BOOTHANGUDI','KADALANGUDI','KALI','MURUGAMANGALAM',
+      'NAMASIVAYAPURAM','THIRUCHITRAMPALAM','THIRUMANGALAM','VARADHAMPATTU',
+      'DHARMATHANAPURAM','KODANGUDI','KULICHAR','MANAKUDI','MANNAMPANDAL',
+      'MOZHAIYUR','SERUTHIYUR','ULUTHUKUPPAI','VALLALAGARAM'
+    ],
+    overseers: {
+      'R.Kayalvizhi':   ['AGARAKEERANGUDI','ANAIMELAGARAM','MARAIYUR','MAYILADUTHURAI RURAL','MOOVALUR','NALLATHUKUDI','PATTAMANGALAM','SOLAMPETTAI','SITHARKADU'],
+      'K.Oosainayagi':  ['ANATHANDAVAPURAM','KADAKKAM','KADUVANGUDI','KEELAMARUTHANTHANALLUR','KIZHAI','KURICHI','MUDIKANDANALLUR','SITHAMALLI','VILLIYANALLUR'],
+      'G.Tamilselvi':   ['ARUNMOZHIDEVAN','IVANALLUR','KANGANAMPUTHUR','KESINGAN','NEEDUR','PANDUR','PONNUR','THALANCHERY','THIRUENTHALUR'],
+      'K.Praveen':      ['ARUVAPADI','ELANTHOPPU','KORKAI','MAHARAJAPURAM','MAPPADUGAI','MELANALLUR','PATTAVARTHI','SETHUR','THALAINAYAR'],
+      'R.Anbazhagan':   ['AATHUR','BOOTHANGUDI','KADALANGUDI','KALI','MURUGAMANGALAM','NAMASIVAYAPURAM','THIRUCHITRAMPALAM','THIRUMANGALAM','VARADHAMPATTU'],
+      'D.Praveena':     ['DHARMATHANAPURAM','KODANGUDI','KULICHAR','MANAKUDI','MANNAMPANDAL','MOZHAIYUR','SERUTHIYUR','ULUTHUKUPPAI','VALLALAGARAM']
+    }
   },
   'Kuthalam': {
     hq: 'Kuthalam',
-    villages: ['Kuthalam', 'Vaimedu', 'Puthur', 'Thiruvarur Road', 'Manakkal', 'Aduthurai']
+    villages: [
+      'Alangudi','Asikkadu','Kadalangudi','Sethirabalapuram','Thirumanacheri','Vanathirajapuram','Villiyanallur',
+      'Gangatharapuram','Kazhanivasal','Manganallur','Pandaravadai','Porumbur','Vazhuvur','Mathirimangalam','Thiruvalangadu','Thirvavaduthurai',
+      'Arivalur','Thathangudi','Edakudi','Kadakkam','Kiliyanur','Kodavilagam','Muthur','Perambur','Peruncheri','Sethur',
+      'Anandhanallur','Kappur','Kanjivoy','Komal','Kothangudi','Maruthur','Palaiyur','Karuppur','Peravur',
+      'Therazhandur','Kokkur','Kozhaiyur','Melaiyur','Palayakoodalur','Perumalkoil','Tholuthalangudi','Senniannallur','Mekkirimangalam',
+      'Ezhumagalur','Kodimangalam','Konerirajapuram','Manthai','Nakkambadi','Paruthikudi','Sivanaragaram'
+    ],
+    overseers: {
+      'C.Muthu':        ['Alangudi','Asikkadu','Kadalangudi','Sethirabalapuram','Thirumanacheri','Vanathirajapuram','Villiyanallur'],
+      'K.Nagendira':    ['Gangatharapuram','Kazhanivasal','Manganallur','Pandaravadai','Porumbur','Vazhuvur','Mathirimangalam','Thiruvalangadu','Thirvavaduthurai'],
+      'K.Prasanna':     ['Arivalur','Thathangudi','Edakudi','Kadakkam','Kiliyanur','Kodavilagam','Muthur','Perambur','Peruncheri','Sethur'],
+      'R.Chandrasekar': ['Anandhanallur','Kappur','Kanjivoy','Komal','Kothangudi','Maruthur','Palaiyur','Karuppur','Peravur'],
+      'S.Gowri':        ['Therazhandur','Kokkur','Kozhaiyur','Melaiyur','Palayakoodalur','Perumalkoil','Tholuthalangudi','Senniannallur','Mekkirimangalam'],
+      'S.Manisangar':   ['Ezhumagalur','Kodimangalam','Konerirajapuram','Manthai','Nakkambadi','Paruthikudi','Sivanaragaram']
+    }
   },
   'Sembanarkoil': {
     hq: 'Sembanarkoil',
-    villages: ['Sembanarkoil', 'Veppancheri', 'Mathur', 'Kilvelur', 'Nannilam', 'Thirumarugal']
+    villages: [
+      'AKKUR','KEELAPERUMPALLAM','KIDANGAL','MADAPURAM','MELAPERUMPALLAM','MUDIKANDANALLUR','SEMBANARKOIL',
+      'ALAVELI','KALAHASTHINATHAPURAM','KONDATHUR','MELAIYUR','NADUKARAI','NATTHAM','SEMANGALAM',
+      'ANNAVASAL','ELAIYALUR','NALLADAI','VILAGAM','VISALUR',
+      'ARASUR','ARUPATHY','ECHANGUDI','ERAVANCHERI','GUDALOORE','KEEZHMATHUR','NARASINGANATHAM','THIRUVILAIYATTAM',
+      'CHANDRAPADI','EDUTHUKATTI','ELUPPUR','KATTUCHERI','T MANALMEDU','THILLAIYADI','THIRUKALACHERY','UTHIRANGUDI',
+      'KALAMANALLUR','KAZHIYAPPANALLUR','MANIKAPANGU','MARUTHAMPALLAM','NEDUVASAL','PILLAIPERUMANALLUR','THIRUVIDAIKAZHI',
+      'KANJANAGARAM','KARUVAZHAKARAI','KEELAIYUR','KIDARANKONDAN','MAMAKUDI','PAGASALAI','THALAIYUDAIYAVARKOILPATHU',
+      'KILLIYUR','KOTHANGUDI','MATHUR','MEMATHUR','MUKKARUMBUR','PARASALUR','THIRUCHAMPALLI','THIRUKADAIYUR'
+    ],
+    overseers: {
+      'U.Rajalakshmi':  ['AKKUR','KEELAPERUMPALLAM','KIDANGAL','MADAPURAM','MELAPERUMPALLAM','MUDIKANDANALLUR','SEMBANARKOIL'],
+      'N.Akila':        ['ALAVELI','KALAHASTHINATHAPURAM','KONDATHUR','MELAIYUR','NADUKARAI','NATTHAM','SEMANGALAM'],
+      'V.Manimaran':    ['ANNAVASAL','ELAIYALUR','NALLADAI','VILAGAM','VISALUR'],
+      'R.Balaji':       ['ARASUR','ARUPATHY','ECHANGUDI','ERAVANCHERI','GUDALOORE','KEEZHMATHUR','NARASINGANATHAM','THIRUVILAIYATTAM'],
+      'K.Bharathi':     ['CHANDRAPADI','EDUTHUKATTI','ELUPPUR','KATTUCHERI','T MANALMEDU','THILLAIYADI','THIRUKALACHERY','UTHIRANGUDI'],
+      'K.Keerthana':    ['KALAMANALLUR','KAZHIYAPPANALLUR','MANIKAPANGU','MARUTHAMPALLAM','NEDUVASAL','PILLAIPERUMANALLUR','THIRUVIDAIKAZHI'],
+      'N.Babu':         ['KANJANAGARAM','KARUVAZHAKARAI','KEELAIYUR','KIDARANKONDAN','MAMAKUDI','PAGASALAI','THALAIYUDAIYAVARKOILPATHU'],
+      'J.Saravanan':    ['KILLIYUR','KOTHANGUDI','MATHUR','MEMATHUR','MUKKARUMBUR','PARASALUR','THIRUCHAMPALLI','THIRUKADAIYUR']
+    }
   },
   'Sirkali': {
     hq: 'Sirkali',
-    villages: ['Sirkali', 'Chidambaram Road', 'Tharangambadi', 'Thiruvenkadu', 'Poompuhar North', 'Kollidam East']
+    villages: [
+      'AGANI','ATHIYUR','MARUTHANGUDI','NEMMELI','PUNGANUR','SATTANATHAPURAM','VALLUVAKUDI','VILANTHIDASAMUTHIRAM',
+      'EDAKUDIVADAPATHY','KATHIRUPPU','KAVERIPOOMPATTINAM','MANIGRAMAM','POOMBUHAR','THIRUVENGADU','VANAGIRI',
+      'KANNIYAKUDI','KARKOIL','KATHIRAMANGALAM','KONDAL','PERUMANGALAM','SEMMANGUDI','THIRUPUNGOORE',
+      'KARAIMEDU','KEELASATTANATHAPURAM','PERUNTHOTTAM','PUDUTHURAI','RADHANALLUR','SEMBATHANIRUPPU','THILLAIVIDANGAN','THIRUVALI','THITTAI',
+      'MANGAIMADAM','NANGOORE','NEPPATHUR','THENNAMPATTINAM','THIRUNAGARI'
+    ],
+    overseers: {
+      'M.Umamaheshwari':['AGANI','ATHIYUR','MARUTHANGUDI','NEMMELI','PUNGANUR','SATTANATHAPURAM','VALLUVAKUDI','VILANTHIDASAMUTHIRAM'],
+      'R.Kala':         ['EDAKUDIVADAPATHY','KATHIRUPPU','KAVERIPOOMPATTINAM','MANIGRAMAM','POOMBUHAR','THIRUVENGADU','VANAGIRI'],
+      'M.Govindharaj':  ['KANNIYAKUDI','KARKOIL','KATHIRAMANGALAM','KONDAL','PERUMANGALAM','SEMMANGUDI','THIRUPUNGOORE'],
+      'M.Amalarani':    ['KARAIMEDU','KEELASATTANATHAPURAM','PERUNTHOTTAM','PUDUTHURAI','RADHANALLUR','SEMBATHANIRUPPU','THILLAIVIDANGAN','THIRUVALI','THITTAI'],
+      'M.Kavitha':      ['MANGAIMADAM','NANGOORE','NEPPATHUR','THENNAMPATTINAM','THIRUNAGARI']
+    }
   },
   'Kollidam': {
     hq: 'Kollidam',
-    villages: ['Kollidam', 'Sirkazhi North', 'Vailankanni', 'Nagore', 'Poigainallur', 'Vedaranyam Road']
+    villages: [
+      'Achalpuram','Alakkudi','Kattur','Kodiyampalayam','Mahendrapalli','Pachaiperumanallur','Palayapalyam',
+      'Agaraelathur','Arappallam','Arasur','Erukkur','Keelamathur','Olaiyanputhur','Puthur',
+      'Agaravattaram','Alangadu','Pannangudi','Pudupattinam','Puliyanthurai','Thandavankulam','Thirumullaivasal','Vettangudi',
+      'Alalasundaram','Arppakkam','Nallavinayagapuram','Othavanthangudi','Anaikkaranchatti',
+      'Edamanal','Kadavasal','Maharajapuram','Thirukarukavoore','Umaiyalpathi','Vadagal',
+      'Gopalasamuthiram','Koothiyampeetai','Kunnam','Mathirivellur','Muthalimedu','Sheeyalam','Sothiyakudi','Vadarangam'
+    ],
+    overseers: {
+      'Thiruselvan':    ['Achalpuram','Alakkudi','Kattur','Kodiyampalayam','Mahendrapalli','Pachaiperumanallur','Palayapalyam'],
+      'A.Shruthi':      ['Agaraelathur','Arappallam','Arasur','Erukkur','Keelamathur','Olaiyanputhur','Puthur'],
+      'D.Vijayakanth':  ['Agaravattaram','Alangadu','Pannangudi','Pudupattinam','Puliyanthurai','Thandavankulam','Thirumullaivasal','Vettangudi'],
+      'Biruntha':       ['Alalasundaram','Arppakkam','Nallavinayagapuram','Othavanthangudi','Anaikkaranchatti'],
+      'Aruldoss':       ['Edamanal','Kadavasal','Maharajapuram','Thirukarukavoore','Umaiyalpathi','Vadagal'],
+      'S.Priya':        ['Gopalasamuthiram','Koothiyampeetai','Kunnam','Mathirivellur','Muthalimedu','Sheeyalam','Sothiyakudi','Vadarangam']
+    }
   }
 };
 const BLOCKS   = Object.keys(BLOCK_DATA);
@@ -899,54 +1127,85 @@ const VILLAGES = Object.values(BLOCK_DATA).flatMap(b => b.villages);
 // ===== SEED DATA =====
 
 function seedData() {
-  // Seed 3 beneficiaries per block = 15 total, each with correct village
+  // Seed 2 beneficiaries per overseer per block using actual panchayat names
   const perBlock = [
-    { block:'Mayiladuthurai', names:['Murugan R','Lakshmi D','Selvam K'] },
-    { block:'Kuthalam',       names:['Geetha P','Rajan M','Vijaya S'] },
-    { block:'Sembanarkoil',   names:['Arumugam T','Kamala N','Pandi V'] },
-    { block:'Sirkali',        names:['Saraswathi A','Karuppaiah B','Meenakshi C'] },
-    { block:'Kollidam',       names:['Suresh G','Devika H','Balamurugan J'] },
+    { block:'Mayiladuthurai', overseers:[
+        {name:'R.Kayalvizhi',   bens:['Murugan R','Lakshmi D'],     vils:['AGARAKEERANGUDI','ANAIMELAGARAM']},
+        {name:'K.Oosainayagi',  bens:['Selvam K','Priya S'],        vils:['ANATHANDAVAPURAM','KADAKKAM']},
+        {name:'G.Tamilselvi',   bens:['Kavitha M','Rajan A'],       vils:['ARUNMOZHIDEVAN','IVANALLUR']},
+        {name:'K.Praveen',      bens:['Suresh B','Meena C'],        vils:['ARUVAPADI','ELANTHOPPU']},
+        {name:'R.Anbazhagan',   bens:['Geetha V','Mani T'],         vils:['AATHUR','BOOTHANGUDI']},
+        {name:'D.Praveena',     bens:['Balan P','Saroja N'],        vils:['DHARMATHANAPURAM','KODANGUDI']},
+    ]},
+    { block:'Kuthalam', overseers:[
+        {name:'C.Muthu',        bens:['Pandi R','Kamala S'],        vils:['Alangudi','Asikkadu']},
+        {name:'K.Nagendira',    bens:['Arjun M','Valli K'],         vils:['Gangatharapuram','Kazhanivasal']},
+        {name:'K.Prasanna',     bens:['Babu L','Devi A'],           vils:['Arivalur','Thathangudi']},
+        {name:'R.Chandrasekar', bens:['Ramu G','Usha P'],          vils:['Anandhanallur','Kappur']},
+        {name:'S.Gowri',        bens:['Karthik B','Nila C'],        vils:['Therazhandur','Kokkur']},
+        {name:'S.Manisangar',   bens:['Velan D','Shanthi E'],      vils:['Ezhumagalur','Kodimangalam']},
+    ]},
+    { block:'Sembanarkoil', overseers:[
+        {name:'U.Rajalakshmi',  bens:['Murugesan F','Janaki G'],    vils:['AKKUR','KEELAPERUMPALLAM']},
+        {name:'N.Akila',        bens:['Selvi H','Rajan I'],         vils:['ALAVELI','KALAHASTHINATHAPURAM']},
+        {name:'V.Manimaran',    bens:['Mani J','Lakshmi K'],        vils:['ANNAVASAL','ELAIYALUR']},
+        {name:'R.Balaji',       bens:['Balaji L','Kaveri M'],       vils:['ARASUR','ARUPATHY']},
+        {name:'K.Bharathi',     bens:['Bharath N','Priya O'],       vils:['CHANDRAPADI','EDUTHUKATTI']},
+        {name:'K.Keerthana',    bens:['Kumar P','Rekha Q'],         vils:['KALAMANALLUR','KAZHIYAPPANALLUR']},
+        {name:'N.Babu',         bens:['Babu R','Geetha S'],         vils:['KANJANAGARAM','KARUVAZHAKARAI']},
+        {name:'J.Saravanan',    bens:['Saravanan T','Vani U'],      vils:['KILLIYUR','KOTHANGUDI']},
+    ]},
+    { block:'Sirkali', overseers:[
+        {name:'M.Umamaheshwari',bens:['Uma V','Suresh W'],          vils:['AGANI','ATHIYUR']},
+        {name:'R.Kala',         bens:['Kala X','Vijay Y'],          vils:['EDAKUDIVADAPATHY','KATHIRUPPU']},
+        {name:'M.Govindharaj',  bens:['Govind Z','Malathi A'],      vils:['KANNIYAKUDI','KARKOIL']},
+        {name:'M.Amalarani',    bens:['Amala B','Ravi C'],          vils:['KARAIMEDU','KEELASATTANATHAPURAM']},
+        {name:'M.Kavitha',      bens:['Kavitha D','Murugan E'],     vils:['MANGAIMADAM','NANGOORE']},
+    ]},
+    { block:'Kollidam', overseers:[
+        {name:'Thiruselvan',    bens:['Thirusel F','Rani G'],       vils:['Achalpuram','Alakkudi']},
+        {name:'A.Shruthi',      bens:['Shruthi H','Kumar I'],       vils:['Agaraelathur','Arappallam']},
+        {name:'D.Vijayakanth',  bens:['Vijay J','Mala K'],          vils:['Agaravattaram','Alangadu']},
+        {name:'Biruntha',       bens:['Biruntha L','Vel M'],        vils:['Alalasundaram','Arppakkam']},
+        {name:'Aruldoss',       bens:['Aruldoss N','Vasantha O'],   vils:['Edamanal','Kadavasal']},
+        {name:'S.Priya',        bens:['Priya P','Anand Q'],         vils:['Gopalasamuthiram','Koothiyampeetai']},
+    ]},
   ];
+
   let idx = 0;
-  DB.beneficiaries = perBlock.flatMap(({block, names}) =>
-    names.map((name, j) => {
-      const vils = BLOCK_DATA[block].villages;
-      idx++;
-      return {
-        id: 'B' + String(idx).padStart(4,'0'),
-        name,
-        aadhaar: '****-****-' + String(1000+idx*77).slice(-4),
-        mobile: '9' + String(8000000000+idx*1234567).slice(0,9),
-        village: vils[j % vils.length],
-        block,
-        scheme: SCHEMES[idx % SCHEMES.length],
-        houseNo: block.slice(0,3).toUpperCase() + '/' + String(2025001+idx),
-        workId: 'TNRD/' + block.slice(0,3).toUpperCase() + '/' + String(1000+idx),
-        year: '2025-26',
-        sanctionedBags: [50,75,100,120][idx%4],
-        issuedBags: 0,
-        receivedBags: 0,
-        status: 'Active',
-        uploadedBy: 'Collector',
-        uploadedAt: new Date(2025,0,idx).toISOString(),
-        createdAt: new Date(2025, 0, idx).toISOString()
-      };
-    })
+  DB.beneficiaries = perBlock.flatMap(({block, overseers}) =>
+    overseers.flatMap(({bens, vils}) =>
+      bens.map((name, j) => {
+        idx++;
+        return {
+          id: 'B' + String(idx).padStart(4,'0'),
+          name,
+          aadhaar: '****-****-' + String(1000+idx*77).slice(-4),
+          mobile: '9' + String(8000000000+idx*1234567).slice(0,9),
+          village: vils[j % vils.length],
+          block,
+          scheme: SCHEMES[idx % SCHEMES.length],
+          houseNo: block.slice(0,3).toUpperCase() + '/' + String(2025001+idx),
+          workId: 'TNRD/' + block.slice(0,3).toUpperCase() + '/' + String(1000+idx),
+          year: '2025-26',
+          sanctionedBags: [50,75,100,120][idx%4],
+          issuedBags: 0,
+          receivedBags: 0,
+          status: 'Active',
+          uploadedBy: 'Collector',
+          uploadedAt: new Date(2025,0,idx).toISOString(),
+          createdAt: new Date(2025, 0, idx).toISOString()
+        };
+      })
+    )
   );
 
   DB.stock = { total: 2500, issued: 0, balance: 2500, openingBalance: 2500, type: 'OPC 43 Grade', lastUpdated: new Date().toISOString() };
   DB.stockLedger = [{
-    id: 'GRN001',
-    type: 'RECEIPT',
-    date: new Date().toISOString(),
-    bags: 2500,
-    openingBalance: 0,
-    closingBalance: 2500,
-    cementType: 'OPC 43 Grade',
-    supplier: 'Govt. Depot – Nagapattinam',
-    grn: 'GRN/2025/001',
-    addedBy: 'Admin',
-    remark: 'Initial stock loaded'
+    id: 'GRN001', type: 'RECEIPT', date: new Date().toISOString(),
+    bags: 2500, openingBalance: 0, closingBalance: 2500,
+    cementType: 'OPC 43 Grade', supplier: 'Govt. Depot – Nagapattinam',
+    grn: 'GRN/2025/001', addedBy: 'Admin', remark: 'Initial stock loaded'
   }];
   DB.allotments = [];
   DB.issuances = [];
@@ -955,14 +1214,48 @@ function seedData() {
   saveDB();
 }
 
+// Current valid blocks — any saved data with different blocks is stale and must be cleaned
+const VALID_BLOCKS = ['Mayiladuthurai', 'Kuthalam', 'Sembanarkoil', 'Sirkali', 'Kollidam'];
+const DB_VERSION = 4; // increment whenever block list or schema changes
+
 function saveDB() {
-  try { localStorage.setItem('drdCementDB', JSON.stringify(DB)); } catch(e) {}
+  try {
+    localStorage.setItem('drdCementDB', JSON.stringify(DB));
+    localStorage.setItem('drdCementDB_version', String(DB_VERSION));
+  } catch(e) {}
 }
 function loadDB() {
   try {
+    const savedVersion = parseInt(localStorage.getItem('drdCementDB_version') || '0');
     const d = localStorage.getItem('drdCementDB');
-    if (d) { DB = JSON.parse(d); return true; }
-  } catch(e) {}
+    if (!d) return false;
+
+    // Version mismatch → wipe and re-seed with correct data
+    if (savedVersion < DB_VERSION) {
+      console.log(`DB version ${savedVersion} < ${DB_VERSION} — clearing stale data and re-seeding`);
+      localStorage.removeItem('drdCementDB');
+      localStorage.removeItem('drdCementDB_version');
+      return false;
+    }
+
+    DB = JSON.parse(d);
+
+    // Sanitise: strip any beneficiaries/allotments/issuances from invalid blocks
+    const invalidBens = DB.beneficiaries.filter(b => b.block && !VALID_BLOCKS.includes(b.block));
+    if (invalidBens.length > 0) {
+      console.warn(`Removing ${invalidBens.length} beneficiaries with invalid blocks:`, [...new Set(invalidBens.map(b=>b.block))]);
+      const validIds = new Set(DB.beneficiaries.filter(b => VALID_BLOCKS.includes(b.block)||!b.block).map(b=>b.id));
+      DB.beneficiaries = DB.beneficiaries.filter(b => VALID_BLOCKS.includes(b.block)||!b.block);
+      DB.allotments   = DB.allotments.filter(a => !a.block || VALID_BLOCKS.includes(a.block));
+      DB.issuances    = DB.issuances.filter(i => !i.block || VALID_BLOCKS.includes(i.block));
+      DB.inspections  = (DB.inspections||[]).filter(i => !i.block || VALID_BLOCKS.includes(i.block));
+      saveDB(); // persist the cleaned version
+    }
+
+    return true;
+  } catch(e) {
+    console.error('loadDB error:', e);
+  }
   return false;
 }
 
@@ -1223,14 +1516,22 @@ function buildSidebar() {
   const rm = ROLE_META[currentUser.role];
   const avatarBg = rm.color;
   const sections = { main: 'Main', records: 'Records', system: 'System' };
+  const panch = userPanchayats();
+  const panchTag = panch
+    ? `<div style="font-size:10px;color:var(--blue);margin-top:3px;line-height:1.4">
+        <span class="material-icons-round" style="font-size:11px;vertical-align:middle">location_on</span>
+        ${panch.length} Panchayats
+       </div>`
+    : '';
   let html = `
     <div class="sidebar-user">
       <div class="su-avatar" style="background:${avatarBg}">
         <span class="material-icons-round" style="font-size:20px">${currentUser.icon}</span>
       </div>
       <div>
-        <div class="su-name">${currentUser.name.split(' ').slice(0,2).join(' ')}</div>
-        <div class="su-role"><span class="role-badge ${rm.badge}">${rm.label}</span></div>
+        <div class="su-name">${currentUser.name}</div>
+        <div class="su-role"><span class="role-badge ${rm.badge}">${rm.label}</span>${currentUser.block ? `&nbsp;<span style="font-size:10px;color:var(--grey-500)">${currentUser.block}</span>` : ''}</div>
+        ${panchTag}
       </div>
     </div>`;
 
@@ -1503,7 +1804,40 @@ function renderDashboard(el) {
           <span class="info-key"><span class="material-icons-round" style="font-size:16px;vertical-align:middle;color:var(--green)">output</span> Issued to ${i.beneficiaryName}</span>
           <span><strong>${i.bags} bags</strong> &nbsp;<span class="chip chip-issued">Issued</span></span>
         </div>`).join('') || '<div style="color:var(--grey-500);font-size:13px">No activity yet</div>'}
-    </div>`;
+    </div>
+
+    ${currentUser.role === 'overseer' && userPanchayats() ? `
+    <div class="card" style="margin-top:16px">
+      <div class="section-title">My Assigned Panchayats (${userPanchayats().length})</div>
+      <div style="font-size:12px;color:var(--grey-500);margin-bottom:10px">${currentUser.block} Block · ${currentUser.name}</div>
+      <div class="table-wrap">
+        <table style="font-size:12px">
+          <thead><tr><th>#</th><th>Panchayat</th><th style="text-align:right">Beneficiaries</th><th style="text-align:right">Sanctioned Bags</th><th style="text-align:right">Issued Bags</th><th style="text-align:right">Balance Bags</th><th>Progress</th></tr></thead>
+          <tbody>
+            ${userPanchayats().map((panch, pi) => {
+              const pBens = DB.beneficiaries.filter(b=>b.block===currentUser.block && (b.village||'').toUpperCase()===panch.toUpperCase());
+              const pIss  = DB.issuances.filter(i=>i.block===currentUser.block && (i.village||'').toUpperCase()===panch.toUpperCase());
+              const sanc  = pBens.reduce((t,b)=>t+(b.sanctionedBags||0),0);
+              const iss   = pIss.reduce((t,i)=>t+i.bags,0);
+              const bal   = Math.max(0,sanc-iss);
+              const pct   = sanc ? Math.round(iss/sanc*100) : 0;
+              return `<tr>
+                <td style="color:var(--grey-400)">${pi+1}</td>
+                <td><strong>${panch}</strong></td>
+                <td style="text-align:right">${pBens.length}</td>
+                <td style="text-align:right">${sanc}</td>
+                <td style="text-align:right;color:var(--green);font-weight:600">${iss}</td>
+                <td style="text-align:right;color:${bal>0?'var(--blue)':'var(--grey-400)'};font-weight:600">${bal}</td>
+                <td style="min-width:90px">
+                  <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
+                  <div style="font-size:10px;color:var(--grey-500);margin-top:2px">${pct}%</div>
+                </td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>` : ''}`;
 }
 
 // ===== CHALLAN NUMBER GENERATION =====
@@ -2403,6 +2737,10 @@ function renderBeneficiaries(el) {
   const dynSchemes = [...new Set(allBens.map(b=>b.scheme).filter(Boolean))];
   const dynYears   = [...new Set(allBens.map(b=>b.year).filter(Boolean))];
   const dynBlocks  = currentUser.block ? [] : [...new Set(allBens.map(b=>b.block).filter(Boolean))];
+  // Overseer options: from BLOCK_DATA overseers for visible blocks
+  const dynOverseers = currentUser.block
+    ? Object.keys(BLOCK_DATA[currentUser.block]?.overseers||{})
+    : BLOCKS.flatMap(blk=>Object.keys(BLOCK_DATA[blk]?.overseers||{}));
 
   el.innerHTML = `
     <div class="page-header">
@@ -2417,13 +2755,17 @@ function renderBeneficiaries(el) {
     </div>
     <div class="card">
       <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px;align-items:flex-end">
-        <div class="search-input" style="flex:1;min-width:180px"><span class="material-icons-round">search</span><input id="benSearch" placeholder="Search name, work ID, house no..." oninput="filterBenTable()"></div>
+        <div class="search-input" style="flex:1;min-width:180px"><span class="material-icons-round">search</span><input id="benSearch" placeholder="Search name, work ID, house no, overseer..." oninput="filterBenTable()"></div>
         ${dynBlocks.length ? `<select class="form-control" style="width:160px" id="benBlockFilter" onchange="filterBenTable()"><option value="">All Blocks</option>${dynBlocks.map(b=>`<option>${b}</option>`).join('')}</select>` : ''}
-        <select class="form-control" style="width:180px" id="benSchemeFilter" onchange="filterBenTable()">
+        <select class="form-control" style="width:175px" id="benOverseerFilter" onchange="filterBenTable()">
+          <option value="">All Overseers</option>
+          ${dynOverseers.map(o=>`<option value="${o}">${o}</option>`).join('')}
+        </select>
+        <select class="form-control" style="width:175px" id="benSchemeFilter" onchange="filterBenTable()">
           <option value="">All Schemes</option>
           ${dynSchemes.map(s=>`<option>${s}</option>`).join('')}
         </select>
-        <select class="form-control" style="width:120px" id="benYearFilter" onchange="filterBenTable()">
+        <select class="form-control" style="width:110px" id="benYearFilter" onchange="filterBenTable()">
           <option value="">All Years</option>
           ${dynYears.map(y=>`<option>${y}</option>`).join('')}
         </select>
@@ -2431,7 +2773,7 @@ function renderBeneficiaries(el) {
       <div style="font-size:12px;color:var(--grey-500);margin-bottom:8px" id="benCount"></div>
       <div class="table-wrap">
         <table id="benTable">
-          <thead><tr><th>S.No.</th><th>Work ID</th><th>Name</th><th>Block</th><th>Village</th><th>Scheme</th><th>Year</th><th>House No.</th><th style="text-align:right">Sanctioned</th><th style="text-align:right">Issued</th><th style="text-align:right">Balance</th><th>Actions</th></tr></thead>
+          <thead><tr><th>S.No.</th><th>Work ID</th><th>Name</th><th>Block</th><th>Village / Panchayat</th><th>Overseer</th><th>Scheme</th><th>Year</th><th>House No.</th><th style="text-align:right">Sanctioned</th><th style="text-align:right">Issued</th><th style="text-align:right">Balance</th><th>Actions</th></tr></thead>
           <tbody id="benBody"></tbody>
         </table>
       </div>
@@ -2439,15 +2781,17 @@ function renderBeneficiaries(el) {
   filterBenTable();
 }
 function filterBenTable() {
-  const q      = (document.getElementById('benSearch')?.value||'').toLowerCase();
-  const scheme = document.getElementById('benSchemeFilter')?.value||'';
-  const block  = document.getElementById('benBlockFilter')?.value||'';
-  const year   = document.getElementById('benYearFilter')?.value||'';
+  const q       = (document.getElementById('benSearch')?.value||'').toLowerCase();
+  const scheme  = document.getElementById('benSchemeFilter')?.value||'';
+  const block   = document.getElementById('benBlockFilter')?.value||'';
+  const year    = document.getElementById('benYearFilter')?.value||'';
+  const overseerF = document.getElementById('benOverseerFilter')?.value||'';
   let data = scopedBeneficiaries();
-  if (q)      data = data.filter(b=>JSON.stringify(b).toLowerCase().includes(q));
-  if (scheme) data = data.filter(b=>b.scheme===scheme);
-  if (block)  data = data.filter(b=>b.block===block);
-  if (year)   data = data.filter(b=>b.year===year);
+  if (q)       data = data.filter(b=>(JSON.stringify(b)+overseerForVillage(b.block,b.village)).toLowerCase().includes(q));
+  if (scheme)  data = data.filter(b=>b.scheme===scheme);
+  if (block)   data = data.filter(b=>b.block===block);
+  if (year)    data = data.filter(b=>b.year===year);
+  if (overseerF) data = data.filter(b=>overseerForVillage(b.block,b.village)===overseerF);
   const body = document.getElementById('benBody');
   const cnt  = document.getElementById('benCount');
   if (cnt) cnt.textContent = data.length + ' beneficiaries';
@@ -2455,6 +2799,7 @@ function filterBenTable() {
   body.innerHTML = data.map((b,idx)=>{
     const issuedBags = DB.issuances.filter(i=>i.beneficiaryId===b.id).reduce((s,i)=>s+i.bags,0);
     const balBags    = Math.max(0,(b.sanctionedBags||0)-issuedBags);
+    const ovsr       = overseerForVillage(b.block, b.village);
     return `
     <tr>
       <td style="color:var(--grey-500)">${idx+1}</td>
@@ -2462,6 +2807,7 @@ function filterBenTable() {
       <td><strong>${b.name}</strong><br><small style="color:var(--grey-500)">${b.aadhaar} · ${b.mobile}</small></td>
       <td><span class="chip chip-approved" style="font-size:10px">${b.block}</span></td>
       <td style="font-size:12px">${b.village}</td>
+      <td style="font-size:11px"><span class="chip" style="background:var(--green-light);color:var(--green);font-size:10px">${ovsr}</span></td>
       <td><span class="chip" style="background:var(--blue-light);color:var(--blue);font-size:10px">${b.scheme}</span></td>
       <td style="font-size:12px">${b.year||'—'}</td>
       <td style="font-size:11px">${b.houseNo}</td>
@@ -2473,7 +2819,7 @@ function filterBenTable() {
         ${can('createAllotment')?`<button class="btn btn-outlined btn-sm" onclick="openAllotForBen('${b.id}')">Allot</button>`:''}
       </td>
     </tr>`;
-  }).join('') || '<tr><td colspan="12"><div class="empty-state"><span class="material-icons-round">people</span><p>No beneficiaries found</p></div></td></tr>';
+  }).join('') || '<tr><td colspan="13"><div class="empty-state"><span class="material-icons-round">people</span><p>No beneficiaries found</p></div></td></tr>';
 }
 function openAddBeneficiary() {
   const myBlocks = allowedBlocks();
@@ -2542,26 +2888,43 @@ function addBeneficiary() {
 function viewBeneficiary(id) {
   const b = DB.beneficiaries.find(x=>x.id===id);
   const allotments = DB.allotments.filter(a=>a.beneficiaryId===id);
-  const issuances = DB.issuances.filter(i=>i.beneficiaryId===id);
+  const issuances  = DB.issuances.filter(i=>i.beneficiaryId===id);
+  const issuedBags = issuances.reduce((s,i)=>s+i.bags,0);
+  const balBags    = Math.max(0,(b.sanctionedBags||0)-issuedBags);
+  const ovsr       = overseerForVillage(b.block, b.village);
   openModal(b.name + ' – Profile', `
     <div class="info-row"><span class="info-key">Beneficiary ID</span><span class="info-val">${b.id}</span></div>
+    <div class="info-row"><span class="info-key">TNRD Work ID</span><span class="info-val" style="font-family:monospace">${b.workId||'—'}</span></div>
     <div class="info-row"><span class="info-key">Aadhaar</span><span class="info-val">${b.aadhaar}</span></div>
     <div class="info-row"><span class="info-key">Mobile</span><span class="info-val">${b.mobile}</span></div>
-    <div class="info-row"><span class="info-key">Village / Block</span><span class="info-val">${b.village} / ${b.block}</span></div>
+    <div class="info-row"><span class="info-key">Panchayat / Block</span><span class="info-val">${b.village} / ${b.block}</span></div>
+    <div class="info-row"><span class="info-key">Assigned Overseer</span><span class="info-val"><span class="chip chip-verified">${ovsr}</span></span></div>
     <div class="info-row"><span class="info-key">Scheme</span><span class="info-val">${b.scheme}</span></div>
+    <div class="info-row"><span class="info-key">Year</span><span class="info-val">${b.year||'—'}</span></div>
     <div class="info-row"><span class="info-key">House No.</span><span class="info-val">${b.houseNo}</span></div>
     <div class="info-row"><span class="info-key">Sanctioned Bags</span><span class="info-val">${b.sanctionedBags}</span></div>
-    <div class="info-row"><span class="info-key">Received Bags</span><span class="info-val"><strong>${b.receivedBags||0}</strong> / ${b.sanctionedBags}</span></div>
+    <div class="info-row"><span class="info-key">Issued Bags</span><span class="info-val" style="color:var(--green);font-weight:700">${issuedBags}</span></div>
+    <div class="info-row"><span class="info-key">Balance Bags</span><span class="info-val" style="color:var(--blue);font-weight:700">${balBags}</span></div>
     <hr class="divider">
-    <div class="progress-bar"><div class="progress-fill" style="width:${b.sanctionedBags?Math.round((b.receivedBags||0)/b.sanctionedBags*100):0}%"></div></div>
-    <div style="font-size:11px;color:var(--grey-500);margin-top:4px">${b.sanctionedBags?Math.round((b.receivedBags||0)/b.sanctionedBags*100):0}% of sanctioned quantity received</div>
+    <div class="progress-bar"><div class="progress-fill" style="width:${b.sanctionedBags?Math.round(issuedBags/b.sanctionedBags*100):0}%"></div></div>
+    <div style="font-size:11px;color:var(--grey-500);margin-top:4px">${b.sanctionedBags?Math.round(issuedBags/b.sanctionedBags*100):0}% of sanctioned quantity issued</div>
     <hr class="divider">
     <div class="section-title">Allotments (${allotments.length})</div>
-    ${allotments.map(a=>`<div class="info-row"><span>${a.id}</span><span><span class="chip chip-${a.status.toLowerCase()}">${a.status}</span> · ${a.bags} bags</span></div>`).join('') || '<div style="font-size:12px;color:var(--grey-500)">No allotments</div>'}
+    ${allotments.map(a=>`
+      <div class="info-row">
+        <span>${a.id} ${a.challanNumber?'· <span style="font-family:monospace;font-size:11px">'+a.challanNumber+'</span>':''}</span>
+        <span><span class="chip chip-${a.status.toLowerCase()}">${a.status}</span> · ${a.bags} bags</span>
+      </div>`).join('') || '<div style="font-size:12px;color:var(--grey-500)">No allotments</div>'}
     <hr class="divider">
     <div class="section-title">Issuances (${issuances.length})</div>
-    ${issuances.map(i=>`<div class="info-row"><span>${i.id}</span><span>${i.bags} bags · ${new Date(i.issuedAt).toLocaleDateString('en-IN')}</span></div>`).join('') || '<div style="font-size:12px;color:var(--grey-500)">No issuances</div>'}
-  `, [{label:'Close',cls:'btn-outlined',fn:closeModal}]);
+    ${issuances.map(i=>`
+      <div class="info-row">
+        <span>${i.id}</span>
+        <span><strong>${i.bags} bags</strong> · ${new Date(i.issuedAt).toLocaleString('en-IN',{dateStyle:'short',timeStyle:'short'})}</span>
+      </div>`).join('') || '<div style="font-size:12px;color:var(--grey-500)">No issuances</div>'}
+  `, [{label:'Close',cls:'btn-outlined',fn:closeModal},
+      ...(can('createAllotment') && balBags>0 ? [{label:'New Allotment',cls:'btn-primary',fn:()=>{closeModal();setTimeout(()=>{navigate('allotments');setTimeout(()=>openNewAllotment(),100);},100);}}] : [])
+  ]);
 }
 function openAllotForBen(id) {
   closeModal();
@@ -3207,29 +3570,73 @@ function renderAlerts(el) {
 
 // ===== SETTINGS =====
 function renderSettings(el) {
+  const savedVer = parseInt(localStorage.getItem('drdCementDB_version')||'0');
+  const blockCheck = DB.beneficiaries.filter(b=>b.block && !VALID_BLOCKS.includes(b.block));
+
   el.innerHTML = `
     <div class="page-header"><div><div class="page-title">Settings</div><div class="page-sub">System configuration</div></div></div>
+
+    ${blockCheck.length > 0 ? `
+    <div class="alert alert-danger" style="margin-bottom:16px">
+      <span class="material-icons-round">warning</span>
+      <div>
+        <strong>${blockCheck.length} records found with invalid block names</strong> (${[...new Set(blockCheck.map(b=>b.block))].join(', ')}).
+        These are stale entries from an old version.
+        <button class="btn btn-danger btn-sm" style="margin-top:8px" onclick="purgeInvalidBlocks()">
+          <span class="material-icons-round">cleaning_services</span> Purge Invalid Block Records
+        </button>
+      </div>
+    </div>` : `
+    <div class="alert alert-success" style="margin-bottom:16px">
+      <span class="material-icons-round">verified</span>
+      <div><strong>Block data is clean.</strong> All records use valid blocks: ${VALID_BLOCKS.join(', ')}.</div>
+    </div>`}
+
     <div class="card">
       <div class="section-title">User Profile</div>
       <div class="info-row"><span class="info-key">Name</span><span class="info-val">${currentUser.name}</span></div>
-      <div class="info-row"><span class="info-key">Email</span><span class="info-val">${currentUser.email}</span></div>
       <div class="info-row"><span class="info-key">Role</span><span class="info-val"><span class="chip chip-approved">${currentUser.role.toUpperCase()}</span></span></div>
+      <div class="info-row"><span class="info-key">Block</span><span class="info-val">${currentUser.block||'All Blocks (District)'}</span></div>
     </div>
+
+    <div class="card" style="margin-top:16px">
+      <div class="section-title">District Block Configuration</div>
+      <div style="font-size:12px;color:var(--grey-700);margin-bottom:10px">Valid blocks for Mayiladuthurai District:</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        ${VALID_BLOCKS.map(b => {
+          const cnt = DB.beneficiaries.filter(x=>x.block===b).length;
+          return `<div style="background:var(--blue-light);border-radius:8px;padding:8px 14px;text-align:center">
+            <div style="font-weight:700;font-size:13px;color:var(--blue)">${b}</div>
+            <div style="font-size:11px;color:var(--grey-500);margin-top:2px">${cnt} beneficiaries</div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>
+
     <div class="card" style="margin-top:16px">
       <div class="section-title">Department Information</div>
       <div class="info-row"><span class="info-key">Department</span><span class="info-val">Rural Development</span></div>
       <div class="info-row"><span class="info-key">District</span><span class="info-val">Mayiladuthurai</span></div>
-      
+      <div class="info-row"><span class="info-key">App Version</span><span class="info-val">DB v${DB_VERSION} (saved v${savedVer})</span></div>
     </div>
+
     ${currentUser.role==='admin'?`
     <div class="card" style="margin-top:16px">
       <div class="section-title">Data Management</div>
-      <button class="btn btn-danger btn-sm" onclick="if(confirm('Reset all data? This cannot be undone.')){localStorage.clear();seedData();navigate('dashboard');showToast('Data reset');}">
-        <span class="material-icons-round">delete_forever</span> Reset All Data
-      </button>
-      <button class="btn btn-outlined btn-sm" style="margin-left:12px" onclick="exportData()">
-        <span class="material-icons-round">download</span> Export JSON
-      </button>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
+        <button class="btn btn-danger btn-sm" onclick="if(confirm('Reset ALL data and re-seed? Cannot be undone.')){localStorage.clear();seedData();navigate('dashboard');showToast('Data reset to fresh state');}">
+          <span class="material-icons-round">delete_forever</span> Reset All Data
+        </button>
+        <button class="btn btn-outlined btn-sm" onclick="purgeInvalidBlocks()">
+          <span class="material-icons-round">cleaning_services</span> Purge Invalid Block Records
+        </button>
+        <button class="btn btn-outlined btn-sm" onclick="exportData()">
+          <span class="material-icons-round">download</span> Export JSON
+        </button>
+      </div>
+      <div style="font-size:11px;color:var(--grey-500);margin-top:10px">
+        ⓘ If you see old blocks like Papanasam or Sirkazhi appearing, click "Purge Invalid Block Records" to clean them up.
+      </div>
     </div>`:''} `;
 }
 function changePin() {
@@ -3672,6 +4079,15 @@ function renderUsers(el) {
   if (!can('manageUsers')) { showAccessDenied('users'); return; }
   const perms = getPerms();
 
+  // Build panchayat reference table per block
+  const panchRefHTML = BLOCKS.map(blk => {
+    const overseers = BLOCK_DATA[blk]?.overseers || {};
+    const rows = Object.entries(overseers).map(([name, vils]) =>
+      vils.map(v => `<tr><td style="font-size:11px;color:var(--grey-500)">${vils.indexOf(v)+1}</td><td style="font-size:11px">${blk}</td><td style="font-size:11px">${v}</td><td><span class="chip chip-approved" style="font-size:10px">${name}</span></td></tr>`).join('')
+    ).join('');
+    return rows;
+  }).join('');
+
   el.innerHTML = `
     <div class="page-header">
       <div>
@@ -3682,27 +4098,34 @@ function renderUsers(el) {
 
     <!-- Users Table -->
     <div class="card" style="margin-bottom:16px">
-      <div class="section-title">Registered Users</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+        <div class="section-title" style="margin:0">Registered Users (${USERS.length})</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          <button class="btn btn-outlined btn-sm" onclick="filterUserTable('')">All</button>
+          <button class="btn btn-outlined btn-sm" onclick="filterUserTable('overseer')">Overseers only</button>
+          ${BLOCKS.map(b=>`<button class="btn btn-outlined btn-sm" onclick="filterUserTable('${b}')">${b}</button>`).join('')}
+        </div>
+      </div>
       <div class="table-wrap">
-        <table>
-          <thead><tr><th>User</th><th>Username</th><th>Role</th><th>Block</th><th>Department</th><th>Pages</th></tr></thead>
-          <tbody>
-            ${USERS.map(u => {
-              const rm = ROLE_META[u.role];
-              const pages = pagesForRole(u.role);
-              return '<tr>'
-                + '<td><div style="display:flex;align-items:center;gap:10px">'
-                + '<div class="u-avatar ' + u.avatarColor + '" style="width:34px;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center"><span class="material-icons-round" style="font-size:17px;color:#fff">' + u.icon + '</span></div>'
-                + '<div><div style="font-weight:600;font-size:13px">' + u.name + '</div><div style="font-size:11px;color:var(--grey-500)">' + u.designation + '</div></div>'
-                + '</div></td>'
-                + '<td><code style="background:var(--grey-100);padding:2px 8px;border-radius:4px;font-size:12px">' + u.username + '</code></td>'
-                + '<td><span class="role-badge ' + rm.badge + '">' + rm.label + '</span></td>'
-                + '<td style="font-size:12px">' + (u.block||'All Blocks') + '</td>'
-                + '<td style="font-size:12px">' + u.dept + '</td>'
-                + '<td><div style="display:flex;flex-wrap:wrap;gap:3px">' + pages.map(p=>'<span class="chip chip-approved" style="font-size:10px">' + (PAGE_META[p]?.label||p) + '</span>').join('') + '</div></td>'
-                + '</tr>';
-            }).join('')}
-          </tbody>
+        <table id="usersTable">
+          <thead><tr><th>User</th><th>Username / Password</th><th>Role</th><th>Block</th><th>Assigned Panchayats</th></tr></thead>
+          <tbody id="usersBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Panchayat – Overseer Mapping Reference -->
+    <div class="card" style="margin-bottom:16px">
+      <div class="section-title">Panchayat – Overseer Assignment Reference</div>
+      <div style="font-size:12px;color:var(--grey-500);margin-bottom:10px">All ${Object.values(BLOCK_DATA).reduce((t,b)=>t+Object.values(b.overseers||{}).flat().length,0)} panchayats mapped across 5 blocks</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+        ${BLOCKS.map(b=>`<button class="btn btn-outlined btn-sm" onclick="filterPanchTable('${b}')">${b} (${Object.values(BLOCK_DATA[b]?.overseers||{}).flat().length})</button>`).join('')}
+        <button class="btn btn-outlined btn-sm" onclick="filterPanchTable('')">All</button>
+      </div>
+      <div class="table-wrap" style="max-height:400px;overflow-y:auto">
+        <table id="panchRefTable">
+          <thead><tr><th>#</th><th>Block</th><th>Panchayat</th><th>Assigned Overseer</th></tr></thead>
+          <tbody id="panchRefBody">${panchRefHTML}</tbody>
         </table>
       </div>
     </div>
@@ -3751,6 +4174,55 @@ function renderUsers(el) {
     </div>`;
 
   buildPermMatrix();
+  renderUsersTable('');
+}
+
+function renderUsersTable(filter) {
+  const tbody = document.getElementById('usersBody');
+  if (!tbody) return;
+  let users = USERS;
+  if (filter === 'overseer') users = users.filter(u=>u.role==='overseer');
+  else if (filter) users = users.filter(u=>u.block===filter||u.block===null);
+  tbody.innerHTML = users.map(u => {
+    const rm = ROLE_META[u.role];
+    const panch = u.panchayats;
+    return '<tr>'
+      + '<td><div style="display:flex;align-items:center;gap:8px">'
+      + '<div class="u-avatar ' + u.avatarColor + '" style="width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0"><span class="material-icons-round" style="font-size:16px;color:#fff">' + u.icon + '</span></div>'
+      + '<div><div style="font-weight:600;font-size:13px">' + u.name + '</div>'
+      + '<div style="font-size:10px;color:var(--grey-500)">' + u.designation + '</div></div></div></td>'
+      + '<td><code style="background:var(--grey-100);padding:2px 8px;border-radius:4px;font-size:11px;display:block">' + u.username + '</code>'
+      + '<code style="background:var(--grey-50);padding:2px 8px;border-radius:4px;font-size:10px;color:var(--grey-500);display:block;margin-top:2px">' + u.password + '</code></td>'
+      + '<td><span class="role-badge ' + rm.badge + '">' + rm.label + '</span></td>'
+      + '<td style="font-size:12px">' + (u.block||'<span style="color:var(--grey-400)">All Blocks</span>') + '</td>'
+      + '<td style="max-width:260px">'
+      + (panch
+          ? '<div style="display:flex;flex-wrap:wrap;gap:3px">' + panch.map(v=>'<span style="background:var(--blue-light);color:var(--blue);border-radius:4px;padding:1px 6px;font-size:10px;font-weight:500">' + v + '</span>').join('') + '</div>'
+          : '<span style="font-size:11px;color:var(--grey-400)">All panchayats in block</span>')
+      + '</td>'
+      + '</tr>';
+  }).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--grey-400);padding:20px">No users found</td></tr>';
+}
+
+function filterUserTable(filter) {
+  renderUsersTable(filter);
+}
+
+function filterPanchTable(blk) {
+  const tbody = document.getElementById('panchRefBody');
+  if (!tbody) return;
+  let rows = '';
+  let sno = 1;
+  for (const [block, data] of Object.entries(BLOCK_DATA)) {
+    if (blk && block !== blk) continue;
+    const overseers = data.overseers || {};
+    for (const [name, vils] of Object.entries(overseers)) {
+      for (const v of vils) {
+        rows += `<tr><td style="font-size:11px;color:var(--grey-500)">${sno++}</td><td style="font-size:11px"><span class="chip chip-approved" style="font-size:10px">${block}</span></td><td style="font-size:11px">${v}</td><td><span class="chip chip-approved" style="font-size:10px;background:var(--green-light);color:var(--green)">${name}</span></td></tr>`;
+      }
+    }
+  }
+  tbody.innerHTML = rows;
 }
 
 function buildPermMatrix() {
@@ -3851,6 +4323,32 @@ function exportData() {
   a.click();
 }
 
+function purgeInvalidBlocks() {
+  const before = DB.beneficiaries.length;
+  const invalidBlocks = [...new Set(
+    DB.beneficiaries.filter(b=>b.block && !VALID_BLOCKS.includes(b.block)).map(b=>b.block)
+  )];
+  if (!invalidBlocks.length) {
+    showToast('No invalid block records found — data is clean ✓');
+    return;
+  }
+  if (!confirm(`Remove all records with invalid blocks (${invalidBlocks.join(', ')})?\n\nThis will delete ${DB.beneficiaries.filter(b=>!VALID_BLOCKS.includes(b.block)).length} beneficiaries and related allotments/issuances.`)) return;
+
+  const validIds = new Set(DB.beneficiaries.filter(b=>VALID_BLOCKS.includes(b.block)||!b.block).map(b=>b.id));
+  DB.beneficiaries = DB.beneficiaries.filter(b=>VALID_BLOCKS.includes(b.block)||!b.block);
+  DB.allotments    = (DB.allotments||[]).filter(a=>VALID_BLOCKS.includes(a.block)||!a.block);
+  DB.issuances     = (DB.issuances||[]).filter(i=>VALID_BLOCKS.includes(i.block)||!i.block);
+  DB.inspections   = (DB.inspections||[]).filter(i=>VALID_BLOCKS.includes(i.block)||!i.block);
+
+  // Also bump version so stale localStorage is rejected next time
+  localStorage.setItem('drdCementDB_version', String(DB_VERSION));
+  saveDB();
+
+  const removed = before - DB.beneficiaries.length;
+  showToast(`Purged ${removed} stale records from: ${invalidBlocks.join(', ')} ✓`);
+  navigate('settings');
+}
+
 // ===== QR CODE HELPER (using Google Charts API) =====
 function qrCodeImg(data, size=120) {
   const encoded = encodeURIComponent(data);
@@ -3883,6 +4381,7 @@ function printSlip(allotmentId) {
   });
 
   const slip = generateAllotmentSlipHTML(a, ben, qrData);
+  const slip1 = slip.replace('class="slip-box"', 'class="slip-box" data-copy="1"').replace('</div>\n  <div class="slips-row">', '');
 
   const w = window.open('','_blank','width=1100,height=700');
   w.document.write(`<html><head><title>Cement Allotment Order – ${a.challanNumber||a.id}</title>
@@ -3890,54 +4389,56 @@ function printSlip(allotmentId) {
   <style>
     * { box-sizing:border-box; margin:0; padding:0; }
     body { font-family:'Roboto',sans-serif; background:#f5f5f5; padding:12px; }
-    @page { size: A4 landscape; margin: 10mm; }
+    @page { size: A4 landscape; margin: 8mm; }
     @media print {
       body { background:#fff; padding:0; }
       .no-print { display:none !important; }
-      .slip-page { page-break-after: avoid; }
     }
-    .slips-row { display:flex; gap:8px; justify-content:center; flex-wrap:nowrap; }
-    .slip-box { width:calc(33.33% - 6px); min-width:0; border:1.5px solid #ccc; border-radius:8px; padding:12px; background:#fff; position:relative; flex-shrink:0; }
-    .slip-copy-label { position:absolute; top:6px; right:8px; font-size:9px; font-weight:700; letter-spacing:1px; color:#999; text-transform:uppercase; }
+    .slips-row { display:flex; gap:6px; justify-content:stretch; flex-wrap:nowrap; width:100%; }
+    .slip-box { width:calc(33.33% - 4px); min-width:0; border:1.5px solid #ccc; border-radius:8px; padding:10px; background:#fff; position:relative; flex-shrink:0; }
+    .slip-copy-label { display:block; text-align:center; font-size:8px; font-weight:700; letter-spacing:1.5px; color:#fff; text-transform:uppercase; background:#1a73e8; border-radius:4px; padding:2px 6px; margin-bottom:6px; }
     .slip-header { text-align:center; border-bottom:1.5px dashed #ccc; padding-bottom:8px; margin-bottom:8px; }
     .slip-dept { font-size:8px; font-weight:700; letter-spacing:1.5px; color:#999; text-transform:uppercase; }
     .slip-title { font-size:13px; font-weight:700; color:#1a73e8; margin:3px 0; }
     .slip-challan { font-size:9px; font-family:monospace; color:#333; margin-top:2px; font-weight:700; }
-    table.slip-table { width:100%; font-size:10px; border-collapse:collapse; margin:8px 0; }
-    table.slip-table td { padding:3px 0; vertical-align:top; }
+    table.slip-table { width:100%; font-size:10px; border-collapse:collapse; margin:6px 0; }
+    table.slip-table td { padding:2px 0; vertical-align:top; }
     table.slip-table td:first-child { color:#666; width:42%; }
     table.slip-table td:last-child { font-weight:600; color:#111; }
-    .slip-bags-box { background:#e8f0fe; border-radius:6px; text-align:center; padding:8px 4px; margin:8px 0; }
-    .slip-bags-num { font-size:26px; font-weight:700; color:#1a73e8; line-height:1; }
+    .slip-bags-box { background:#e8f0fe; border-radius:6px; text-align:center; padding:6px 4px; margin:6px 0; }
+    .slip-bags-num { font-size:24px; font-weight:700; color:#1a73e8; line-height:1; }
     .slip-bags-lbl { font-size:9px; color:#555; }
-    .slip-qr { text-align:center; margin:6px 0; }
-    .slip-qr img { width:80px; height:80px; }
-    .slip-sign { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:12px; }
-    .slip-sign-line { border-top:1px solid #333; padding-top:3px; font-size:8px; color:#555; margin-top:28px; text-align:center; }
-    .slip-footer { text-align:center; font-size:8px; color:#1e8e3e; font-weight:700; letter-spacing:1.5px; margin-top:6px; }
-    .slip-barcode { font-family:monospace; font-size:7px; letter-spacing:2px; color:#bbb; text-align:center; margin-top:4px; }
+    .slip-qr { text-align:center; margin:4px 0; }
+    .slip-qr img { width:75px; height:75px; }
+    .slip-sign { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:10px; }
+    .slip-sign-line { border-top:1px solid #333; padding-top:3px; font-size:8px; color:#555; margin-top:24px; text-align:center; }
+    .slip-footer { text-align:center; font-size:8px; color:#1e8e3e; font-weight:700; letter-spacing:1.5px; margin-top:4px; }
+    .slip-barcode { font-family:monospace; font-size:7px; letter-spacing:2px; color:#bbb; text-align:center; margin-top:3px; }
   </style>
   </head><body>
-  <div class="no-print" style="text-align:center;margin-bottom:12px">
+  <div class="no-print" style="text-align:center;margin-bottom:10px">
     <button onclick="window.print()" style="padding:10px 28px;background:#1a73e8;color:#fff;border:none;border-radius:8px;font-size:14px;cursor:pointer;margin-right:8px">
-      🖨 Print A4 Landscape (3 Slips)
+      🖨 Print A4 Landscape (3 Copies)
     </button>
     <span style="font-size:12px;color:#666">Challan: <strong>${a.challanNumber||'—'}</strong></span>
   </div>
   <div class="slips-row">
-    ${slip}${slip}${slip}
+    ${generateAllotmentSlipHTML(a, ben, qrData, 'OFFICE COPY')}
+    ${generateAllotmentSlipHTML(a, ben, qrData, 'STORE KEEPER COPY')}
+    ${generateAllotmentSlipHTML(a, ben, qrData, 'BENEFICIARY COPY')}
   </div>
   </body></html>`);
   w.document.close();
 }
 
-function generateAllotmentSlipHTML(a, ben, qrData) {
+function generateAllotmentSlipHTML(a, ben, qrData, copyLabel) {
   const challan = a.challanNumber || '—';
-  const qr = qrCodeImg(qrData || challan, 80);
+  const qr = qrCodeImg(qrData || challan, 75);
   const issuedBags = DB.issuances.filter(i=>i.beneficiaryId===a.beneficiaryId).reduce((s,i)=>s+i.bags,0);
   const balBags = Math.max(0,(ben.sanctionedBags||a.bags)-issuedBags);
   return `
   <div class="slip-box">
+    ${copyLabel ? `<div class="slip-copy-label">${copyLabel}</div>` : ''}
     <div class="slip-header">
       <div class="slip-dept">Rural Development Department · Mayiladuthurai District</div>
       <div class="slip-title">CEMENT ALLOTMENT ORDER</div>
@@ -3954,15 +4455,16 @@ function generateAllotmentSlipHTML(a, ben, qrData) {
       <tr><td>Cement Type</td><td>${a.cementType||'OPC 43 Grade'}</td></tr>
       <tr><td>Sanctioned</td><td>${ben.sanctionedBags||a.bags} bags</td></tr>
       <tr><td>Already Issued</td><td>${issuedBags} bags</td></tr>
+      <tr><td>Balance</td><td><strong>${balBags} bags</strong></td></tr>
       <tr><td>Approved By</td><td>${a.approvedBy||'—'}</td></tr>
     </table>
     <div class="slip-bags-box">
       <div class="slip-bags-num">${a.bags}</div>
-      <div class="slip-bags-lbl">Bags Allotted (50 kg each)</div>
+      <div class="slip-bags-lbl">Bags to be Issued this Order (50 kg each)</div>
     </div>
     <div class="slip-qr">
       ${qr}
-      <div style="font-size:8px;color:#666;margin-top:2px">Scan QR at Store</div>
+      <div style="font-size:8px;color:#666;margin-top:2px">Scan QR at Store Keeper</div>
     </div>
     <div class="slip-sign">
       <div class="slip-sign-line">Beneficiary Signature</div>
