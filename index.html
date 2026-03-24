@@ -1106,7 +1106,8 @@ function showSyncToast() {
 
 // ── Save + push combined ─────────────────────────────────────────────
 function saveAndSync() {
-  saveAndSync();
+  saveDB();        // write to localStorage (immediate, always works)
+  pushToFirebase(); // async push to Firestore (fires and forgets)
 }
 
 // ===== LOGIN =====
