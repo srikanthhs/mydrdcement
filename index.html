@@ -1449,10 +1449,27 @@ function showSyncToast() {
   _syncToastTimer = setTimeout(() => { el.style.opacity = '0'; }, 2500);
 }
 
+// ===== GOOGLE SHEETS WEBHOOK =====
+// Paste your Apps Script Web App URL here after deploying (see the .gs file for setup instructions)
+const APPS_SCRIPT_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbzmgImCxL-6lkO7d-8HSxuGKI8yWKTJBJE-ECTSC5CBhEBEMl5EC4pzPAKGkLvtuHpk/exec'; // e.g. "https://script.google.com/macros/s/AKfy.../exec"
+
+function pingSheetWebhook() {
+  if (!APPS_SCRIPT_WEBHOOK_URL) return;       // not configured yet
+  try {
+    fetch(APPS_SCRIPT_WEBHOOK_URL, {
+      method: 'POST',
+      mode: 'no-cors',                         // avoids CORS preflight
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify({ source: 'MYL-CementApp', ts: Date.now() })
+    }).catch(()=>{}); // fire-and-forget
+  } catch(e) {}
+}
+
 // ── Save + push combined ─────────────────────────────────────────────
 function saveAndSync() {
-  saveDB();        // write to localStorage (immediate, always works)
-  pushToFirebase(); // async push to Firestore (fires and forgets)
+  saveDB();          // write to localStorage (immediate, always works)
+  pushToFirebase();  // async push to Firestore (fires and forgets)
+  pingSheetWebhook(); // notify Google Sheet to pull latest data
 }
 
 // ===== LOGIN =====
