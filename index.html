@@ -292,6 +292,7 @@
   .u-avatar.overseer { background: #6d4c41; }
   .u-avatar.store    { background: #e65100; }
   .u-avatar.inspector{ background: #c62828; }
+  .u-avatar.engineer { background: #7b1fa2; }
   .user-item .u-info { flex: 1; }
   .user-item .u-name { font-size: 14px; font-weight: 600; color: var(--grey-900); }
   .user-item .u-role { font-size: 11px; color: var(--grey-500); margin-top: 1px; }
@@ -314,6 +315,7 @@
   .rb-overseer { background: #efebe9; color: #6d4c41; }
   .rb-store    { background: #fff3e0; color: #e65100; }
   .rb-inspector{ background: #fce8e6; color: #c62828; }
+  .rb-engineer { background: #f3e5f5; color: #7b1fa2; }
   /* Locked page overlay */
   .access-denied { text-align:center; padding: 80px 24px; }
   .access-denied .material-icons-round { font-size: 64px; color: var(--grey-300); }
@@ -342,9 +344,24 @@
   @media (max-width: 768px) {
     .sidebar { transform: translateX(-100%); }
     .sidebar.open { transform: translateX(0); }
-    .main { margin-left: 0; padding: 16px; }
+    .main { margin-left: 0; padding: 12px; }
     .stat-grid { grid-template-columns: 1fr 1fr; }
     .form-grid { grid-template-columns: 1fr; }
+    .modal { max-width: 100%; margin: 0; border-radius: var(--radius) var(--radius) 0 0; }
+    .modal-backdrop { align-items: flex-end; padding: 0; }
+    .app-bar h1 span { display: none; }
+    .page-header { flex-direction: column; align-items: flex-start; gap: 10px; }
+    table { font-size: 12px; }
+    th, td { padding: 8px 10px; }
+    #fbStatus { display: none !important; }
+    .slips-row { flex-direction: column; }
+    .photo-grid { grid-template-columns: repeat(3, 1fr); }
+  }
+  @media (max-width: 480px) {
+    .stat-grid { grid-template-columns: 1fr; }
+    .btn { padding: 9px 14px; font-size: 13px; }
+    .modal-body { padding: 14px 16px; }
+    .modal-footer { padding: 10px 16px 16px; flex-wrap: wrap; }
   }
 
   .hidden { display: none !important; }
@@ -448,6 +465,7 @@
           <span>Overseer – Sirkali (R.Kala)</span><code style="background:#fff;padding:1px 6px;border-radius:4px;border:1px solid var(--grey-200)">r.kala</code><code style="background:#fff;padding:1px 6px;border-radius:4px;border:1px solid var(--grey-200)">kala2025</code>
           <span>Overseer – Kuthalam (C.Muthu)</span><code style="background:#fff;padding:1px 6px;border-radius:4px;border:1px solid var(--grey-200)">c.muthu</code><code style="background:#fff;padding:1px 6px;border-radius:4px;border:1px solid var(--grey-200)">muthu2025</code>
           <span>Store Keeper (Mayiladuthurai)</span><code style="background:#fff;padding:1px 6px;border-radius:4px;border:1px solid var(--grey-200)">store.myl</code><code style="background:#fff;padding:1px 6px;border-radius:4px;border:1px solid var(--grey-200)">store.myl2025</code>
+          <span>Engineer AE/JE (Mayiladuthurai)</span><code style="background:#fff;padding:1px 6px;border-radius:4px;border:1px solid var(--grey-200)">engineer.myl</code><code style="background:#fff;padding:1px 6px;border-radius:4px;border:1px solid var(--grey-200)">eng.myl2025</code>
         </div>
       </details>
       <div style="margin-top:12px;font-size:11px;color:var(--grey-500);text-align:center;line-height:1.7">
@@ -468,6 +486,8 @@
       </div>
     </div>
     <div style="display:flex;gap:8px;align-items:center">
+      <div id="fbStatus" style="font-size:11px;color:var(--grey-500);display:flex;align-items:center;gap:4px;transition:color .3s"></div>
+      <div id="syncIndicator" style="font-size:11px;color:var(--green);opacity:0;transition:opacity .5s;white-space:nowrap">↺ Synced</div>
       <button class="nav-icon-btn" title="Notifications" onclick="navigate('alerts')">
         <span class="material-icons-round">notifications</span>
       </button>
@@ -626,7 +646,7 @@ const USERS = [
     name: 'District Collector', designation: 'District Collector, Mayiladuthurai',
     dept: 'Collectorate, Mayiladuthurai', mobile: '9400000001',
     avatarColor: 'admin', icon: 'admin_panel_settings',
-    pages: ['dashboard','masterupload','allotments','issuance','collection','inspection',
+    pages: ['dashboard','masterupload','allotments','issuance',
             'beneficiaries','stock','reports','alerts','settings','users']
   },
 
@@ -635,7 +655,7 @@ const USERS = [
     name:'S. Ravikumar', designation:'BDO – Mayiladuthurai Block',
     dept:'Block Development Office, Mayiladuthurai', mobile:'9400001001',
     avatarColor:'bdo', icon:'account_balance',
-    pages:['dashboard','allotments','beneficiaries','collection','reports','alerts'] },
+    pages:['dashboard','allotments','beneficiaries','stock','reports','alerts'] },
   { id:'U103', username:'store.myl', password:'store.myl2025', role:'store', block:'Mayiladuthurai', panchayats:null,
     name:'P. Murugesan', designation:'Store Keeper – Mayiladuthurai Depot',
     dept:'Rural Development Dept, Mayiladuthurai', mobile:'9400001003',
@@ -645,7 +665,12 @@ const USERS = [
     name:'M. Selvaraj', designation:'Field Inspector – Mayiladuthurai',
     dept:'Rural Development Dept, Mayiladuthurai', mobile:'9400001004',
     avatarColor:'inspector', icon:'fact_check',
-    pages:['dashboard','collection','inspection','alerts'] },
+    pages:['dashboard','alerts'] },
+  { id:'U105', username:'engineer.myl', password:'eng.myl2025', role:'engineer', block:'Mayiladuthurai', panchayats:null,
+    name:'K. Arumugam', designation:'AE/JE – Mayiladuthurai Block',
+    dept:'Rural Development Dept, Mayiladuthurai', mobile:'9400001005',
+    avatarColor:'inspector', icon:'engineering',
+    pages:['dashboard','allotments','alerts'] },
 
   // ── Mayiladuthurai Overseers ────────────────────────────────────────────────
   { id:'MYL-OV1', username:'r.kayalvizhi', password:'kayalvizhi2025', role:'overseer', block:'Mayiladuthurai',
@@ -653,44 +678,44 @@ const USERS = [
     name:'R.Kayalvizhi', designation:'Works Overseer – Mayiladuthurai',
     dept:'Rural Development Dept, Mayiladuthurai', mobile:'',
     avatarColor:'overseer', icon:'engineering',
-    pages:['dashboard','allotments','beneficiaries','inspection','alerts'] },
+    pages:['dashboard','allotments','beneficiaries','reports','alerts'] },
   { id:'MYL-OV2', username:'k.oosainayagi', password:'oosainayagi2025', role:'overseer', block:'Mayiladuthurai',
     panchayats:['ANATHANDAVAPURAM','KADAKKAM','KADUVANGUDI','KEELAMARUTHANTHANALLUR','KIZHAI','KURICHI','MUDIKANDANALLUR','SITHAMALLI','VILLIYANALLUR'],
     name:'K.Oosainayagi', designation:'Works Overseer – Mayiladuthurai',
     dept:'Rural Development Dept, Mayiladuthurai', mobile:'',
     avatarColor:'overseer', icon:'engineering',
-    pages:['dashboard','allotments','beneficiaries','inspection','alerts'] },
+    pages:['dashboard','allotments','beneficiaries','reports','alerts'] },
   { id:'MYL-OV3', username:'g.tamilselvi', password:'tamilselvi2025', role:'overseer', block:'Mayiladuthurai',
     panchayats:['ARUNMOZHIDEVAN','IVANALLUR','KANGANAMPUTHUR','KESINGAN','NEEDUR','PANDUR','PONNUR','THALANCHERY','THIRUENTHALUR'],
     name:'G.Tamilselvi', designation:'Works Overseer – Mayiladuthurai',
     dept:'Rural Development Dept, Mayiladuthurai', mobile:'',
     avatarColor:'overseer', icon:'engineering',
-    pages:['dashboard','allotments','beneficiaries','inspection','alerts'] },
+    pages:['dashboard','allotments','beneficiaries','reports','alerts'] },
   { id:'MYL-OV4', username:'k.praveen', password:'praveen2025', role:'overseer', block:'Mayiladuthurai',
     panchayats:['ARUVAPADI','ELANTHOPPU','KORKAI','MAHARAJAPURAM','MAPPADUGAI','MELANALLUR','PATTAVARTHI','SETHUR','THALAINAYAR'],
     name:'K.Praveen', designation:'Works Overseer – Mayiladuthurai',
     dept:'Rural Development Dept, Mayiladuthurai', mobile:'',
     avatarColor:'overseer', icon:'engineering',
-    pages:['dashboard','allotments','beneficiaries','inspection','alerts'] },
+    pages:['dashboard','allotments','beneficiaries','reports','alerts'] },
   { id:'MYL-OV5', username:'r.anbazhagan', password:'anbazhagan2025', role:'overseer', block:'Mayiladuthurai',
     panchayats:['AATHUR','BOOTHANGUDI','KADALANGUDI','KALI','MURUGAMANGALAM','NAMASIVAYAPURAM','THIRUCHITRAMPALAM','THIRUMANGALAM','VARADHAMPATTU'],
     name:'R.Anbazhagan', designation:'Works Overseer – Mayiladuthurai',
     dept:'Rural Development Dept, Mayiladuthurai', mobile:'',
     avatarColor:'overseer', icon:'engineering',
-    pages:['dashboard','allotments','beneficiaries','inspection','alerts'] },
+    pages:['dashboard','allotments','beneficiaries','reports','alerts'] },
   { id:'MYL-OV6', username:'d.praveena', password:'praveena2025', role:'overseer', block:'Mayiladuthurai',
     panchayats:['DHARMATHANAPURAM','KODANGUDI','KULICHAR','MANAKUDI','MANNAMPANDAL','MOZHAIYUR','SERUTHIYUR','ULUTHUKUPPAI','VALLALAGARAM'],
     name:'D.Praveena', designation:'Works Overseer – Mayiladuthurai',
     dept:'Rural Development Dept, Mayiladuthurai', mobile:'',
     avatarColor:'overseer', icon:'engineering',
-    pages:['dashboard','allotments','beneficiaries','inspection','alerts'] },
+    pages:['dashboard','allotments','beneficiaries','reports','alerts'] },
 
   // ── Block: Sirkali – BDO + Store + Inspector ─────────────────────────────
   { id:'U201', username:'bdo.skz', password:'bdo.skz2025', role:'bdo', block:'Sirkali', panchayats:null,
     name:'R. Ganesh', designation:'BDO – Sirkali Block',
     dept:'Block Development Office, Sirkali', mobile:'9400002001',
     avatarColor:'bdo', icon:'account_balance',
-    pages:['dashboard','allotments','beneficiaries','collection','reports','alerts'] },
+    pages:['dashboard','allotments','beneficiaries','stock','reports','alerts'] },
   { id:'U203', username:'store.skz', password:'store.skz2025', role:'store', block:'Sirkali', panchayats:null,
     name:'A. Rajan', designation:'Store Keeper – Sirkali Depot',
     dept:'Rural Development Dept, Sirkali', mobile:'9400002003',
@@ -700,7 +725,12 @@ const USERS = [
     name:'D. Lakshmi', designation:'Field Inspector – Sirkali',
     dept:'Rural Development Dept, Sirkali', mobile:'9400002004',
     avatarColor:'inspector', icon:'fact_check',
-    pages:['dashboard','collection','inspection','alerts'] },
+    pages:['dashboard','alerts'] },
+  { id:'U205', username:'engineer.skz', password:'eng.skz2025', role:'engineer', block:'Sirkali', panchayats:null,
+    name:'P. Suresh', designation:'AE/JE – Sirkali Block',
+    dept:'Rural Development Dept, Sirkali', mobile:'9400002005',
+    avatarColor:'inspector', icon:'engineering',
+    pages:['dashboard','allotments','alerts'] },
 
   // ── Sirkali Overseers ──────────────────────────────────────────────────────
   { id:'SIR-OV1', username:'m.umamaheshwari', password:'umamaheshwari2025', role:'overseer', block:'Sirkali',
@@ -708,38 +738,38 @@ const USERS = [
     name:'M.Umamaheshwari', designation:'Works Overseer – Sirkali',
     dept:'Rural Development Dept, Sirkali', mobile:'',
     avatarColor:'overseer', icon:'engineering',
-    pages:['dashboard','allotments','beneficiaries','inspection','alerts'] },
+    pages:['dashboard','allotments','beneficiaries','reports','alerts'] },
   { id:'SIR-OV2', username:'r.kala', password:'kala2025', role:'overseer', block:'Sirkali',
     panchayats:['EDAKUDIVADAPATHY','KATHIRUPPU','KAVERIPOOMPATTINAM','MANIGRAMAM','POOMBUHAR','THIRUVENGADU','VANAGIRI'],
     name:'R.Kala', designation:'Works Overseer – Sirkali',
     dept:'Rural Development Dept, Sirkali', mobile:'',
     avatarColor:'overseer', icon:'engineering',
-    pages:['dashboard','allotments','beneficiaries','inspection','alerts'] },
+    pages:['dashboard','allotments','beneficiaries','reports','alerts'] },
   { id:'SIR-OV3', username:'m.govindharaj', password:'govindharaj2025', role:'overseer', block:'Sirkali',
     panchayats:['KANNIYAKUDI','KARKOIL','KATHIRAMANGALAM','KONDAL','PERUMANGALAM','SEMMANGUDI','THIRUPUNGOORE'],
     name:'M.Govindharaj', designation:'Works Overseer – Sirkali',
     dept:'Rural Development Dept, Sirkali', mobile:'',
     avatarColor:'overseer', icon:'engineering',
-    pages:['dashboard','allotments','beneficiaries','inspection','alerts'] },
+    pages:['dashboard','allotments','beneficiaries','reports','alerts'] },
   { id:'SIR-OV4', username:'m.amalarani', password:'amalarani2025', role:'overseer', block:'Sirkali',
     panchayats:['KARAIMEDU','KEELASATTANATHAPURAM','PERUNTHOTTAM','PUDUTHURAI','RADHANALLUR','SEMBATHANIRUPPU','THILLAIVIDANGAN','THIRUVALI','THITTAI'],
     name:'M.Amalarani', designation:'Works Overseer – Sirkali',
     dept:'Rural Development Dept, Sirkali', mobile:'',
     avatarColor:'overseer', icon:'engineering',
-    pages:['dashboard','allotments','beneficiaries','inspection','alerts'] },
+    pages:['dashboard','allotments','beneficiaries','reports','alerts'] },
   { id:'SIR-OV5', username:'m.kavitha.skz', password:'kavitha.skz2025', role:'overseer', block:'Sirkali',
     panchayats:['MANGAIMADAM','NANGOORE','NEPPATHUR','THENNAMPATTINAM','THIRUNAGARI'],
     name:'M.Kavitha', designation:'Works Overseer – Sirkali',
     dept:'Rural Development Dept, Sirkali', mobile:'',
     avatarColor:'overseer', icon:'engineering',
-    pages:['dashboard','allotments','beneficiaries','inspection','alerts'] },
+    pages:['dashboard','allotments','beneficiaries','reports','alerts'] },
 
   // ── Block: Sembanarkoil – BDO + Store + Inspector ─────────────────────────
   { id:'U301', username:'bdo.sbn', password:'bdo.sbn2025', role:'bdo', block:'Sembanarkoil', panchayats:null,
     name:'V. Suresh', designation:'BDO – Sembanarkoil Block',
     dept:'Block Development Office, Sembanarkoil', mobile:'9400003001',
     avatarColor:'bdo', icon:'account_balance',
-    pages:['dashboard','allotments','beneficiaries','collection','reports','alerts'] },
+    pages:['dashboard','allotments','beneficiaries','stock','reports','alerts'] },
   { id:'U303', username:'store.sbn', password:'store.sbn2025', role:'store', block:'Sembanarkoil', panchayats:null,
     name:'B. Mani', designation:'Store Keeper – Sembanarkoil Depot',
     dept:'Rural Development Dept, Sembanarkoil', mobile:'9400003003',
@@ -749,7 +779,12 @@ const USERS = [
     name:'C. Devika', designation:'Field Inspector – Sembanarkoil',
     dept:'Rural Development Dept, Sembanarkoil', mobile:'9400003004',
     avatarColor:'inspector', icon:'fact_check',
-    pages:['dashboard','collection','inspection','alerts'] },
+    pages:['dashboard','alerts'] },
+  { id:'U305', username:'engineer.sbn', password:'eng.sbn2025', role:'engineer', block:'Sembanarkoil', panchayats:null,
+    name:'R. Mani', designation:'AE/JE – Sembanarkoil Block',
+    dept:'Rural Development Dept, Sembanarkoil', mobile:'9400003005',
+    avatarColor:'inspector', icon:'engineering',
+    pages:['dashboard','allotments','alerts'] },
 
   // ── Sembanarkoil Overseers ─────────────────────────────────────────────────
   { id:'SBN-OV1', username:'u.rajalakshmi', password:'rajalakshmi2025', role:'overseer', block:'Sembanarkoil',
@@ -757,56 +792,56 @@ const USERS = [
     name:'U.Rajalakshmi', designation:'Works Overseer – Sembanarkoil',
     dept:'Rural Development Dept, Sembanarkoil', mobile:'',
     avatarColor:'overseer', icon:'engineering',
-    pages:['dashboard','allotments','beneficiaries','inspection','alerts'] },
+    pages:['dashboard','allotments','beneficiaries','reports','alerts'] },
   { id:'SBN-OV2', username:'n.akila', password:'akila2025', role:'overseer', block:'Sembanarkoil',
     panchayats:['ALAVELI','KALAHASTHINATHAPURAM','KONDATHUR','MELAIYUR','NADUKARAI','NATTHAM','SEMANGALAM'],
     name:'N.Akila', designation:'Works Overseer – Sembanarkoil',
     dept:'Rural Development Dept, Sembanarkoil', mobile:'',
     avatarColor:'overseer', icon:'engineering',
-    pages:['dashboard','allotments','beneficiaries','inspection','alerts'] },
+    pages:['dashboard','allotments','beneficiaries','reports','alerts'] },
   { id:'SBN-OV3', username:'v.manimaran', password:'manimaran2025', role:'overseer', block:'Sembanarkoil',
     panchayats:['ANNAVASAL','ELAIYALUR','NALLADAI','VILAGAM','VISALUR'],
     name:'V.Manimaran', designation:'Works Overseer – Sembanarkoil',
     dept:'Rural Development Dept, Sembanarkoil', mobile:'',
     avatarColor:'overseer', icon:'engineering',
-    pages:['dashboard','allotments','beneficiaries','inspection','alerts'] },
+    pages:['dashboard','allotments','beneficiaries','reports','alerts'] },
   { id:'SBN-OV4', username:'r.balaji', password:'balaji2025', role:'overseer', block:'Sembanarkoil',
     panchayats:['ARASUR','ARUPATHY','ECHANGUDI','ERAVANCHERI','GUDALOORE','KEEZHMATHUR','NARASINGANATHAM','THIRUVILAIYATTAM'],
     name:'R.Balaji', designation:'Works Overseer – Sembanarkoil',
     dept:'Rural Development Dept, Sembanarkoil', mobile:'',
     avatarColor:'overseer', icon:'engineering',
-    pages:['dashboard','allotments','beneficiaries','inspection','alerts'] },
+    pages:['dashboard','allotments','beneficiaries','reports','alerts'] },
   { id:'SBN-OV5', username:'k.bharathi', password:'bharathi2025', role:'overseer', block:'Sembanarkoil',
     panchayats:['CHANDRAPADI','EDUTHUKATTI','ELUPPUR','KATTUCHERI','T MANALMEDU','THILLAIYADI','THIRUKALACHERY','UTHIRANGUDI'],
     name:'K.Bharathi', designation:'Works Overseer – Sembanarkoil',
     dept:'Rural Development Dept, Sembanarkoil', mobile:'',
     avatarColor:'overseer', icon:'engineering',
-    pages:['dashboard','allotments','beneficiaries','inspection','alerts'] },
+    pages:['dashboard','allotments','beneficiaries','reports','alerts'] },
   { id:'SBN-OV6', username:'k.keerthana', password:'keerthana2025', role:'overseer', block:'Sembanarkoil',
     panchayats:['KALAMANALLUR','KAZHIYAPPANALLUR','MANIKAPANGU','MARUTHAMPALLAM','NEDUVASAL','PILLAIPERUMANALLUR','THIRUVIDAIKAZHI'],
     name:'K.Keerthana', designation:'Works Overseer – Sembanarkoil',
     dept:'Rural Development Dept, Sembanarkoil', mobile:'',
     avatarColor:'overseer', icon:'engineering',
-    pages:['dashboard','allotments','beneficiaries','inspection','alerts'] },
+    pages:['dashboard','allotments','beneficiaries','reports','alerts'] },
   { id:'SBN-OV7', username:'n.babu', password:'babu2025', role:'overseer', block:'Sembanarkoil',
     panchayats:['KANJANAGARAM','KARUVAZHAKARAI','KEELAIYUR','KIDARANKONDAN','MAMAKUDI','PAGASALAI','THALAIYUDAIYAVARKOILPATHU'],
     name:'N.Babu', designation:'Works Overseer – Sembanarkoil',
     dept:'Rural Development Dept, Sembanarkoil', mobile:'',
     avatarColor:'overseer', icon:'engineering',
-    pages:['dashboard','allotments','beneficiaries','inspection','alerts'] },
+    pages:['dashboard','allotments','beneficiaries','reports','alerts'] },
   { id:'SBN-OV8', username:'j.saravanan', password:'saravanan2025', role:'overseer', block:'Sembanarkoil',
     panchayats:['KILLIYUR','KOTHANGUDI','MATHUR','MEMATHUR','MUKKARUMBUR','PARASALUR','THIRUCHAMPALLI','THIRUKADAIYUR'],
     name:'J.Saravanan', designation:'Works Overseer – Sembanarkoil',
     dept:'Rural Development Dept, Sembanarkoil', mobile:'',
     avatarColor:'overseer', icon:'engineering',
-    pages:['dashboard','allotments','beneficiaries','inspection','alerts'] },
+    pages:['dashboard','allotments','beneficiaries','reports','alerts'] },
 
   // ── Block: Kuthalam – BDO + Store + Inspector ─────────────────────────────
   { id:'U401', username:'bdo.ktl', password:'bdo.ktl2025', role:'bdo', block:'Kuthalam', panchayats:null,
     name:'G. Pandi', designation:'BDO – Kuthalam Block',
     dept:'Block Development Office, Kuthalam', mobile:'9400004001',
     avatarColor:'bdo', icon:'account_balance',
-    pages:['dashboard','allotments','beneficiaries','collection','reports','alerts'] },
+    pages:['dashboard','allotments','beneficiaries','stock','reports','alerts'] },
   { id:'U403', username:'store.ktl', password:'store.ktl2025', role:'store', block:'Kuthalam', panchayats:null,
     name:'J. Arumugam', designation:'Store Keeper – Kuthalam Depot',
     dept:'Rural Development Dept, Kuthalam', mobile:'9400004003',
@@ -816,7 +851,12 @@ const USERS = [
     name:'F. Kamala', designation:'Field Inspector – Kuthalam',
     dept:'Rural Development Dept, Kuthalam', mobile:'9400004004',
     avatarColor:'inspector', icon:'fact_check',
-    pages:['dashboard','collection','inspection','alerts'] },
+    pages:['dashboard','alerts'] },
+  { id:'U405', username:'engineer.ktl', password:'eng.ktl2025', role:'engineer', block:'Kuthalam', panchayats:null,
+    name:'G. Balan', designation:'AE/JE – Kuthalam Block',
+    dept:'Rural Development Dept, Kuthalam', mobile:'9400004005',
+    avatarColor:'inspector', icon:'engineering',
+    pages:['dashboard','allotments','alerts'] },
 
   // ── Kuthalam Overseers ─────────────────────────────────────────────────────
   { id:'KTL-OV1', username:'c.muthu', password:'muthu2025', role:'overseer', block:'Kuthalam',
@@ -824,44 +864,44 @@ const USERS = [
     name:'C.Muthu', designation:'Works Overseer – Kuthalam',
     dept:'Rural Development Dept, Kuthalam', mobile:'',
     avatarColor:'overseer', icon:'engineering',
-    pages:['dashboard','allotments','beneficiaries','inspection','alerts'] },
+    pages:['dashboard','allotments','beneficiaries','reports','alerts'] },
   { id:'KTL-OV2', username:'k.nagendira', password:'nagendira2025', role:'overseer', block:'Kuthalam',
     panchayats:['Gangatharapuram','Kazhanivasal','Manganallur','Pandaravadai','Porumbur','Vazhuvur','Mathirimangalam','Thiruvalangadu','Thirvavaduthurai'],
     name:'K.Nagendira', designation:'Works Overseer – Kuthalam',
     dept:'Rural Development Dept, Kuthalam', mobile:'',
     avatarColor:'overseer', icon:'engineering',
-    pages:['dashboard','allotments','beneficiaries','inspection','alerts'] },
+    pages:['dashboard','allotments','beneficiaries','reports','alerts'] },
   { id:'KTL-OV3', username:'k.prasanna', password:'prasanna2025', role:'overseer', block:'Kuthalam',
     panchayats:['Arivalur','Thathangudi','Edakudi','Kadakkam','Kiliyanur','Kodavilagam','Muthur','Perambur','Peruncheri','Sethur'],
     name:'K.Prasanna', designation:'Works Overseer – Kuthalam',
     dept:'Rural Development Dept, Kuthalam', mobile:'',
     avatarColor:'overseer', icon:'engineering',
-    pages:['dashboard','allotments','beneficiaries','inspection','alerts'] },
+    pages:['dashboard','allotments','beneficiaries','reports','alerts'] },
   { id:'KTL-OV4', username:'r.chandrasekar', password:'chandrasekar2025', role:'overseer', block:'Kuthalam',
     panchayats:['Anandhanallur','Kappur','Kanjivoy','Komal','Kothangudi','Maruthur','Palaiyur','Karuppur','Peravur'],
     name:'R.Chandrasekar', designation:'Works Overseer – Kuthalam',
     dept:'Rural Development Dept, Kuthalam', mobile:'',
     avatarColor:'overseer', icon:'engineering',
-    pages:['dashboard','allotments','beneficiaries','inspection','alerts'] },
+    pages:['dashboard','allotments','beneficiaries','reports','alerts'] },
   { id:'KTL-OV5', username:'s.gowri', password:'gowri2025', role:'overseer', block:'Kuthalam',
     panchayats:['Therazhandur','Kokkur','Kozhaiyur','Melaiyur','Palayakoodalur','Perumalkoil','Tholuthalangudi','Senniannallur','Mekkirimangalam'],
     name:'S.Gowri', designation:'Works Overseer – Kuthalam',
     dept:'Rural Development Dept, Kuthalam', mobile:'',
     avatarColor:'overseer', icon:'engineering',
-    pages:['dashboard','allotments','beneficiaries','inspection','alerts'] },
+    pages:['dashboard','allotments','beneficiaries','reports','alerts'] },
   { id:'KTL-OV6', username:'s.manisangar', password:'manisangar2025', role:'overseer', block:'Kuthalam',
     panchayats:['Ezhumagalur','Kodimangalam','Konerirajapuram','Manthai','Nakkambadi','Paruthikudi','Sivanaragaram'],
     name:'S.Manisangar', designation:'Works Overseer – Kuthalam',
     dept:'Rural Development Dept, Kuthalam', mobile:'',
     avatarColor:'overseer', icon:'engineering',
-    pages:['dashboard','allotments','beneficiaries','inspection','alerts'] },
+    pages:['dashboard','allotments','beneficiaries','reports','alerts'] },
 
   // ── Block: Kollidam – BDO + Store + Inspector ─────────────────────────────
   { id:'U501', username:'bdo.kld', password:'bdo.kld2025', role:'bdo', block:'Kollidam', panchayats:null,
     name:'I. Balamurugan', designation:'BDO – Kollidam Block',
     dept:'Block Development Office, Kollidam', mobile:'9400005001',
     avatarColor:'bdo', icon:'account_balance',
-    pages:['dashboard','allotments','beneficiaries','collection','reports','alerts'] },
+    pages:['dashboard','allotments','beneficiaries','stock','reports','alerts'] },
   { id:'U503', username:'store.kld', password:'store.kld2025', role:'store', block:'Kollidam', panchayats:null,
     name:'L. Karuppaiah', designation:'Store Keeper – Kollidam Depot',
     dept:'Rural Development Dept, Kollidam', mobile:'9400005003',
@@ -871,7 +911,12 @@ const USERS = [
     name:'O. Geetha', designation:'Field Inspector – Kollidam',
     dept:'Rural Development Dept, Kollidam', mobile:'9400005004',
     avatarColor:'inspector', icon:'fact_check',
-    pages:['dashboard','collection','inspection','alerts'] },
+    pages:['dashboard','alerts'] },
+  { id:'U505', username:'engineer.kld', password:'eng.kld2025', role:'engineer', block:'Kollidam', panchayats:null,
+    name:'S. Venkat', designation:'AE/JE – Kollidam Block',
+    dept:'Rural Development Dept, Kollidam', mobile:'9400005005',
+    avatarColor:'inspector', icon:'engineering',
+    pages:['dashboard','allotments','alerts'] },
 
   // ── Kollidam Overseers ─────────────────────────────────────────────────────
   { id:'KLD-OV1', username:'thiruselvan', password:'thiruselvan2025', role:'overseer', block:'Kollidam',
@@ -879,37 +924,37 @@ const USERS = [
     name:'Thiruselvan', designation:'Works Overseer – Kollidam',
     dept:'Rural Development Dept, Kollidam', mobile:'',
     avatarColor:'overseer', icon:'engineering',
-    pages:['dashboard','allotments','beneficiaries','inspection','alerts'] },
+    pages:['dashboard','allotments','beneficiaries','reports','alerts'] },
   { id:'KLD-OV2', username:'a.shruthi', password:'shruthi2025', role:'overseer', block:'Kollidam',
     panchayats:['Agaraelathur','Arappallam','Arasur','Erukkur','Keelamathur','Olaiyanputhur','Puthur'],
     name:'A.Shruthi', designation:'Works Overseer – Kollidam',
     dept:'Rural Development Dept, Kollidam', mobile:'',
     avatarColor:'overseer', icon:'engineering',
-    pages:['dashboard','allotments','beneficiaries','inspection','alerts'] },
+    pages:['dashboard','allotments','beneficiaries','reports','alerts'] },
   { id:'KLD-OV3', username:'d.vijayakanth', password:'vijayakanth2025', role:'overseer', block:'Kollidam',
     panchayats:['Agaravattaram','Alangadu','Pannangudi','Pudupattinam','Puliyanthurai','Thandavankulam','Thirumullaivasal','Vettangudi'],
     name:'D.Vijayakanth', designation:'Works Overseer – Kollidam',
     dept:'Rural Development Dept, Kollidam', mobile:'',
     avatarColor:'overseer', icon:'engineering',
-    pages:['dashboard','allotments','beneficiaries','inspection','alerts'] },
+    pages:['dashboard','allotments','beneficiaries','reports','alerts'] },
   { id:'KLD-OV4', username:'biruntha', password:'biruntha2025', role:'overseer', block:'Kollidam',
     panchayats:['Alalasundaram','Arppakkam','Nallavinayagapuram','Othavanthangudi','Anaikkaranchatti'],
     name:'Biruntha', designation:'Works Overseer – Kollidam',
     dept:'Rural Development Dept, Kollidam', mobile:'',
     avatarColor:'overseer', icon:'engineering',
-    pages:['dashboard','allotments','beneficiaries','inspection','alerts'] },
+    pages:['dashboard','allotments','beneficiaries','reports','alerts'] },
   { id:'KLD-OV5', username:'aruldoss', password:'aruldoss2025', role:'overseer', block:'Kollidam',
     panchayats:['Edamanal','Kadavasal','Maharajapuram','Thirukarukavoore','Umaiyalpathi','Vadagal'],
     name:'Aruldoss', designation:'Works Overseer – Kollidam',
     dept:'Rural Development Dept, Kollidam', mobile:'',
     avatarColor:'overseer', icon:'engineering',
-    pages:['dashboard','allotments','beneficiaries','inspection','alerts'] },
+    pages:['dashboard','allotments','beneficiaries','reports','alerts'] },
   { id:'KLD-OV6', username:'s.priya', password:'priya2025', role:'overseer', block:'Kollidam',
     panchayats:['Gopalasamuthiram','Koothiyampeetai','Kunnam','Mathirivellur','Muthalimedu','Sheeyalam','Sothiyakudi','Vadarangam'],
     name:'S.Priya', designation:'Works Overseer – Kollidam',
     dept:'Rural Development Dept, Kollidam', mobile:'',
     avatarColor:'overseer', icon:'engineering',
-    pages:['dashboard','allotments','beneficiaries','inspection','alerts'] }
+    pages:['dashboard','allotments','beneficiaries','reports','alerts'] }
 ];
 
 // Role → display metadata
@@ -918,7 +963,8 @@ const ROLE_META = {
   bdo:      { label: 'BDO',            badge: 'rb-bdo',      color: '#1e8e3e' },
   overseer: { label: 'Overseer',       badge: 'rb-overseer', color: '#6d4c41' },
   store:    { label: 'Store Keeper',   badge: 'rb-store',    color: '#e65100' },
-  inspector:{ label: 'Field Inspector',badge: 'rb-inspector',color: '#c62828' }
+  inspector:{ label: 'Field Inspector',badge: 'rb-inspector',color: '#c62828' },
+  engineer: { label: 'Engineer (AE/JE)', badge: 'rb-engineer', color: '#7b1fa2' }
 };
 
 // Page → {label, icon, section}
@@ -927,8 +973,6 @@ const PAGE_META = {
   masterupload:  { label:'Master Upload',        icon:'upload_file',      section:'main' },
   allotments:    { label:'Allotments',           icon:'assignment',       section:'main', badge:'pendingBadge' },
   issuance:      { label:'Issuance',             icon:'output',           section:'main', badge:'issuanceBadge' },
-  collection:    { label:'Collection Verify',    icon:'verified',         section:'main' },
-  inspection:    { label:'Field Inspection',     icon:'fact_check',       section:'main' },
   beneficiaries: { label:'Beneficiaries',        icon:'people',           section:'records' },
   stock:         { label:'Stock Register',       icon:'inventory_2',      section:'records' },
   reports:       { label:'Reports',              icon:'bar_chart',        section:'records' },
@@ -1008,11 +1052,12 @@ let DB = {
   allotments: [],
   issuances: [],
   inspections: [],
-  stock: { total: 0, issued: 0, balance: 0 }
+  stock: { total: 0, issued: 0, balance: 0 },
+  bdoStockEntries: []
 };
 
 // ===== DISTRICT STRUCTURE =====
-const SCHEMES = ['KKI-2025-26', 'KKI-2025-26 Additional Allocation', 'MVMT-2025-26', 'PMAY(G) - 2024-25', 'PMAY(G) - Spill over houses'];
+const SCHEMES = ['KKI-2024-25', 'KKI-2025-26', 'KKI-2025-26 Additional Allocation', 'PMAY(G) - 2024-25', 'PMAY(G) - Spill over houses', 'MVMT-2025-26'];
 const CEMENT_TYPES = ['OPC 43 Grade', 'OPC 53 Grade', 'PPC Cement', 'PSC Cement'];
 
 // The 5 blocks with all real panchayats and overseer assignments from official records
@@ -1210,13 +1255,14 @@ function seedData() {
   DB.allotments = [];
   DB.issuances = [];
   DB.inspections = [];
+  DB.bdoStockEntries = [];
   DB.challanCounter = 10000;
   saveDB();
 }
 
 // Current valid blocks — any saved data with different blocks is stale and must be cleaned
 const VALID_BLOCKS = ['Mayiladuthurai', 'Kuthalam', 'Sembanarkoil', 'Sirkali', 'Kollidam'];
-const DB_VERSION = 4; // increment whenever block list or schema changes
+const DB_VERSION = 5; // increment whenever block list or schema changes
 
 function saveDB() {
   try {
@@ -1367,9 +1413,10 @@ function mergeRemoteIntoDB(remote) {
   }
 
   // Stock + stockLedger: remote wins entirely
-  if (remote.stock)        DB.stock        = remote.stock;
-  if (remote.stockLedger)  DB.stockLedger  = remote.stockLedger;
-  if (remote.authPin)      DB.authPin      = remote.authPin;
+  if (remote.stock)             DB.stock             = remote.stock;
+  if (remote.stockLedger)       DB.stockLedger       = remote.stockLedger;
+  if (remote.bdoStockEntries)   DB.bdoStockEntries   = remote.bdoStockEntries;
+  if (remote.authPin)           DB.authPin           = remote.authPin;
 }
 
 // ── Silently refresh current page without losing scroll position ─────
@@ -1378,8 +1425,7 @@ function refreshCurrentPage() {
   if (!main || !currentPage) return;
   const pages = {
     dashboard: renderDashboard, allotments: renderAllotments,
-    issuance: renderIssuance, collection: renderCollection,
-    inspection: renderInspection, beneficiaries: renderBeneficiaries,
+    issuance: renderIssuance, beneficiaries: renderBeneficiaries,
     stock: renderStock, reports: renderReports,
     alerts: renderAlerts, masterupload: renderMasterUpload,
     users: renderUsers, settings: renderSettings,
@@ -1569,8 +1615,6 @@ function navigate(page) {
     masterupload:  renderMasterUpload,
     allotments:    renderAllotments,
     issuance:      renderIssuance,
-    collection:    renderCollection,
-    inspection:    renderInspection,
     beneficiaries: renderBeneficiaries,
     stock:         renderStock,
     reports:       renderReports,
@@ -1623,32 +1667,29 @@ const DEFAULT_PERMISSIONS = {
   approveAllotment: ['admin','bdo'],
   editAllotment:    ['admin','bdo'],
   issueCement:      ['admin','store'],
-  addStock:         ['admin'],
-  verifyCollection: ['admin','bdo','inspector'],
-  fieldInspect:     ['admin','overseer','inspector'],
-  viewReports:      ['admin','bdo'],
+  addStock:         ['admin','bdo'],
+  viewReports:      ['admin','bdo','overseer'],
   manageUsers:      ['admin'],
-  viewBeneficiary:  ['admin','bdo','overseer'],
-  editBeneficiary:  ['admin','bdo']
+  viewBeneficiary:  ['admin','bdo','overseer','engineer'],
+  editBeneficiary:  ['admin','bdo'],
+  engineerVerify:   ['admin','engineer']
 };
 
 // All defined actions with human-readable labels (order matters for UI)
 const ACTION_DEFS = [
-  { key:'createAllotment',  label:'Create Allotment',   protected: false },
-  { key:'approveAllotment', label:'Approve Allotment',  protected: false },
-  { key:'editAllotment',    label:'Edit Allotment',     protected: false },
-  { key:'issueCement',      label:'Issue Cement',        protected: false },
-  { key:'addStock',         label:'Add Stock Receipt',   protected: false },
-  { key:'verifyCollection', label:'Verify Collection',   protected: false },
-  { key:'fieldInspect',     label:'Field Inspection',    protected: false },
-  { key:'viewReports',      label:'View Reports',        protected: false },
-  { key:'viewBeneficiary',  label:'View Beneficiaries',  protected: false },
-  { key:'editBeneficiary',  label:'Add/Edit Beneficiary',protected: false },
-  { key:'manageUsers',      label:'Manage Users & Permissions', protected: true }, // admin-only, locked
+  { key:'createAllotment',  label:'Create Allotment',          protected: false },
+  { key:'approveAllotment', label:'Approve Allotment',         protected: false },
+  { key:'editAllotment',    label:'Edit Allotment',            protected: false },
+  { key:'engineerVerify',   label:'Engineer Verify Allotment', protected: false },
+  { key:'issueCement',      label:'Issue Cement',              protected: false },
+  { key:'addStock',         label:'Add / Edit Stock',          protected: false },
+  { key:'viewReports',      label:'View Reports',              protected: false },
+  { key:'viewBeneficiary',  label:'View Beneficiaries',        protected: false },
+  { key:'editBeneficiary',  label:'Add/Edit Beneficiary',      protected: false },
+  { key:'manageUsers',      label:'Manage Users & Permissions', protected: true },
 ];
 
-// Roles that can be edited (admin is always locked — can do everything)
-const EDITABLE_ROLES = ['bdo','overseer','store','inspector'];
+const EDITABLE_ROLES = ['bdo','overseer','store','inspector','engineer'];
 
 // Live permissions — reads DB.permissions first, falls back to DEFAULT_PERMISSIONS
 function getPerms() {
@@ -1675,17 +1716,16 @@ function pagesForRole(role) {
     pages.push('allotments');
   if ((p.issueCement||[]).includes(role))
     pages.push('issuance');
-  if ((p.verifyCollection||[]).includes(role))
-    pages.push('collection');
-  if ((p.fieldInspect||[]).includes(role))
-    pages.push('inspection');
   if ((p.viewBeneficiary||[]).includes(role) || (p.editBeneficiary||[]).includes(role))
     pages.push('beneficiaries');
+  if (role === 'engineer') pages.push('allotments');
   if ((p.addStock||[]).includes(role))
     pages.push('stock');
   else if ((p.issueCement||[]).includes(role))
-    pages.push('stock'); // store keeper can always see stock
-  if ((p.viewReports||[]).includes(role))
+    pages.push('stock');
+  else if (role === 'bdo')
+    pages.push('stock');
+  if ((p.viewReports||[]).includes(role) || role === 'overseer' || role === 'bdo')
     pages.push('reports');
   if ((p.manageUsers||[]).includes(role))
     pages.push('users','settings');
@@ -1698,7 +1738,6 @@ function renderDashboard(el) {
   const myBens    = scopedBeneficiaries();
   const myAllots  = scopedAllotments();
   const myIss     = scopedIssuances();
-  const myInsp    = scopedInspections();
   const totalBagsIssued = myIss.reduce((s,i)=>s+i.bags,0);
   const pendingApprovals = myAllots.filter(a=>a.status==='Pending').length;
 
@@ -1731,6 +1770,28 @@ function renderDashboard(el) {
 
     ${pendingApprovals > 0 ? `<div class="alert alert-warn"><span class="material-icons-round">warning_amber</span><div><strong>${pendingApprovals} allotments</strong> pending approval. <a href="#" onclick="navigate('allotments');return false" style="color:inherit">Review now →</a></div></div>` : ''}
 
+    ${currentUser.role === 'overseer' ? (()=>{
+      if (!DB.bdoStockEntries) DB.bdoStockEntries = [];
+      const blockEntries = DB.bdoStockEntries.filter(e=>!e.block||e.block===currentUser.block);
+      const totalCement  = blockEntries.reduce((t,e)=>t+e.bags,0);
+      const issuedCement = DB.issuances.filter(i=>i.block===currentUser.block).reduce((t,i)=>t+i.bags,0);
+      const available    = Math.max(0, totalCement - issuedCement);
+      return `<div class="card" style="margin-bottom:16px;background:${available===0&&totalCement>0?'var(--red-light)':'var(--green-light)'}">
+        <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+          <span class="material-icons-round" style="font-size:32px;color:${available===0&&totalCement>0?'var(--red)':'var(--green)'}">inventory_2</span>
+          <div style="flex:1">
+            <div style="font-size:13px;font-weight:700;color:var(--grey-700);margin-bottom:6px">Stock Details – ${currentUser.block} Block</div>
+            <div style="display:flex;gap:20px;flex-wrap:wrap;font-size:13px">
+              <span>Total Cement Bags: <strong>${totalCement}</strong></span>
+              <span>Issued Bags: <strong style="color:var(--red)">${issuedCement}</strong></span>
+              <span>Available Bags: <strong style="color:${available>0?'var(--green)':'var(--red)'}">${available}</strong></span>
+            </div>
+            ${available===0&&totalCement>0 ? `<div style="color:var(--red);font-weight:700;margin-top:6px;font-size:12px">⚠ No stock available – cement allotment not allowed</div>` : ''}
+          </div>
+        </div>
+      </div>`;
+    })() : ''}
+
     <div class="stat-grid">
       <div class="stat-card">
         <div class="stat-icon blue"><span class="material-icons-round">people</span></div>
@@ -1748,10 +1809,6 @@ function renderDashboard(el) {
         <div class="stat-icon purple"><span class="material-icons-round">inventory_2</span></div>
         <div><div class="stat-val">${DB.stock.balance}</div><div class="stat-label">Stock Balance</div><div class="stat-sub">Bags available</div></div>
       </div>
-      <div class="stat-card">
-        <div class="stat-icon red"><span class="material-icons-round">fact_check</span></div>
-        <div><div class="stat-val">${myInsp.filter(i=>i.verified).length}</div><div class="stat-label">Field Verified</div><div class="stat-sub">Photo confirmed</div></div>
-      </div>
     </div>
 
     ${blockSummary.length ? `
@@ -1759,18 +1816,16 @@ function renderDashboard(el) {
       <div class="section-title">Block-wise Summary</div>
       <div class="table-wrap">
         <table>
-          <thead><tr><th>Block</th><th>Beneficiaries</th><th>Allotments</th><th>Bags Issued</th><th>Verified</th><th>Pending</th></tr></thead>
+          <thead><tr><th>Block</th><th>Beneficiaries</th><th>Allotments</th><th>Bags Issued</th><th>Pending</th></tr></thead>
           <tbody>
             ${blockSummary.map(({blk,bens,issued})=>{
               const allots = DB.allotments.filter(a=>a.block===blk);
-              const insp   = DB.inspections.filter(i=>i.block===blk&&i.verified).length;
               const pend   = allots.filter(a=>a.status==='Pending').length;
               return `<tr>
                 <td><strong>${blk}</strong></td>
                 <td>${bens}</td>
                 <td>${allots.length}</td>
                 <td><strong>${issued}</strong></td>
-                <td><span class="chip chip-verified">${insp}</span></td>
                 <td>${pend>0?`<span class="chip chip-pending">${pend}</span>`:'—'}</td>
               </tr>`;
             }).join('')}
@@ -1795,7 +1850,6 @@ function renderDashboard(el) {
         <div class="info-row"><span class="info-key">⏳ Pending Approval</span><span class="info-val">${myAllots.filter(a=>a.status==='Pending').length} orders</span></div>
         <div class="info-row"><span class="info-key">✅ Ready to Issue</span><span class="info-val">${myAllots.filter(a=>a.status==='Approved').length} orders</span></div>
         <div class="info-row"><span class="info-key">📦 Issued</span><span class="info-val">${myIss.length} records</span></div>
-        <div class="info-row"><span class="info-key">🔍 Inspected</span><span class="info-val">${myInsp.filter(i=>i.verified).length} verified</span></div>
       </div>
     </div>
 
@@ -1947,14 +2001,41 @@ function renderAllotTable(data) {
       <td style="text-align:right;color:var(--green)">${issuedBags}</td>
       <td style="text-align:right;color:${toBeIssued>0?'var(--blue)':'var(--grey-500)'};font-weight:600">${toBeIssued}</td>
       <td style="font-size:11px;font-family:monospace">${a.challanNumber||'—'}</td>
-      <td><span class="chip chip-${a.status.toLowerCase()}">${a.status}</span></td>
+      <td><span class="chip chip-${a.status.toLowerCase()}">${a.status}</span>${a.engineerVerified?` <span class="chip chip-verified" style="font-size:10px">✓ Eng</span>`:""}</td>
       <td style="display:flex;gap:6px;flex-wrap:wrap">
         <button class="btn btn-text btn-sm" onclick="viewAllotment('${a.id}')"><span class="material-icons-round">visibility</span></button>
         ${can('editAllotment') && a.status==='Pending' ? `<button class="btn btn-outlined btn-sm" onclick="editAllotment('${a.id}')" title="Edit Allotment"><span class="material-icons-round">edit</span></button>` : ''}
-        ${a.status==='Pending' && can('approveAllotment') && (currentUser.role==='admin' || a.createdBy !== currentUser.name) ? `<button class="btn btn-green btn-sm" onclick="approveAllotment('${a.id}')">Approve</button><button class="btn btn-danger btn-sm" onclick="rejectAllotment('${a.id}')">Reject</button>` : (a.status==='Pending' && a.createdBy===currentUser.name ? '<span style="font-size:11px;color:var(--grey-500)">Awaiting approval</span>' : '')}
+        ${a.status==='Pending' && currentUser.role==='engineer' && !a.engineerVerified ? `<button class="btn btn-green btn-sm" onclick="engineerVerifyAllotment('${a.id}')"><span class="material-icons-round">engineering</span> Verify</button>` : ''}
+        ${a.status==='Pending' && a.engineerVerified && currentUser.role==='engineer' ? `<span class="chip chip-verified" style="font-size:11px">✓ Verified by you</span>` : ''}
+        ${a.status==='Pending' && can('approveAllotment') && (currentUser.role==='admin' || a.createdBy !== currentUser.name) ? `<button class="btn btn-green btn-sm" onclick="approveAllotment('${a.id}')">${a.engineerVerified?'Approve':'Approve'}</button><button class="btn btn-danger btn-sm" onclick="rejectAllotment('${a.id}')">Reject</button>` : (a.status==='Pending' && a.createdBy===currentUser.name && currentUser.role!=='engineer' ? '<span style="font-size:11px;color:var(--grey-500)">Awaiting approval</span>' : '')}
         ${a.status==='Approved' ? `<button class="btn btn-outlined btn-sm" onclick="printSlip('${a.id}')"><span class="material-icons-round">print</span> Slip</button>` : ''}
       </td>
     </tr>`}).join('');
+}
+
+let allotGpsCoords = null;
+function captureAllotGPS() {
+  const btn = document.getElementById('allotGpsBtn');
+  const status = document.getElementById('allotGpsStatus');
+  if (btn) { btn.innerHTML = '<span class="material-icons-round">hourglass_empty</span> Capturing…'; btn.disabled = true; }
+  if (status) status.textContent = 'Capturing GPS…';
+  navigator.geolocation.getCurrentPosition(
+    pos => {
+      allotGpsCoords = { lat: pos.coords.latitude.toFixed(6), lng: pos.coords.longitude.toFixed(6), accuracy: Math.round(pos.coords.accuracy) };
+      if (status) status.textContent = '';
+      const disp = document.getElementById('allotGpsDisplay');
+      const coord = document.getElementById('allotGpsCoords');
+      if (disp) disp.style.display = 'block';
+      if (coord) coord.textContent = `Lat: ${allotGpsCoords.lat}  |  Long: ${allotGpsCoords.lng}  |  ±${allotGpsCoords.accuracy}m`;
+      if (btn) { btn.innerHTML = '<span class="material-icons-round">my_location</span> Re-capture GPS'; btn.disabled = false; }
+    },
+    err => {
+      if (status) status.textContent = '⚠ GPS unavailable';
+      if (btn) { btn.innerHTML = '<span class="material-icons-round">my_location</span> Capture GPS Location'; btn.disabled = false; }
+      allotGpsCoords = null;
+    },
+    { enableHighAccuracy: true, timeout: 15000 }
+  );
 }
 
 function fillBenDetails() {
@@ -2004,6 +2085,24 @@ function openNewAllotment() {
   const myBens = scopedBeneficiaries();
   if (!myBens.length) { showToast('No beneficiaries in your block yet','error'); return; }
 
+  // Overseer: check stock availability
+  if (currentUser.role === 'overseer') {
+    if (!DB.bdoStockEntries) DB.bdoStockEntries = [];
+    const blockEntries = DB.bdoStockEntries.filter(e=>!e.block||e.block===currentUser.block);
+    const totalStock = blockEntries.reduce((t,e)=>t+e.bags,0);
+    const totalIssued = DB.issuances.filter(i=>i.block===currentUser.block).reduce((t,i)=>t+i.bags,0);
+    const availableStock = Math.max(0, totalStock - totalIssued);
+    if (availableStock === 0 && totalStock > 0) {
+      showToast('No stock available – cement allotment not allowed','error');
+      openModal('No Stock Available', `
+        <div class="alert alert-danger">
+          <span class="material-icons-round">warning</span>
+          <div><strong>No stock available.</strong> All cement bags have been issued. Please contact BDO for replenishment.</div>
+        </div>`, [{label:'Close',cls:'btn-outlined',fn:closeModal}]);
+      return;
+    }
+  }
+
   // Build options showing name + work ID + balance
   const bOpts = myBens.map(b=>{
     const issued = DB.issuances.filter(i=>i.beneficiaryId===b.id).reduce((s,i)=>s+i.bags,0);
@@ -2011,6 +2110,7 @@ function openNewAllotment() {
     return `<option value="${b.id}">${b.name} [${b.workId||'—'}] – Bal: ${bal} bags</option>`;
   }).join('');
 
+  const isOverseer = currentUser.role === 'overseer';
   issPhotosData = [];
   openModal('New Allotment Order', `
     <div class="form-grid">
@@ -2019,7 +2119,7 @@ function openNewAllotment() {
         <select class="form-control" id="aBen" onchange="fillBenDetails()">${bOpts}</select>
       </div>
       <div class="form-group"><label class="form-label">TNRD Work ID</label><input class="form-control" id="aWorkId" readonly style="background:var(--grey-50)"></div>
-      <div class="form-group"><label class="form-label">House No.</label><input class="form-control" id="aHouseNo" readonly></div>
+      ${!isOverseer ? `<div class="form-group"><label class="form-label">House No.</label><input class="form-control" id="aHouseNo" readonly></div>` : '<div id="aHouseNo" style="display:none"></div>'}
       <div class="form-group"><label class="form-label">Scheme</label><input class="form-control" id="aScheme" readonly></div>
       <div class="form-group"><label class="form-label">Village / Block</label><input class="form-control" id="aVillage" readonly></div>
       <div class="form-group">
@@ -2027,9 +2127,11 @@ function openNewAllotment() {
         <select class="form-control" id="aCType">${CEMENT_TYPES.map(t=>`<option>${t}</option>`).join('')}</select>
       </div>
       <div class="form-group"><label class="form-label">Bags to Allot * (Balance only)</label><input class="form-control" type="number" id="aBags" min="1" max="200" value="0"></div>
-      <div class="form-group"><label class="form-label">Intended Use *</label>
+      <div class="form-group"><label class="form-label">Stage *</label>
         <select class="form-control" id="aUse">
-          <option>Foundation</option><option>Walls</option><option>Roof Slab</option><option>Flooring</option><option>Complete Construction</option>
+          <option>Earthwork</option><option>FC Laid</option><option>Basement</option>
+          <option>Lintel Level</option><option>Lintel Laid</option><option>Roof Level</option>
+          <option>Roof Laid</option><option>Plastering</option><option>PC</option>
         </select>
       </div>
       <div class="form-group" style="grid-column:1/-1"><label class="form-label">Remarks</label><input class="form-control" id="aRemark" placeholder="Additional notes..."></div>
@@ -2038,26 +2140,46 @@ function openNewAllotment() {
     <!-- Issued history injected by fillBenDetails -->
     <div id="aIssuedHistory" style="display:none"></div>
 
-    <!-- Cement Receipt Photo Upload (MANDATORY) -->
+    <!-- Work Order / Stage Photo Upload (MANDATORY) -->
     <hr class="divider">
-    <div class="section-title" style="margin-bottom:6px">📷 Cement Receipt / Order Proof <span style="color:var(--red);font-size:11px;font-weight:400">(Mandatory – at least 1 photo required)</span></div>
+    <div class="section-title" style="margin-bottom:6px">📷 Work Order / Stage Photo <span style="color:var(--red);font-size:11px;font-weight:400">(Mandatory – at least 1 photo required)</span></div>
     <div style="font-size:12px;color:var(--grey-700);margin-bottom:10px">
-      Upload a clear photo of the <strong>cement purchase receipt, supply order, or approval document</strong> as proof before creating this allotment.
+      Upload the <strong>beneficiary work order copy image</strong> or <strong>current stage field photo</strong> as proof before creating this allotment.
     </div>
-    <input type="file" accept="image/*" capture="environment" id="aReceiptPhotoInput" multiple style="display:none"
-      onchange="handlePhotoCapture(event,'aReceiptPhotos')">
-    <div class="photo-grid" id="aReceiptPhotos">
-      <div class="photo-add" onclick="document.getElementById('aReceiptPhotoInput').click()">
-        <span class="material-icons-round">receipt_long</span><span>Add Receipt Photo</span>
-      </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">
+      <input type="file" accept="image/*" id="aReceiptPhotoInput" multiple style="display:none"
+        onchange="handlePhotoCapture(event,'aReceiptPhotos')">
+      <input type="file" accept="image/*" capture="environment" id="aReceiptCameraInput" multiple style="display:none"
+        onchange="handlePhotoCapture(event,'aReceiptPhotos')">
+      <button class="btn btn-outlined btn-sm" onclick="document.getElementById('aReceiptPhotoInput').click()">
+        <span class="material-icons-round">photo_library</span> Browse Gallery
+      </button>
+      <button class="btn btn-outlined btn-sm" onclick="document.getElementById('aReceiptCameraInput').click()">
+        <span class="material-icons-round">photo_camera</span> Capture Photo
+      </button>
     </div>
+    <div class="photo-grid" id="aReceiptPhotos"></div>
     <div id="aReceiptPhotoErr" style="font-size:12px;color:var(--red);margin-top:6px;display:none">
       <span class="material-icons-round" style="font-size:14px;vertical-align:middle">error</span>
-      At least 1 cement receipt photo is mandatory.
+      At least 1 work order / stage photo is mandatory.
     </div>
     <div id="aReceiptPhotoOk" style="font-size:12px;color:var(--green);margin-top:6px;display:none">
       <span class="material-icons-round" style="font-size:14px;vertical-align:middle">check_circle</span>
-      Receipt photo(s) attached.
+      Photo(s) attached.
+    </div>
+
+    <!-- GPS Location (above verify checkbox) -->
+    <hr class="divider">
+    <div class="section-title" style="margin-bottom:6px">📍 GPS Location</div>
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px">
+      <button class="btn btn-outlined btn-sm" onclick="captureAllotGPS()" id="allotGpsBtn">
+        <span class="material-icons-round">my_location</span> Capture GPS Location
+      </button>
+      <div id="allotGpsStatus" style="font-size:12px;color:var(--grey-500)">Not captured (optional)</div>
+    </div>
+    <div id="allotGpsDisplay" style="display:none;background:var(--green-light);border-radius:8px;padding:8px 12px;font-size:12px;color:var(--green);margin-bottom:8px">
+      <span class="material-icons-round" style="font-size:14px;vertical-align:middle">location_on</span>
+      <span id="allotGpsCoords"></span>
     </div>
 
     <!-- Data verification checkbox -->
@@ -2116,9 +2238,11 @@ function submitAllotment() {
     sanctionedBags: b.sanctionedBags,
     cementType: document.getElementById('aCType').value,
     bags: bags,
+    stage: document.getElementById('aUse').value,
     use: document.getElementById('aUse').value,
     remark: document.getElementById('aRemark').value,
     receiptPhotos: [...issPhotosData],
+    gps: allotGpsCoords ? {...allotGpsCoords} : null,
     status: 'Pending',
     createdBy: currentUser.name,
     createdAt: new Date().toISOString(),
@@ -2126,6 +2250,7 @@ function submitAllotment() {
   };
   DB.allotments.push(allotment);
   issPhotosData = [];
+  allotGpsCoords = null;
   saveAndSync();
   closeModal();
   showToast('Allotment submitted for approval');
@@ -2133,6 +2258,19 @@ function submitAllotment() {
 }
 function approveAllotment(id) {
   const a = DB.allotments.find(x=>x.id===id);
+  // Require engineer verification before BDO approval
+  if (!a.engineerVerified && currentUser.role !== 'admin') {
+    openModal('Engineer Verification Required', `
+      <div class="alert alert-warn">
+        <span class="material-icons-round">engineering</span>
+        <div><strong>Engineer verification pending.</strong> The AE/JE must verify this allotment before BDO can approve it.</div>
+      </div>
+      <div class="info-row"><span class="info-key">Beneficiary</span><span class="info-val">${a.beneficiaryName}</span></div>
+      <div class="info-row"><span class="info-key">Bags</span><span class="info-val">${a.bags}</span></div>
+      <div class="info-row"><span class="info-key">Status</span><span class="info-val"><span class="chip chip-pending">Awaiting Engineer Verification</span></span></div>
+    `, [{label:'Close',cls:'btn-outlined',fn:closeModal}]);
+    return;
+  }
   a.status = 'Approved';
   a.approvedBy = currentUser.name;
   a.approvedAt = new Date().toISOString();
@@ -2140,11 +2278,45 @@ function approveAllotment(id) {
   if (!a.challanNumber) {
     a.challanNumber = generateChallanNumber(a.block);
   }
-  a.timeline.push({event:'Approved', by:currentUser.name, at:new Date().toISOString(), note:'Challan: ' + a.challanNumber});
+  a.timeline.push({event:'Approved by BDO', by:currentUser.name, at:new Date().toISOString(), note:'Challan: ' + a.challanNumber});
   saveAndSync();
   showToast('Allotment approved ✓  Challan: ' + a.challanNumber);
   filterAllotTable();
   updateBadges();
+}
+
+function engineerVerifyAllotment(id) {
+  const a = DB.allotments.find(x=>x.id===id);
+  if (!a) return;
+  openModal('Engineer Verification – ' + a.id, `
+    <div class="alert alert-info"><span class="material-icons-round">engineering</span>
+      <div>Verifying allotment for <strong>${a.beneficiaryName}</strong> · ${a.village}</div>
+    </div>
+    <div class="info-row"><span class="info-key">Overseer</span><span class="info-val">${a.createdBy}</span></div>
+    <div class="info-row"><span class="info-key">Bags Allotted</span><span class="info-val"><strong>${a.bags}</strong></span></div>
+    <div class="info-row"><span class="info-key">Scheme</span><span class="info-val">${a.scheme}</span></div>
+    <div class="info-row"><span class="info-key">Stage</span><span class="info-val">${a.stage||a.use||'—'}</span></div>
+    ${a.receiptPhotos && a.receiptPhotos.length ? `
+    <hr class="divider">
+    <div class="section-title">Work Order / Stage Photos</div>
+    <div class="photo-grid">${a.receiptPhotos.map(p=>`<img class="photo-thumb" src="${p}" onclick="window.open(this.src,'_blank')">`).join('')}</div>` : ''}
+    <div class="form-group" style="margin-top:14px"><label class="form-label">Verification Remarks</label>
+      <input class="form-control" id="engVerRemark" placeholder="Engineer observations…"></div>
+  `, [
+    {label:'Cancel', cls:'btn-outlined', fn:closeModal},
+    {label:'✓ Verified – Forward to BDO', cls:'btn-green', fn:()=>{
+      a.engineerVerified = true;
+      a.engineerVerifiedBy = currentUser.name;
+      a.verifiedBy = currentUser.name;
+      a.engineerVerifiedAt = new Date().toISOString();
+      a.engineerRemark = document.getElementById('engVerRemark').value;
+      a.timeline.push({event:'Engineer Verified', by:currentUser.name, at:new Date().toISOString(), note:'Forwarded to BDO for approval'});
+      saveAndSync();
+      closeModal();
+      showToast('Allotment verified ✓ Forwarded to BDO');
+      filterAllotTable();
+    }}
+  ]);
 }
 function rejectAllotment(id) {
   const a = DB.allotments.find(x=>x.id===id);
@@ -2168,6 +2340,7 @@ function viewAllotment(id) {
       <div class="info-row"><span class="info-key">Bags</span><span class="info-val"><strong>${a.bags}</strong></span></div>
       <div class="info-row"><span class="info-key">Use</span><span class="info-val">${a.use}</span></div>
       <div class="info-row"><span class="info-key">Status</span><span class="info-val"><span class="chip chip-${a.status.toLowerCase()}">${a.status}</span></span></div>
+      ${a.engineerVerified ? `<div class="info-row"><span class="info-key">Engineer Verified By</span><span class="info-val"><span class="chip chip-verified">✓ ${a.engineerVerifiedBy}</span></span></div>` : `<div class="info-row"><span class="info-key">Engineer Verification</span><span class="info-val"><span class="chip chip-pending">Pending</span></span></div>`}
     </div>
     ${a.receiptPhotos && a.receiptPhotos.length ? `
     <hr class="divider">
@@ -2342,7 +2515,7 @@ function openIssueModal(allotmentId) {
       </div>
       <div class="form-group"><label class="form-label">Lorry / Vehicle No.</label><input class="form-control" id="issVeh" placeholder="e.g. TN68AB1234"></div>
       <div class="form-group"><label class="form-label">Driver Name</label><input class="form-control" id="issDrv" placeholder="Driver name"></div>
-      <div class="form-group"><label class="form-label">Driver Mobile</label><input class="form-control" id="issDrvMob" placeholder="10-digit mobile"></div>
+      <div class="form-group"><label class="form-label">Beneficiary Mobile</label><input class="form-control" id="issBenMob" placeholder="10-digit mobile" value="${a.mobile||''}"></div>
       <div class="form-group" style="grid-column:1/-1"><label class="form-label">Remark / Notes</label><input class="form-control" id="issRemark" placeholder="Optional notes..."></div>
     </div>
 
@@ -2352,13 +2525,19 @@ function openIssueModal(allotmentId) {
     <div style="font-size:12px;color:var(--grey-700);margin-bottom:10px">
       Take photos of: <strong>(a) cement bags stacked</strong> and <strong>(b) beneficiary receiving bags</strong>
     </div>
-    <input type="file" accept="image/*" capture="environment" id="issPhotoInput" multiple style="display:none"
-      onchange="handlePhotoCapture(event,'issPhotos')">
-    <div class="photo-grid" id="issPhotos">
-      <div class="photo-add" onclick="document.getElementById('issPhotoInput').click()">
-        <span class="material-icons-round">add_a_photo</span><span>Add Photo</span>
-      </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">
+      <input type="file" accept="image/*" id="issPhotoInput" multiple style="display:none"
+        onchange="handlePhotoCapture(event,'issPhotos')">
+      <input type="file" accept="image/*" capture="environment" id="issPhotoCameraInput" multiple style="display:none"
+        onchange="handlePhotoCapture(event,'issPhotos')">
+      <button class="btn btn-outlined btn-sm" onclick="document.getElementById('issPhotoInput').click()">
+        <span class="material-icons-round">photo_library</span> Browse Gallery
+      </button>
+      <button class="btn btn-outlined btn-sm" onclick="document.getElementById('issPhotoCameraInput').click()">
+        <span class="material-icons-round">add_a_photo</span> Capture Photo
+      </button>
     </div>
+    <div class="photo-grid" id="issPhotos"></div>
     <div id="photoValidMsg" style="font-size:12px;color:var(--red);margin-top:6px;display:none">
       <span class="material-icons-round" style="font-size:14px;vertical-align:middle">error</span>
       At least 2 photos are required to proceed.
@@ -2400,6 +2579,23 @@ function openIssueModal(allotmentId) {
     <div style="display:flex;align-items:center;gap:8px;margin-top:4px">
       <button class="btn btn-text btn-sm" onclick="clearSig()">Clear</button>
       <span id="sigStatus" style="font-size:12px;color:var(--grey-500)">Draw signature above</span>
+    </div>
+
+    <!-- BDO approved slip upload -->
+    <div style="margin-top:14px">
+      <label class="form-label" style="margin-bottom:6px;display:block">📄 Upload BDO Approved Slip Photo</label>
+      <div style="font-size:12px;color:var(--grey-700);margin-bottom:8px">Attach a photo of the BDO-approved permit slip as evidence before issuing cement.</div>
+      <input type="file" accept="image/*" id="issBDOSlipInput" style="display:none"
+        onchange="handleBDOSlipUpload(event)">
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <button class="btn btn-outlined btn-sm" onclick="document.getElementById('issBDOSlipInput').click()">
+          <span class="material-icons-round">upload</span> Browse File
+        </button>
+        <button class="btn btn-outlined btn-sm" onclick="captureBDOSlip()">
+          <span class="material-icons-round">photo_camera</span> Capture Photo
+        </button>
+      </div>
+      <div id="bdoSlipPreview" style="margin-top:8px"></div>
     </div>
 
     <!-- STEP 5: Authorizer PIN -->
@@ -2479,6 +2675,7 @@ function updateIssueStockPreview() {
 
 let sigData = null;
 let issPhotosData = [];
+let bdoStockPhotoData = null;
 function initSig() {
   const c = document.getElementById('sigCanvas');
   if (!c) return;
@@ -2509,6 +2706,29 @@ function clearSig() {
   if(c){c.getContext('2d').clearRect(0,0,c.width,c.height); sigData=null;}
   const el=document.getElementById('sigStatus');
   if(el){el.textContent='Draw signature above'; el.style.color='var(--grey-500)';}
+}
+
+function handleBDOSlipUpload(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    window._bdoSlipPhotoData = e.target.result;
+    const prev = document.getElementById('bdoSlipPreview');
+    if (prev) prev.innerHTML = `<img src="${e.target.result}" style="max-width:100%;max-height:120px;border-radius:6px;border:1px solid var(--grey-200);margin-top:4px">
+      <div style="font-size:11px;color:var(--green);margin-top:3px"><span class="material-icons-round" style="font-size:13px;vertical-align:middle">check_circle</span> BDO slip photo attached</div>`;
+  };
+  reader.readAsDataURL(file);
+  event.target.value = '';
+}
+
+function captureBDOSlip() {
+  const inp = document.createElement('input');
+  inp.type = 'file';
+  inp.accept = 'image/*';
+  inp.capture = 'environment';
+  inp.onchange = handleBDOSlipUpload;
+  inp.click();
 }
 
 function handlePhotoCapture(event, containerId) {
@@ -2634,11 +2854,13 @@ function confirmIssue(allotmentId) {
     bags,
     vehicle:      veh,
     driver:       document.getElementById('issDrv').value,
-    driverMobile: document.getElementById('issDrvMob').value,
+    beneficiaryMobile: document.getElementById('issBenMob')?.value || a.mobile || '',
     remark:       document.getElementById('issRemark').value,
     signature:    sigData,
     photos:       [...issPhotosData],
     photoCount:   issPhotosData.length,
+    bdoSlipPhoto: window._bdoSlipPhotoData || null,
+    permitNumber: a.challanNumber || '',
     issuedBy:     currentUser.name,
     authorizedBy: currentUser.name,
     authorizedAt: issuedAt,
@@ -2877,7 +3099,7 @@ function submitVerification(issuanceId) {
   saveDB();
   closeModal();
   showToast('Collection verified successfully!');
-  navigate('collection');
+  navigate('dashboard');
 }
 function viewInspection(issuanceId) {
   const ins = DB.inspections.find(x=>x.issuanceId===issuanceId);
@@ -2992,7 +3214,7 @@ function submitFieldInspection() {
   saveDB();
   closeModal();
   showToast('Field inspection submitted');
-  navigate('inspection');
+  navigate('dashboard');
 }
 function viewInspectionFull(id) {
   const ins = DB.inspections.find(x=>x.id===id);
@@ -3032,7 +3254,7 @@ function renderBeneficiaries(el) {
       </div>
       <div style="display:flex;gap:8px">
         ${currentUser.role==='admin'?`<button class="btn btn-outlined" onclick="navigate('masterupload')"><span class="material-icons-round">upload_file</span> Master Upload</button>`:''}
-        ${can('editBeneficiary')?`<button class="btn btn-primary" onclick="openAddBeneficiary()"><span class="material-icons-round">person_add</span> Add Beneficiary</button>`:''}
+        ${currentUser.role==='admin'&&can('editBeneficiary')?`<button class="btn btn-primary" onclick="openAddBeneficiary()"><span class="material-icons-round">person_add</span> Add Beneficiary</button>`:''}
       </div>
     </div>
     <div class="card">
@@ -3216,6 +3438,11 @@ function openAllotForBen(id) {
 // ===== STOCK REGISTER =====
 let stockSelectedBlock = '';
 function renderStock(el) {
+  // BDO: show dedicated stock register with manual entries
+  if (currentUser.role === 'bdo') { renderBDOStock(el); return; }
+  // Store Keeper: show view-only BDO stock register
+  if (currentUser.role === 'store') { renderStoreKeeperStock(el); return; }
+
   const s = DB.stock;
   if (!DB.stockLedger) DB.stockLedger = [];
   const ledger = DB.stockLedger.slice().sort((a,b)=>new Date(b.date)-new Date(a.date));
@@ -3449,8 +3676,494 @@ function addStock() {
   navigate('stock');
 }
 
+// ===== BDO STOCK REGISTER (Full) =====
+
+function renderBDOStock(el) {
+  if (!DB.bdoStockEntries) DB.bdoStockEntries = [];
+  const myBlock   = currentUser.block;
+  const entries   = (DB.bdoStockEntries||[]).filter(e=>!e.block||e.block===myBlock).slice().sort((a,b)=>new Date(b.date)-new Date(a.date));
+  const totalReceived = entries.reduce((t,e)=>t+e.bags,0);
+  const totalIssued   = DB.issuances.filter(i=>i.block===myBlock).reduce((t,i)=>t+i.bags,0);
+  const available     = Math.max(0, totalReceived - totalIssued);
+  const pct           = totalReceived ? Math.round(totalIssued/totalReceived*100) : 0;
+
+  el.innerHTML = `
+    <div class="page-header">
+      <div><div class="page-title">Stock Register</div><div class="page-sub">${myBlock} Block · Cement Inventory Management</div></div>
+      ${can('addStock')?`<button class="btn btn-primary" onclick="openBDOAddStock()"><span class="material-icons-round">add</span> Add Stock Entry</button>`:''}
+    </div>
+
+    <!-- Summary cards -->
+    <div class="stat-grid" style="grid-template-columns:repeat(auto-fit,minmax(160px,1fr));margin-bottom:16px">
+      <div class="stat-card">
+        <div class="stat-icon blue"><span class="material-icons-round">inventory_2</span></div>
+        <div><div class="stat-val">${totalReceived}</div><div class="stat-label">Total Received</div><div class="stat-sub">All entries</div></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon red"><span class="material-icons-round">output</span></div>
+        <div><div class="stat-val">${totalIssued}</div><div class="stat-label">Total Issued</div><div class="stat-sub">Via store keeper</div></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon ${available<50?'red':available<200?'yellow':'green'}"><span class="material-icons-round">balance</span></div>
+        <div><div class="stat-val">${available}</div><div class="stat-label">Available Bags</div><div class="stat-sub">${pct}% utilized</div></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon purple"><span class="material-icons-round">receipt_long</span></div>
+        <div><div class="stat-val">${entries.length}</div><div class="stat-label">Stock Entries</div><div class="stat-sub">All receipts logged</div></div>
+      </div>
+    </div>
+
+    <!-- Utilization bar -->
+    <div class="card" style="margin-bottom:16px">
+      <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:8px">
+        <span>Stock Utilization &nbsp;<strong>${totalIssued}</strong> issued of <strong>${totalReceived}</strong> bags received</span>
+        <span style="font-weight:700;color:${pct>85?'var(--red)':pct>60?'var(--yellow)':'var(--blue)'}">${pct}%</span>
+      </div>
+      <div class="progress-bar" style="height:12px">
+        <div class="progress-fill" style="width:${pct}%;background:${pct>85?'var(--red)':pct>60?'var(--yellow)':'var(--blue)'}"></div>
+      </div>
+      ${available<50?`<div style="color:var(--red);font-weight:700;font-size:12px;margin-top:6px">⚠ Critical: Only ${available} bags remaining</div>`:''}
+    </div>
+
+    <!-- Filter bar -->
+    <div class="card" style="margin-bottom:16px">
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
+        <div class="search-input" style="flex:1;min-width:160px">
+          <span class="material-icons-round">search</span>
+          <input id="stockSearch" placeholder="Search scheme, invoice, supplier…" oninput="filterBDOStockLog()">
+        </div>
+        <div class="form-group" style="margin:0;min-width:170px">
+          <label class="form-label">Scheme</label>
+          <select class="form-control" id="stockSchemeF" onchange="filterBDOStockLog()">
+            <option value="">All Schemes</option>
+            ${SCHEMES.map(s=>`<option>${s}</option>`).join('')}
+          </select>
+        </div>
+        <div class="form-group" style="margin:0;min-width:120px">
+          <label class="form-label">From Date</label>
+          <input class="form-control" type="date" id="stockFromF" oninput="filterBDOStockLog()">
+        </div>
+        <div class="form-group" style="margin:0;min-width:120px">
+          <label class="form-label">To Date</label>
+          <input class="form-control" type="date" id="stockToF" oninput="filterBDOStockLog()">
+        </div>
+      </div>
+    </div>
+
+    <!-- Stock log table -->
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+        <div class="section-title" style="margin:0">📋 Cement Stock Log</div>
+        <span id="stockLogCount" style="font-size:12px;color:var(--grey-500)">${entries.length} entries</span>
+      </div>
+      <div class="table-wrap" id="stockLogTableWrap"></div>
+    </div>`;
+
+  filterBDOStockLog();
+}
+
+function filterBDOStockLog() {
+  if (!DB.bdoStockEntries) DB.bdoStockEntries = [];
+  const myBlock = currentUser.role === 'bdo' ? currentUser.block : (currentUser.block||'');
+  const q       = (document.getElementById('stockSearch')?.value||'').toLowerCase();
+  const schF    = document.getElementById('stockSchemeF')?.value||'';
+  const fromF   = document.getElementById('stockFromF')?.value||'';
+  const toF     = document.getElementById('stockToF')?.value||'';
+  let entries   = DB.bdoStockEntries.filter(e=>!e.block||e.block===myBlock);
+  if (schF)  entries = entries.filter(e=>e.scheme===schF);
+  if (fromF) entries = entries.filter(e=>e.date>=fromF);
+  if (toF)   entries = entries.filter(e=>e.date<=toF);
+  if (q)     entries = entries.filter(e=>JSON.stringify(e).toLowerCase().includes(q));
+  entries = entries.slice().sort((a,b)=>new Date(b.date)-new Date(a.date));
+
+  const countEl = document.getElementById('stockLogCount');
+  if (countEl) countEl.textContent = entries.length + ' entries';
+
+  const tbl = document.getElementById('stockLogTableWrap');
+  if (!tbl) return;
+
+  const totalFiltered = entries.reduce((t,e)=>t+e.bags,0);
+
+  tbl.innerHTML = `
+    <table>
+      <thead>
+        <tr>
+          <th>S.No.</th>
+          <th>Date</th>
+          <th>Invoice / GRN No.</th>
+          <th>Supplier</th>
+          <th>Scheme</th>
+          <th>Year</th>
+          <th style="text-align:right">Bags Received</th>
+          <th>Cement Type</th>
+          <th>Slip / Photo</th>
+          <th>Logged By</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${entries.length ? entries.map((e,idx)=>`
+        <tr style="background:${idx%2===0?'var(--grey-50)':'#fff'}">
+          <td style="color:var(--grey-500)">${idx+1}</td>
+          <td><strong>${new Date(e.date+'T00:00:00').toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'})}</strong></td>
+          <td style="font-family:monospace;font-size:12px;color:var(--blue)">${e.invoice||'—'}</td>
+          <td style="font-size:12px">${e.supplier||'—'}</td>
+          <td><span class="chip chip-approved" style="font-size:10px">${e.scheme}</span></td>
+          <td style="font-size:12px">${e.year||'—'}</td>
+          <td style="text-align:right;font-weight:700;color:var(--green);font-size:15px">${e.bags}</td>
+          <td style="font-size:12px">${e.cementType||'OPC 43 Grade'}</td>
+          <td style="text-align:center">
+            ${e.photo
+              ? `<img src="${e.photo}" style="width:44px;height:44px;object-fit:cover;border-radius:6px;border:1.5px solid var(--grey-200);cursor:pointer" onclick="window.open('${e.photo}','_blank')" title="View slip photo">`
+              : '<span style="color:var(--grey-400);font-size:11px">No photo</span>'}
+          </td>
+          <td style="font-size:12px;color:var(--grey-500)">${e.addedBy||'—'}<br><span style="font-size:10px">${e.createdAt?new Date(e.createdAt).toLocaleDateString('en-IN'):''}</span></td>
+          <td>
+            <div style="display:flex;gap:4px">
+              <button class="btn btn-outlined btn-sm" onclick="openBDOEditStock('${e.id}')" title="Edit">
+                <span class="material-icons-round">edit</span>
+              </button>
+              <button class="btn btn-text btn-sm" onclick="viewBDOStockEntry('${e.id}')" title="View Details">
+                <span class="material-icons-round">visibility</span>
+              </button>
+            </div>
+          </td>
+        </tr>`).join('')
+        : `<tr><td colspan="11"><div class="empty-state"><span class="material-icons-round">inventory_2</span><p>No stock entries yet. Click "+ Add Stock Entry" to begin.</p></div></td></tr>`}
+        ${entries.length>0?`
+        <tr style="background:var(--blue-light);font-weight:700">
+          <td colspan="6" style="text-align:right;padding:10px 14px">TOTAL</td>
+          <td style="text-align:right;color:var(--blue);font-size:15px">${totalFiltered}</td>
+          <td colspan="4"></td>
+        </tr>`:''}
+      </tbody>
+    </table>`;
+}
+
+// ── Add Stock Entry modal ──────────────────────────────────────────────
+function openBDOAddStock() {
+  bdoStockPhotoData = null;
+  openModal('Add Cement Stock Entry', `
+    <div class="form-grid">
+      <div class="form-group">
+        <label class="form-label">Date of Receipt *</label>
+        <input class="form-control" type="date" id="bsDate" value="${new Date().toISOString().slice(0,10)}">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Invoice / GRN No. *</label>
+        <input class="form-control" id="bsInvoice" placeholder="e.g. GRN/2025/001">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Supplier Name</label>
+        <input class="form-control" id="bsSupplier" placeholder="Govt. Depot / Supplier name">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Scheme *</label>
+        <select class="form-control" id="bsScheme">${SCHEMES.map(s=>`<option>${s}</option>`).join('')}</select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Year *</label>
+        <input class="form-control" id="bsYear" placeholder="e.g. 2025-26" value="2025-26">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Cement Type *</label>
+        <select class="form-control" id="bsCType">${CEMENT_TYPES.map(t=>`<option>${t}</option>`).join('')}</select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Total Bags Received *</label>
+        <input class="form-control" type="number" id="bsBags" placeholder="Enter number of bags" min="1">
+      </div>
+      <div class="form-group" style="grid-column:1/-1">
+        <label class="form-label">Remarks / Notes</label>
+        <input class="form-control" id="bsRemark" placeholder="Any additional notes…">
+      </div>
+    </div>
+
+    <hr class="divider">
+    <div class="section-title" style="margin-bottom:6px">📷 Work Order / Cement Received Slip Photo</div>
+    <div style="font-size:12px;color:var(--grey-700);margin-bottom:10px">
+      Upload a photo of the <strong>cement delivery challan, work order, or received goods slip</strong> as documentary proof.
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+      <input type="file" accept="image/*" id="bsPhotoFile" style="display:none" onchange="handleBSPhoto(event)">
+      <input type="file" accept="image/*" capture="environment" id="bsPhotoCam" style="display:none" onchange="handleBSPhoto(event)">
+      <button class="btn btn-outlined btn-sm" onclick="document.getElementById('bsPhotoFile').click()">
+        <span class="material-icons-round">photo_library</span> Browse Gallery
+      </button>
+      <button class="btn btn-outlined btn-sm" onclick="document.getElementById('bsPhotoCam').click()">
+        <span class="material-icons-round">photo_camera</span> Capture Photo
+      </button>
+    </div>
+    <div id="bsPhotoPreview" style="margin-bottom:6px"></div>
+    <div id="bsPhotoStatus" style="font-size:12px;color:var(--grey-500)">No photo attached yet.</div>
+  `, [
+    {label:'Cancel', cls:'btn-outlined', fn:closeModal},
+    {label:'💾 Save Entry', cls:'btn-primary', fn:()=>saveBDOStockEntry(null)}
+  ]);
+}
+
+// ── Edit Stock Entry modal ─────────────────────────────────────────────
+function openBDOEditStock(id) {
+  const e = (DB.bdoStockEntries||[]).find(x=>x.id===id);
+  if (!e) return;
+  bdoStockPhotoData = e.photo || null;
+  openModal('Edit Stock Entry – ' + (e.invoice||e.id), `
+    <div class="form-grid">
+      <div class="form-group">
+        <label class="form-label">Date of Receipt *</label>
+        <input class="form-control" type="date" id="bsDate" value="${e.date.slice(0,10)}">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Invoice / GRN No. *</label>
+        <input class="form-control" id="bsInvoice" value="${e.invoice||''}">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Supplier Name</label>
+        <input class="form-control" id="bsSupplier" value="${e.supplier||''}">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Scheme *</label>
+        <select class="form-control" id="bsScheme">${SCHEMES.map(s=>`<option${s===e.scheme?' selected':''}>${s}</option>`).join('')}</select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Year *</label>
+        <input class="form-control" id="bsYear" value="${e.year||'2025-26'}">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Cement Type *</label>
+        <select class="form-control" id="bsCType">${CEMENT_TYPES.map(t=>`<option${t===e.cementType?' selected':''}>${t}</option>`).join('')}</select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Total Bags Received *</label>
+        <input class="form-control" type="number" id="bsBags" value="${e.bags}" min="1">
+      </div>
+      <div class="form-group" style="grid-column:1/-1">
+        <label class="form-label">Remarks / Notes</label>
+        <input class="form-control" id="bsRemark" value="${e.remark||''}">
+      </div>
+    </div>
+
+    <hr class="divider">
+    <div class="section-title" style="margin-bottom:6px">📷 Work Order / Cement Received Slip Photo</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+      <input type="file" accept="image/*" id="bsPhotoFile" style="display:none" onchange="handleBSPhoto(event)">
+      <input type="file" accept="image/*" capture="environment" id="bsPhotoCam" style="display:none" onchange="handleBSPhoto(event)">
+      <button class="btn btn-outlined btn-sm" onclick="document.getElementById('bsPhotoFile').click()">
+        <span class="material-icons-round">photo_library</span> Browse Gallery
+      </button>
+      <button class="btn btn-outlined btn-sm" onclick="document.getElementById('bsPhotoCam').click()">
+        <span class="material-icons-round">photo_camera</span> Capture / Replace
+      </button>
+      ${e.photo?`<button class="btn btn-danger btn-sm" onclick="clearBSPhoto()"><span class="material-icons-round">delete</span> Remove Photo</button>`:''}
+    </div>
+    <div id="bsPhotoPreview">
+      ${e.photo?`<img src="${e.photo}" style="max-width:100%;max-height:160px;border-radius:8px;border:1.5px solid var(--grey-200)">`:'' }
+    </div>
+    <div id="bsPhotoStatus" style="font-size:12px;color:${e.photo?'var(--green)':'var(--grey-500)'}">
+      ${e.photo?'✓ Photo attached (you may replace it)':'No photo attached yet.'}
+    </div>
+  `, [
+    {label:'Cancel', cls:'btn-outlined', fn:closeModal},
+    {label:'💾 Update Entry', cls:'btn-primary', fn:()=>saveBDOStockEntry(id)}
+  ]);
+}
+
+function handleBSPhoto(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    bdoStockPhotoData = ev.target.result;
+    const prev   = document.getElementById('bsPhotoPreview');
+    const status = document.getElementById('bsPhotoStatus');
+    if (prev)   prev.innerHTML   = `<img src="${ev.target.result}" style="max-width:100%;max-height:160px;border-radius:8px;border:1.5px solid var(--green);margin-top:4px">`;
+    if (status) { status.textContent = '✓ Photo attached'; status.style.color = 'var(--green)'; }
+  };
+  reader.readAsDataURL(file);
+  event.target.value = '';
+}
+
+function clearBSPhoto() {
+  bdoStockPhotoData = null;
+  const prev   = document.getElementById('bsPhotoPreview');
+  const status = document.getElementById('bsPhotoStatus');
+  if (prev)   prev.innerHTML   = '';
+  if (status) { status.textContent = 'Photo removed.'; status.style.color = 'var(--grey-500)'; }
+}
+
+// ── Save (create or update) ────────────────────────────────────────────
+function saveBDOStockEntry(editId) {
+  const bags    = parseInt(document.getElementById('bsBags')?.value);
+  const date    = document.getElementById('bsDate')?.value;
+  const invoice = document.getElementById('bsInvoice')?.value.trim();
+  const scheme  = document.getElementById('bsScheme')?.value;
+  const year    = document.getElementById('bsYear')?.value.trim();
+  const cType   = document.getElementById('bsCType')?.value;
+  const supplier= document.getElementById('bsSupplier')?.value.trim();
+  const remark  = document.getElementById('bsRemark')?.value.trim();
+
+  if (!bags || bags<1) { showToast('Enter a valid bags count','error'); return; }
+  if (!date)           { showToast('Date is required','error'); return; }
+  if (!invoice)        { showToast('Invoice / GRN number is required','error'); return; }
+  if (!year)           { showToast('Year is required','error'); return; }
+
+  if (!DB.bdoStockEntries) DB.bdoStockEntries = [];
+
+  if (editId) {
+    // Edit existing
+    const idx = DB.bdoStockEntries.findIndex(e=>e.id===editId);
+    if (idx >= 0) {
+      const oldBags = DB.bdoStockEntries[idx].bags;
+      DB.bdoStockEntries[idx] = {
+        ...DB.bdoStockEntries[idx],
+        date, invoice, supplier, scheme, year, cementType: cType,
+        bags, remark,
+        photo: bdoStockPhotoData,
+        updatedBy: currentUser.name,
+        updatedAt: new Date().toISOString()
+      };
+      // Adjust global stock total for bag difference
+      const diff = bags - oldBags;
+      DB.stock.total   = Math.max(0, (DB.stock.total||0) + diff);
+      DB.stock.balance = Math.max(0, (DB.stock.balance||0) + diff);
+    }
+    showToast('Stock entry updated ✓');
+  } else {
+    // New entry
+    const id = 'BST' + Date.now();
+    DB.bdoStockEntries.push({
+      id, date, invoice, supplier, scheme, year,
+      cementType: cType, bags, remark,
+      photo: bdoStockPhotoData,
+      block: currentUser.block,
+      addedBy: currentUser.name,
+      createdAt: new Date().toISOString()
+    });
+    // Update global stock
+    const openBal = DB.stock.balance || 0;
+    DB.stock.total   = (DB.stock.total||0) + bags;
+    DB.stock.balance = openBal + bags;
+    DB.stock.lastUpdated = new Date().toISOString();
+    // Add to global ledger for store keeper visibility
+    if (!DB.stockLedger) DB.stockLedger = [];
+    DB.stockLedger.push({
+      id: 'GL'+Date.now(), type:'RECEIPT',
+      date: new Date(date+'T00:00:00').toISOString(),
+      bags, scheme, year, cementType: cType,
+      supplier: supplier||'—', grn: invoice,
+      openingBalance: openBal,
+      closingBalance: DB.stock.balance,
+      addedBy: currentUser.name,
+      remark: `BDO Stock Entry – ${scheme} – Invoice: ${invoice}`
+    });
+    showToast('Stock entry added ✓ ' + bags + ' bags | Balance: ' + DB.stock.balance);
+  }
+
+  bdoStockPhotoData = null;
+  saveAndSync();
+  closeModal();
+  renderBDOStock(document.getElementById('mainContent'));
+}
+
+// ── View full details of a stock entry ─────────────────────────────────
+function viewBDOStockEntry(id) {
+  const e = (DB.bdoStockEntries||[]).find(x=>x.id===id);
+  if (!e) return;
+  openModal('Stock Entry Details – ' + (e.invoice||e.id), `
+    <div class="info-row"><span class="info-key">Date</span><span class="info-val">${new Date(e.date+'T00:00:00').toLocaleDateString('en-IN',{dateStyle:'long'})}</span></div>
+    <div class="info-row"><span class="info-key">Invoice / GRN No.</span><span class="info-val" style="font-family:monospace;color:var(--blue)">${e.invoice||'—'}</span></div>
+    <div class="info-row"><span class="info-key">Supplier</span><span class="info-val">${e.supplier||'—'}</span></div>
+    <div class="info-row"><span class="info-key">Scheme</span><span class="info-val">${e.scheme}</span></div>
+    <div class="info-row"><span class="info-key">Year</span><span class="info-val">${e.year||'—'}</span></div>
+    <div class="info-row"><span class="info-key">Cement Type</span><span class="info-val">${e.cementType||'OPC 43 Grade'}</span></div>
+    <div class="info-row"><span class="info-key">Bags Received</span><span class="info-val" style="font-size:20px;font-weight:700;color:var(--green)">${e.bags}</span></div>
+    <div class="info-row"><span class="info-key">Remarks</span><span class="info-val">${e.remark||'—'}</span></div>
+    <div class="info-row"><span class="info-key">Logged By</span><span class="info-val">${e.addedBy}</span></div>
+    <div class="info-row"><span class="info-key">Logged At</span><span class="info-val">${e.createdAt?new Date(e.createdAt).toLocaleString('en-IN'):'—'}</span></div>
+    ${e.updatedBy?`<div class="info-row"><span class="info-key">Last Edited By</span><span class="info-val">${e.updatedBy} · ${new Date(e.updatedAt).toLocaleString('en-IN')}</span></div>`:''}
+    ${e.photo?`
+    <hr class="divider">
+    <div class="section-title">Received Slip / Work Order Photo</div>
+    <img src="${e.photo}" style="max-width:100%;border-radius:8px;border:1.5px solid var(--grey-200);margin-top:6px;cursor:pointer" onclick="window.open(this.src,'_blank')">
+    `:``}
+  `, [
+    {label:'Close', cls:'btn-outlined', fn:closeModal},
+    {label:'Edit', cls:'btn-primary', fn:()=>{closeModal();openBDOEditStock(id);}}
+  ]);
+}
+
+// ===== STORE KEEPER STOCK (view-only of BDO stock) =====
+function renderStoreKeeperStock(el) {
+  if (!DB.bdoStockEntries) DB.bdoStockEntries = [];
+  const myBlock = currentUser.block;
+  const entries = DB.bdoStockEntries.filter(e=>!e.block||e.block===myBlock).slice().sort((a,b)=>new Date(b.date)-new Date(a.date));
+  const totalReceived = entries.reduce((t,e)=>t+e.bags,0);
+  const totalIssued   = DB.issuances.filter(i=>i.block===myBlock).reduce((t,i)=>t+i.bags,0);
+  const available     = Math.max(0, totalReceived - totalIssued);
+  const pct           = totalReceived ? Math.round(totalIssued/totalReceived*100) : 0;
+
+  el.innerHTML = `
+    <div class="page-header">
+      <div><div class="page-title">Stock Register</div><div class="page-sub">${myBlock} Block · View Only (managed by BDO)</div></div>
+    </div>
+    <div class="alert alert-info" style="margin-bottom:16px">
+      <span class="material-icons-round">info</span>
+      This is a read-only view of the stock register managed by the BDO.
+    </div>
+
+    <div class="stat-grid" style="grid-template-columns:repeat(auto-fit,minmax(160px,1fr));margin-bottom:16px">
+      <div class="stat-card"><div class="stat-icon blue"><span class="material-icons-round">inventory_2</span></div><div><div class="stat-val">${totalReceived}</div><div class="stat-label">Total Received Bags</div></div></div>
+      <div class="stat-card"><div class="stat-icon red"><span class="material-icons-round">output</span></div><div><div class="stat-val">${totalIssued}</div><div class="stat-label">Total Issued Bags</div></div></div>
+      <div class="stat-card"><div class="stat-icon ${available<50?'red':available<200?'yellow':'green'}"><span class="material-icons-round">balance</span></div><div><div class="stat-val">${available}</div><div class="stat-label">Available Bags</div></div></div>
+    </div>
+
+    <div class="card" style="margin-bottom:16px">
+      <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px">
+        <span>Stock Utilization</span><span>${pct}%</span>
+      </div>
+      <div class="progress-bar" style="height:12px"><div class="progress-fill" style="width:${pct}%"></div></div>
+    </div>
+
+    <div class="card">
+      <div class="section-title">Cement Stock Log (BDO Managed)</div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>S.No.</th><th>Date</th><th>Invoice / GRN</th><th>Supplier</th>
+              <th>Scheme</th><th style="text-align:right">Bags</th><th>Type</th><th>Slip Photo</th><th>Logged By</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${entries.length ? entries.map((e,idx)=>`
+            <tr style="background:${idx%2===0?'var(--grey-50)':'#fff'}">
+              <td>${idx+1}</td>
+              <td>${new Date(e.date+'T00:00:00').toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'})}</td>
+              <td style="font-family:monospace;font-size:12px;color:var(--blue)">${e.invoice||'—'}</td>
+              <td style="font-size:12px">${e.supplier||'—'}</td>
+              <td><span class="chip chip-approved" style="font-size:10px">${e.scheme}</span></td>
+              <td style="text-align:right;font-weight:700;color:var(--green)">${e.bags}</td>
+              <td style="font-size:12px">${e.cementType||'—'}</td>
+              <td>
+                ${e.photo
+                  ? `<img src="${e.photo}" style="width:40px;height:40px;object-fit:cover;border-radius:5px;border:1px solid var(--grey-200);cursor:pointer" onclick="window.open('${e.photo}','_blank')">`
+                  : '<span style="font-size:11px;color:var(--grey-400)">—</span>'}
+              </td>
+              <td style="font-size:11px;color:var(--grey-500)">${e.addedBy||'—'}</td>
+            </tr>`).join('') : '<tr><td colspan="9"><div class="empty-state"><span class="material-icons-round">inventory_2</span><p>No stock entries from BDO yet</p></div></td></tr>'}
+          </tbody>
+          ${entries.length?`<tfoot><tr style="background:var(--blue-light);font-weight:700"><td colspan="5" style="text-align:right">TOTAL</td><td style="text-align:right;color:var(--blue)">${totalReceived}</td><td colspan="3"></td></tr></tfoot>`:''}
+        </table>
+      </div>
+    </div>`;
+}
+
 // ===== REPORTS =====
 function renderReports(el) {
+  if (currentUser.role === 'bdo' || currentUser.role === 'overseer') {
+    renderRoleAllotmentReport(el);
+    return;
+  }
   // Default date range: current month
   const today = new Date();
   const firstOfMonth = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().slice(0,10);
@@ -3507,6 +4220,120 @@ function renderReports(el) {
     <div id="reportOutput"></div>`;
 
   generateReport();
+}
+
+function renderRoleAllotmentReport(el) {
+  const today = new Date();
+  const firstOfMonth = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().slice(0,10);
+  const todayStr = today.toISOString().slice(0,10);
+  const roleLabel = currentUser.role === 'bdo' ? 'BDO' : 'Overseer';
+
+  el.innerHTML = `
+    <div class="page-header">
+      <div><div class="page-title">Allotment Report</div><div class="page-sub">${currentUser.name} · ${currentUser.block} Block</div></div>
+      <button class="btn btn-outlined" onclick="printRoleReport()"><span class="material-icons-round">print</span> Print</button>
+    </div>
+
+    <!-- Filters -->
+    <div class="card" style="margin-bottom:16px">
+      <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end">
+        <div class="form-group" style="margin:0;min-width:130px">
+          <label class="form-label">From Date</label>
+          <input class="form-control" type="date" id="rrFrom" value="${firstOfMonth}">
+        </div>
+        <div class="form-group" style="margin:0;min-width:130px">
+          <label class="form-label">To Date</label>
+          <input class="form-control" type="date" id="rrTo" value="${todayStr}">
+        </div>
+        <div class="form-group" style="margin:0;min-width:130px">
+          <label class="form-label">Month Quick-select</label>
+          <select class="form-control" id="rrMonth" onchange="applyRRMonth()">
+            <option value="">-- Select Month --</option>
+            ${[0,1,2,3,4,5,6,7,8,9,10,11].map(m=>{
+              const d=new Date(today.getFullYear(),m,1);
+              return `<option value="${m}">${d.toLocaleString('en-IN',{month:'long'})} ${d.getFullYear()}</option>`;
+            }).join('')}
+          </select>
+        </div>
+        <button class="btn btn-primary" onclick="generateRoleReport()" style="margin-bottom:1px">
+          <span class="material-icons-round">search</span> Apply
+        </button>
+      </div>
+    </div>
+
+    <div id="roleReportOutput"></div>`;
+  generateRoleReport();
+}
+
+function applyRRMonth() {
+  const m = parseInt(document.getElementById('rrMonth').value);
+  if (isNaN(m)) return;
+  const y = new Date().getFullYear();
+  const from = new Date(y, m, 1).toISOString().slice(0,10);
+  const to   = new Date(y, m+1, 0).toISOString().slice(0,10);
+  document.getElementById('rrFrom').value = from;
+  document.getElementById('rrTo').value   = to;
+  generateRoleReport();
+}
+
+function generateRoleReport() {
+  const fromStr = document.getElementById('rrFrom')?.value || '2020-01-01';
+  const toStr   = document.getElementById('rrTo')?.value   || new Date().toISOString().slice(0,10);
+  const fromDt  = new Date(fromStr + 'T00:00:00');
+  const toDt    = new Date(toStr   + 'T23:59:59');
+
+  let allots = scopedAllotments().filter(a => {
+    const d = new Date(a.createdAt);
+    return d >= fromDt && d <= toDt;
+  });
+
+  const totalAllots   = allots.length;
+  const totalBags     = allots.reduce((t,a)=>t+a.bags,0);
+  const pending       = allots.filter(a=>a.status==='Pending').length;
+  const approved      = allots.filter(a=>a.status==='Approved').length;
+  const issued        = allots.filter(a=>a.status==='Issued').length;
+
+  const output = document.getElementById('roleReportOutput');
+  if (!output) return;
+  output.innerHTML = `
+    <div class="stat-grid" style="margin-bottom:16px">
+      <div class="stat-card"><div class="stat-icon blue"><span class="material-icons-round">assignment</span></div><div><div class="stat-val">${totalAllots}</div><div class="stat-label">Total Allotments</div></div></div>
+      <div class="stat-card"><div class="stat-icon yellow"><span class="material-icons-round">hourglass_empty</span></div><div><div class="stat-val">${pending}</div><div class="stat-label">Pending</div></div></div>
+      <div class="stat-card"><div class="stat-icon green"><span class="material-icons-round">check_circle</span></div><div><div class="stat-val">${approved+issued}</div><div class="stat-label">Approved / Issued</div></div></div>
+      <div class="stat-card"><div class="stat-icon blue"><span class="material-icons-round">inventory_2</span></div><div><div class="stat-val">${totalBags}</div><div class="stat-label">Total Bags Allotted</div></div></div>
+    </div>
+    <div class="card" id="roleReportPrintable">
+      <div class="section-title">Allotment Details – ${new Date(fromStr).toLocaleDateString('en-IN')} to ${new Date(toStr).toLocaleDateString('en-IN')}</div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>S.No.</th><th>Date</th><th>Allotment ID</th><th>Beneficiary</th><th>Village</th><th>Scheme</th><th style="text-align:right">Bags</th><th>Stage</th><th>Status</th></tr></thead>
+          <tbody>
+            ${allots.length ? allots.map((a,idx)=>`
+            <tr>
+              <td>${idx+1}</td>
+              <td>${new Date(a.createdAt).toLocaleDateString('en-IN')}</td>
+              <td style="font-size:11px;font-family:monospace">${a.id}</td>
+              <td><strong>${a.beneficiaryName}</strong></td>
+              <td style="font-size:12px">${a.village}</td>
+              <td style="font-size:11px">${a.scheme}</td>
+              <td style="text-align:right;font-weight:700;color:var(--blue)">${a.bags}</td>
+              <td style="font-size:12px">${a.stage||a.use||'—'}</td>
+              <td><span class="chip chip-${a.status.toLowerCase()}">${a.status}</span></td>
+            </tr>`).join('') : '<tr><td colspan="9"><div class="empty-state"><span class="material-icons-round">assignment</span><p>No allotments in this period</p></div></td></tr>'}
+          </tbody>
+        </table>
+      </div>
+    </div>`;
+}
+
+function printRoleReport() {
+  const el = document.getElementById('roleReportPrintable');
+  if (!el) { showToast('Generate report first','error'); return; }
+  const w = window.open('','_blank','width=900,height=700');
+  w.document.write(`<html><head><title>Allotment Report</title>
+    <style>*{box-sizing:border-box;margin:0;padding:0;}body{font-family:sans-serif;padding:20px;font-size:12px;}table{width:100%;border-collapse:collapse;}th,td{padding:6px 10px;border:1px solid #ddd;font-size:11px;}th{background:#1a73e8;color:#fff;}</style>
+    </head><body>${el.outerHTML}<br><button onclick="window.print()" style="padding:10px 28px;background:#1a73e8;color:#fff;border:none;border-radius:8px;font-size:14px;cursor:pointer">Print</button></body></html>`);
+  w.document.close();
 }
 
 function setQuickRange(range) {
@@ -3835,11 +4662,7 @@ function printReport() {
 function renderAlerts(el) {
   const alerts = [];
   DB.allotments.filter(a=>a.status==='Pending').forEach(a=>alerts.push({type:'warn',msg:`Allotment ${a.id} pending approval – ${a.beneficiaryName}`,time:a.createdAt}));
-  DB.issuances.filter(i=>!DB.inspections.find(x=>x.issuanceId===i.id)).forEach(i=>alerts.push({type:'info',msg:`Collection not verified for ${i.beneficiaryName} (${i.id}) – ${i.bags} bags`,time:i.issuedAt}));
   if (DB.stock.balance<100) alerts.push({type:'danger',msg:`Critical: Stock balance only ${DB.stock.balance} bags remaining!`,time:new Date().toISOString()});
-  DB.beneficiaries.filter(b=>b.receivedBags>=(b.sanctionedBags||0) && !DB.inspections.find(i=>i.beneficiaryId===b.id&&i.stage==='Completed')).forEach(b=>{
-    if ((b.receivedBags||0)>0) alerts.push({type:'info',msg:`${b.name} has received all bags but no completion inspection recorded`,time:b.createdAt});
-  });
 
   el.innerHTML = `
     <div class="page-header"><div><div class="page-title">Alerts & Notifications</div><div class="page-sub">${alerts.length} active alerts</div></div></div>
@@ -4018,8 +4841,7 @@ function renderMasterUpload(el) {
         <div class="form-group"><label class="form-label">Full Name *</label><input class="form-control" id="muName" placeholder="Full name"></div>
         <div class="form-group"><label class="form-label">TNRD Work ID No. *</label><input class="form-control" id="muWorkId" placeholder="e.g. TNRD/MYL/1001"></div>
         <div class="form-group"><label class="form-label">Aadhaar No. *</label><input class="form-control" id="muAadhaar" placeholder="XXXX-XXXX-XXXX" maxlength="14"></div>
-        <div class="form-group"><label class="form-label">Mobile *</label><input class="form-control" id="muMobile" placeholder="10-digit" maxlength="10"></div>
-        <div class="form-group">
+        <div class="form-group"><label class="form-label">Mobile *</label><input class="form-control" id="muMobile" placeholder="10-digit" maxlength="10"></div>        <div class="form-group">
           <label class="form-label">Block *</label>
           <select class="form-control" id="muBlock" onchange="updateMUVillages()">
             ${BLOCKS.map(b=>`<option>${b}</option>`).join('')}
@@ -4029,12 +4851,10 @@ function renderMasterUpload(el) {
           <label class="form-label">Village *</label>
           <select class="form-control" id="muVillage">${(BLOCK_DATA[BLOCKS[0]]?.villages||[]).map(v=>`<option>${v}</option>`).join('')}</select>
         </div>
-        <div class="form-group">
-          <label class="form-label">Scheme *</label>
+        <div class="form-group"><label class="form-label">Scheme *</label>
           <select class="form-control" id="muScheme">${SCHEMES.map(s=>`<option>${s}</option>`).join('')}</select>
         </div>
         <div class="form-group"><label class="form-label">Year *</label><input class="form-control" id="muYear" placeholder="e.g. 2025-26" value="2025-26"></div>
-        <div class="form-group"><label class="form-label">House No. *</label><input class="form-control" id="muHouse" placeholder="e.g. MYL/2025001"></div>
         <div class="form-group"><label class="form-label">Sanctioned Bags *</label><input class="form-control" type="number" id="muBags" value="100" min="1"></div>
       </div>
       <button class="btn btn-primary" style="margin-top:12px" onclick="addMasterBeneficiary()">
@@ -4267,10 +5087,8 @@ function addMasterBeneficiary() {
   const workId  = document.getElementById('muWorkId').value.trim();
   const aadhaar = document.getElementById('muAadhaar').value.trim();
   const mobile  = document.getElementById('muMobile').value.trim();
-  const houseNo = document.getElementById('muHouse').value.trim();
   if (!name)   { showToast('Beneficiary name is required','error'); return; }
   if (!workId) { showToast('TNRD Work ID is required','error'); return; }
-  if (!houseNo) { showToast('House number is required','error'); return; }
   const b = {
     id: 'B' + String(Date.now()).slice(-7),
     name,
@@ -4281,7 +5099,7 @@ function addMasterBeneficiary() {
     village: document.getElementById('muVillage').value,
     scheme:  document.getElementById('muScheme').value,
     year:    document.getElementById('muYear').value || '2025-26',
-    houseNo,
+    houseNo: '',
     sanctionedBags: parseInt(document.getElementById('muBags').value)||100,
     issuedBags: 0, receivedBags: 0, status: 'Active',
     uploadedBy: currentUser.name,
@@ -4631,6 +5449,19 @@ function purgeInvalidBlocks() {
   navigate('settings');
 }
 
+// ===== NUMBER TO WORDS =====
+function numberToWords(n) {
+  const ones = ['','One','Two','Three','Four','Five','Six','Seven','Eight','Nine','Ten','Eleven','Twelve','Thirteen','Fourteen','Fifteen','Sixteen','Seventeen','Eighteen','Nineteen'];
+  const tens = ['','','Twenty','Thirty','Forty','Fifty','Sixty','Seventy','Eighty','Ninety'];
+  if (n === 0) return 'Zero';
+  if (n < 0) return 'Minus ' + numberToWords(-n);
+  if (n < 20) return ones[n];
+  if (n < 100) return tens[Math.floor(n/10)] + (n%10 ? ' ' + ones[n%10] : '');
+  if (n < 1000) return ones[Math.floor(n/100)] + ' Hundred' + (n%100 ? ' ' + numberToWords(n%100) : '');
+  if (n < 100000) return numberToWords(Math.floor(n/1000)) + ' Thousand' + (n%1000 ? ' ' + numberToWords(n%1000) : '');
+  return numberToWords(Math.floor(n/100000)) + ' Lakh' + (n%100000 ? ' ' + numberToWords(n%100000) : '');
+}
+
 // ===== QR CODE HELPER (using Google Charts API) =====
 function qrCodeImg(data, size=120) {
   const encoded = encodeURIComponent(data);
@@ -4718,18 +5549,22 @@ function generateAllotmentSlipHTML(a, ben, qrData, copyLabel) {
   const qr = qrCodeImg(qrData || challan, 75);
   const issuedBags = DB.issuances.filter(i=>i.beneficiaryId===a.beneficiaryId).reduce((s,i)=>s+i.bags,0);
   const balBags = Math.max(0,(ben.sanctionedBags||a.bags)-issuedBags);
+  // Overseer name for this beneficiary
+  const overseerName = overseerForVillage(a.block, a.village);
+  const approvedByStr = `Allotment – Overseer/${overseerName}<br>Verification – AE/JE/${a.verifiedBy||'—'}<br>Approved – BDO/${a.approvedBy||'—'}`;
+  // Photo from overseer allotment (receiptPhotos[0])
+  const allotPhoto = (a.receiptPhotos && a.receiptPhotos.length > 0) ? a.receiptPhotos[0] : null;
   return `
   <div class="slip-box">
     ${copyLabel ? `<div class="slip-copy-label">${copyLabel}</div>` : ''}
     <div class="slip-header">
       <div class="slip-dept">Rural Development Department · Mayiladuthurai District</div>
       <div class="slip-title">CEMENT ALLOTMENT ORDER</div>
-      <div class="slip-challan">Challan: ${challan}</div>
+      <div class="slip-challan">Permit No: ${challan}</div>
     </div>
     <table class="slip-table">
       <tr><td>Beneficiary</td><td>${a.beneficiaryName}</td></tr>
       <tr><td>Work ID (TNRD)</td><td>${a.workId||ben.workId||'—'}</td></tr>
-      <tr><td>House No.</td><td>${a.houseNo}</td></tr>
       <tr><td>Village / Block</td><td>${a.village} / ${a.block}</td></tr>
       <tr><td>Scheme / Year</td><td>${a.scheme} · ${a.year||ben.year||'—'}</td></tr>
       <tr><td>Aadhaar</td><td>${a.aadhaar}</td></tr>
@@ -4738,15 +5573,19 @@ function generateAllotmentSlipHTML(a, ben, qrData, copyLabel) {
       <tr><td>Sanctioned</td><td>${ben.sanctionedBags||a.bags} bags</td></tr>
       <tr><td>Already Issued</td><td>${issuedBags} bags</td></tr>
       <tr><td>Balance</td><td><strong>${balBags} bags</strong></td></tr>
-      <tr><td>Approved By</td><td>${a.approvedBy||'—'}</td></tr>
+      <tr><td>Approved By</td><td style="font-size:9px;line-height:1.5">${approvedByStr}</td></tr>
+      <tr><td>Stage</td><td>${a.stage||a.use||'—'}</td></tr>
     </table>
     <div class="slip-bags-box">
       <div class="slip-bags-num">${a.bags}</div>
       <div class="slip-bags-lbl">Bags to be Issued this Order (50 kg each)</div>
     </div>
-    <div class="slip-qr">
-      ${qr}
-      <div style="font-size:8px;color:#666;margin-top:2px">Scan QR at Store Keeper</div>
+    <div style="display:flex;align-items:flex-start;gap:6px;margin:4px 0">
+      <div class="slip-qr">
+        ${qr}
+        <div style="font-size:8px;color:#666;margin-top:2px">Scan QR at Store Keeper</div>
+      </div>
+      ${allotPhoto ? `<img src="${allotPhoto}" style="width:75px;height:75px;object-fit:cover;border:1px solid #ddd;border-radius:4px" title="Work Order / Stage Photo">` : '<div style="width:75px;height:75px;border:1px dashed #ddd;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:8px;color:#bbb">Work Photo</div>'}
     </div>
     <div class="slip-sign">
       <div class="slip-sign-line">Beneficiary Signature</div>
@@ -4884,13 +5723,13 @@ function generateIssuanceSlipCopy(i, copyLabel, gpsStr, gpsUrl, dateStr) {
     <table class="dt">
       <tr><td>Beneficiary</td><td>${i.beneficiaryName}</td></tr>
       <tr><td>Aadhaar</td><td>${i.aadhaar}</td></tr>
-      <tr><td>Mobile</td><td>${i.mobile||'—'}</td></tr>
-      <tr><td>House No.</td><td>${i.houseNo}</td></tr>
+      <tr><td>Mobile</td><td>${i.beneficiaryMobile||i.mobile||'—'}</td></tr>
       <tr><td>Village / Block</td><td>${i.village} / ${i.block}</td></tr>
       <tr><td>Scheme</td><td>${i.scheme}</td></tr>
       <tr><td>Cement Type</td><td>${i.cementType||'OPC 43 Grade'}</td></tr>
       <tr><td>Vehicle No.</td><td>${i.vehicle||'—'}</td></tr>
-      <tr><td>Driver</td><td>${i.driver||'—'} ${i.driverMobile?'· '+i.driverMobile:''}</td></tr>
+      <tr><td>Driver</td><td>${i.driver||'—'}</td></tr>
+      <tr><td>Permit No.</td><td style="font-weight:700;font-family:monospace">${i.permitNumber||i.challanNumber||i.allotmentId}</td></tr>
       <tr><td>Issued By</td><td>${i.issuedBy}</td></tr>
       <tr><td>Date &amp; Time</td><td>${dateStr}</td></tr>
       <tr><td>Opening Balance</td><td>${i.openingBalance} bags</td></tr>
@@ -4898,7 +5737,7 @@ function generateIssuanceSlipCopy(i, copyLabel, gpsStr, gpsUrl, dateStr) {
     </table>
     <div class="bags-box">
       <div class="bags-num">${i.bags}</div>
-      <div class="bags-lbl">Bags Issued &nbsp;(${i.bags*50} kg total)</div>
+      <div class="bags-lbl">Bags Issued &nbsp;(${numberToWords(i.bags)} Bags · ${i.bags*50} kg total)</div>
     </div>
     <div class="gps-box">
       📍 GPS: ${gpsStr}${i.gps ? ` (±${i.gps.accuracy||'?'}m)` : ''}
@@ -4922,7 +5761,7 @@ function openModal(title, body, buttons) {
   window.modalBtnFns = (buttons||[]).map(b=>b.fn);
   document.getElementById('modalBackdrop').classList.add('open');
 }
-function closeModal() { document.getElementById('modalBackdrop').classList.remove('open'); issPhotosData=[]; }
+function closeModal() { document.getElementById('modalBackdrop').classList.remove('open'); issPhotosData=[]; window._bdoSlipPhotoData=null; bdoStockPhotoData=null; }
 function closeModalOutside(e) { if (e.target===document.getElementById('modalBackdrop')) closeModal(); }
 
 // ===== TOAST =====
