@@ -1668,11 +1668,23 @@ function toggleSidebar() {
 }
 
 function updateBadges() {
-  const allotPending = DB.allotments.filter(a => a.status === 'Pending').length;
+  // For engineer: badge = allotments needing their verification
+  // For bdo/admin: badge = allotments engineer-verified and awaiting BDO approval
+  // For store: badge = approved allotments ready to issue
+  let allotBadgeCount = 0;
+  if (currentUser?.role === 'engineer') {
+    allotBadgeCount = DB.allotments.filter(a => a.status === 'Pending' && !a.engineerVerified).length;
+  } else if (currentUser?.role === 'bdo' || currentUser?.role === 'admin') {
+    allotBadgeCount = DB.allotments.filter(a => a.status === 'Pending' && a.engineerVerified).length;
+  } else if (currentUser?.role === 'overseer') {
+    allotBadgeCount = DB.allotments.filter(a => a.status === 'Pending' && a.createdBy === currentUser.name).length;
+  } else {
+    allotBadgeCount = DB.allotments.filter(a => a.status === 'Pending').length;
+  }
   const issuancePending = DB.allotments.filter(a => a.status === 'Approved' && !DB.issuances.find(i => i.allotmentId === a.id)).length;
   const pb = document.getElementById('pendingBadge');
   const ib = document.getElementById('issuanceBadge');
-  if (pb) pb.textContent = allotPending;
+  if (pb) pb.textContent = allotBadgeCount;
   if (ib) ib.textContent = issuancePending;
 }
 
@@ -1785,7 +1797,14 @@ function renderDashboard(el) {
       </div>
     </div>
 
-    ${pendingApprovals > 0 ? `<div class="alert alert-warn"><span class="material-icons-round">warning_amber</span><div><strong>${pendingApprovals} allotments</strong> pending approval. <a href="#" onclick="navigate('allotments');return false" style="color:inherit">Review now →</a></div></div>` : ''}
+    ${(() => {
+      const awaitingEng = myAllots.filter(a=>a.status==='Pending' && !a.engineerVerified).length;
+      const awaitingBDO = myAllots.filter(a=>a.status==='Pending' && a.engineerVerified).length;
+      const parts = [];
+      if (awaitingEng > 0) parts.push(`<strong>${awaitingEng}</strong> awaiting Engineer verification`);
+      if (awaitingBDO > 0) parts.push(`<strong>${awaitingBDO}</strong> awaiting BDO approval`);
+      return parts.length ? `<div class="alert alert-warn"><span class="material-icons-round">warning_amber</span><div>${parts.join(' · ')} &nbsp;<a href="#" onclick="navigate('allotments');return false" style="color:inherit">Review now →</a></div></div>` : '';
+    })()}
 
     ${currentUser.role === 'overseer' ? (()=>{
       if (!DB.bdoStockEntries) DB.bdoStockEntries = [];
@@ -1864,8 +1883,9 @@ function renderDashboard(el) {
 
       <div class="card">
         <div class="section-title">Workflow Status</div>
-        <div class="info-row"><span class="info-key">⏳ Pending Approval</span><span class="info-val">${myAllots.filter(a=>a.status==='Pending').length} orders</span></div>
-        <div class="info-row"><span class="info-key">✅ Ready to Issue</span><span class="info-val">${myAllots.filter(a=>a.status==='Approved').length} orders</span></div>
+        <div class="info-row"><span class="info-key">⏳ Awaiting Engineer</span><span class="info-val">${myAllots.filter(a=>a.status==='Pending' && !a.engineerVerified).length} orders</span></div>
+        <div class="info-row"><span class="info-key">🔧 Engineer Verified – Awaiting BDO</span><span class="info-val">${myAllots.filter(a=>a.status==='Pending' && a.engineerVerified).length} orders</span></div>
+        <div class="info-row"><span class="info-key">✅ BDO Approved – Ready to Issue</span><span class="info-val">${myAllots.filter(a=>a.status==='Approved').length} orders</span></div>
         <div class="info-row"><span class="info-key">📦 Issued</span><span class="info-val">${myIss.length} records</span></div>
       </div>
     </div>
@@ -1947,6 +1967,8 @@ function renderAllotments(el) {
     <div class="tab-bar">
       <button class="tab active" onclick="filterAllotments('all',this)">All</button>
       <button class="tab" onclick="filterAllotments('Pending',this)">⏳ Pending</button>
+      <button class="tab" onclick="filterAllotments('awaiting_engineer',this)">🔧 Awaiting Engineer</button>
+      <button class="tab" onclick="filterAllotments('awaiting_bdo',this)">📋 Awaiting BDO</button>
       <button class="tab" onclick="filterAllotments('Approved',this)">✅ Approved</button>
       <button class="tab" onclick="filterAllotments('Rejected',this)">❌ Rejected</button>
     </div>
@@ -1991,7 +2013,13 @@ function filterAllotTable() {
   const scheme = document.getElementById('allotSchemeF')?.value||'';
   const year   = document.getElementById('allotYearF')?.value||'';
   let data = scopedAllotments();
-  if (allotFilter !== 'all') data = data.filter(a=>a.status===allotFilter);
+  if (allotFilter === 'awaiting_engineer') {
+    data = data.filter(a=>a.status==='Pending' && !a.engineerVerified);
+  } else if (allotFilter === 'awaiting_bdo') {
+    data = data.filter(a=>a.status==='Pending' && a.engineerVerified);
+  } else if (allotFilter !== 'all') {
+    data = data.filter(a=>a.status===allotFilter);
+  }
   if (block)  data = data.filter(a=>a.block===block);
   if (scheme) data = data.filter(a=>a.scheme===scheme);
   if (year)   data = data.filter(a=>a.year===year);
@@ -2018,13 +2046,40 @@ function renderAllotTable(data) {
       <td style="text-align:right;color:var(--green)">${issuedBags}</td>
       <td style="text-align:right;color:${toBeIssued>0?'var(--blue)':'var(--grey-500)'};font-weight:600">${toBeIssued}</td>
       <td style="font-size:11px;font-family:monospace">${a.challanNumber||'—'}</td>
-      <td><span class="chip chip-${a.status.toLowerCase()}">${a.status}</span>${a.engineerVerified?` <span class="chip chip-verified" style="font-size:10px">✓ Eng</span>`:""}</td>
+      <td>
+        ${a.status === 'Pending' && a.engineerVerified
+          ? `<span class="chip chip-pending">Pending</span> <span class="chip chip-verified" style="font-size:10px">✓ Eng</span><br><span style="font-size:10px;color:var(--grey-500);margin-top:2px;display:block">Awaiting BDO</span>`
+          : a.status === 'Pending' && !a.engineerVerified
+          ? `<span class="chip chip-pending">Pending</span><br><span style="font-size:10px;color:var(--grey-500);margin-top:2px;display:block">Awaiting Engineer</span>`
+          : `<span class="chip chip-${a.status.toLowerCase()}">${a.status}</span>`}
+      </td>
       <td style="display:flex;gap:6px;flex-wrap:wrap">
         <button class="btn btn-text btn-sm" onclick="viewAllotment('${a.id}')"><span class="material-icons-round">visibility</span></button>
         ${can('editAllotment') && a.status==='Pending' ? `<button class="btn btn-outlined btn-sm" onclick="editAllotment('${a.id}')" title="Edit Allotment"><span class="material-icons-round">edit</span></button>` : ''}
-        ${a.status==='Pending' && currentUser.role==='engineer' && !a.engineerVerified ? `<button class="btn btn-green btn-sm" onclick="engineerVerifyAllotment('${a.id}')"><span class="material-icons-round">engineering</span> Verify</button>` : ''}
-        ${a.status==='Pending' && a.engineerVerified && currentUser.role==='engineer' ? `<span class="chip chip-verified" style="font-size:11px">✓ Verified by you</span>` : ''}
-        ${a.status==='Pending' && can('approveAllotment') && (currentUser.role==='admin' || a.createdBy !== currentUser.name) ? `<button class="btn btn-green btn-sm" onclick="approveAllotment('${a.id}')">${a.engineerVerified?'Approve':'Approve'}</button><button class="btn btn-danger btn-sm" onclick="rejectAllotment('${a.id}')">Reject</button>` : (a.status==='Pending' && a.createdBy===currentUser.name && currentUser.role!=='engineer' ? '<span style="font-size:11px;color:var(--grey-500)">Awaiting approval</span>' : '')}
+        ${(() => {
+          if (a.status !== 'Pending') return '';
+          const role = currentUser.role;
+          // Engineer: show Verify button if not yet verified, else show "Forwarded" badge
+          if (role === 'engineer') {
+            return !a.engineerVerified
+              ? `<button class="btn btn-green btn-sm" onclick="engineerVerifyAllotment('${a.id}')"><span class="material-icons-round">engineering</span> Verify</button>`
+              : `<span class="chip chip-verified" style="font-size:11px">✓ Verified – Awaiting BDO</span>`;
+          }
+          // Overseer / creator: show waiting status
+          if (role === 'overseer') {
+            return !a.engineerVerified
+              ? `<span style="font-size:11px;color:var(--grey-500)">⏳ Awaiting Engineer</span>`
+              : `<span style="font-size:11px;color:#9c6e00">⏳ Awaiting BDO</span>`;
+          }
+          // BDO or admin: show approve/reject with gate enforcement
+          if (can('approveAllotment') && (currentUser.role === 'admin' || a.createdBy !== currentUser.name)) {
+            if (!a.engineerVerified && currentUser.role !== 'admin') {
+              return `<span style="font-size:11px;color:var(--grey-500)">⏳ Pending Engineer</span>`;
+            }
+            return `<button class="btn btn-green btn-sm" onclick="approveAllotment('${a.id}')">Approve</button><button class="btn btn-danger btn-sm" onclick="rejectAllotment('${a.id}')">Reject</button>`;
+          }
+          return '';
+        })()}
         ${a.status==='Approved' ? `<button class="btn btn-outlined btn-sm" onclick="printSlip('${a.id}')"><span class="material-icons-round">print</span> Slip</button>` : ''}
       </td>
     </tr>`}).join('');
@@ -2357,7 +2412,8 @@ function viewAllotment(id) {
       <div class="info-row"><span class="info-key">Bags</span><span class="info-val"><strong>${a.bags}</strong></span></div>
       <div class="info-row"><span class="info-key">Use</span><span class="info-val">${a.use}</span></div>
       <div class="info-row"><span class="info-key">Status</span><span class="info-val"><span class="chip chip-${a.status.toLowerCase()}">${a.status}</span></span></div>
-      ${a.engineerVerified ? `<div class="info-row"><span class="info-key">Engineer Verified By</span><span class="info-val"><span class="chip chip-verified">✓ ${a.engineerVerifiedBy}</span></span></div>` : `<div class="info-row"><span class="info-key">Engineer Verification</span><span class="info-val"><span class="chip chip-pending">Pending</span></span></div>`}
+      ${a.engineerVerified ? `<div class="info-row"><span class="info-key">Engineer Verified By</span><span class="info-val"><span class="chip chip-verified">✓ ${a.engineerVerifiedBy}</span> <span style="font-size:11px;color:var(--grey-500)">${a.engineerVerifiedAt ? new Date(a.engineerVerifiedAt).toLocaleString('en-IN',{dateStyle:'short',timeStyle:'short'}) : ''}</span></span></div>` : `<div class="info-row"><span class="info-key">Engineer Verification</span><span class="info-val"><span class="chip chip-pending">⏳ Pending – AE/JE must verify first</span></span></div>`}
+      ${a.status === 'Approved' ? `<div class="info-row"><span class="info-key">BDO Approved By</span><span class="info-val"><span class="chip chip-approved">✓ ${a.approvedBy}</span></span></div>` : a.engineerVerified ? `<div class="info-row"><span class="info-key">BDO Approval</span><span class="info-val"><span class="chip chip-pending">⏳ Pending – Engineer verified, awaiting BDO</span></span></div>` : `<div class="info-row"><span class="info-key">BDO Approval</span><span class="info-val"><span style="color:var(--grey-500);font-size:12px">Blocked – Engineer must verify first</span></span></div>`}
     </div>
     ${a.receiptPhotos && a.receiptPhotos.length ? `
     <hr class="divider">
