@@ -1747,7 +1747,7 @@ function pagesForRole(role) {
     pages.push('issuance');
   if ((p.viewBeneficiary||[]).includes(role) || (p.editBeneficiary||[]).includes(role))
     pages.push('beneficiaries');
-  if (role === 'engineer') pages.push('allotments');
+  if (role === 'engineer') pages.push('allotments', 'reports', 'stock');
   if ((p.addStock||[]).includes(role))
     pages.push('stock');
   else if ((p.issueCement||[]).includes(role))
@@ -1769,13 +1769,39 @@ function renderDashboard(el) {
   const myIss     = scopedIssuances();
   const totalBagsIssued = myIss.reduce((s,i)=>s+i.bags,0);
   const pendingApprovals = myAllots.filter(a=>a.status==='Pending').length;
+  const role = currentUser.role;
+  const isBlockOfficer = !!currentUser.block; // BDO, overseer, engineer, store, inspector
 
   // Block-wise summary for Collector
   const blockSummary = currentUser.block === null ? BLOCKS.map(blk => {
     const bb = DB.beneficiaries.filter(b=>b.block===blk);
     const bi = DB.issuances.filter(i=>i.block===blk);
-    return { blk, bens: bb.length, issued: bi.reduce((s,x)=>s+x.bags,0) };
+    const ba = DB.allotments.filter(a=>a.block===blk);
+    const bdoEntries = (DB.bdoStockEntries||[]).filter(e=>e.block===blk);
+    const stockRecv = bdoEntries.reduce((t,e)=>t+e.bags,0);
+    return { blk, bens: bb.length, issued: bi.reduce((s,x)=>s+x.bags,0),
+             allots: ba.length, pend: ba.filter(a=>a.status==='Pending').length,
+             stockRecv, sanctioned: bb.reduce((t,b)=>t+(b.sanctionedBags||0),0) };
   }) : [];
+
+  // Block-level stats for block officers
+  const blkBens  = isBlockOfficer ? DB.beneficiaries.filter(b=>b.block===currentUser.block) : [];
+  const blkIss   = isBlockOfficer ? DB.issuances.filter(i=>i.block===currentUser.block) : [];
+  const blkAllots= isBlockOfficer ? DB.allotments.filter(a=>a.block===currentUser.block) : [];
+  const blkSanc  = blkBens.reduce((t,b)=>t+(b.sanctionedBags||0),0);
+  const blkIssBags = blkIss.reduce((t,i)=>t+i.bags,0);
+  const blkPending = blkAllots.filter(a=>a.status==='Pending').length;
+  const blkApproved = blkAllots.filter(a=>a.status==='Approved').length;
+  const blkBalance = Math.max(0, blkSanc - blkIssBags);
+  const blkPct = blkSanc ? Math.round(blkIssBags/blkSanc*100) : 0;
+
+  // BDO stock entries for this block
+  const bdoEntries = (DB.bdoStockEntries||[]).filter(e=>!e.block||e.block===currentUser.block);
+  const bdoStockRecv = bdoEntries.reduce((t,e)=>t+e.bags,0);
+  const bdoStockBal = Math.max(0, bdoStockRecv - blkIssBags);
+
+  // Panchayat breakdown for overseer
+  const myPanchs = userPanchayats();
 
   el.innerHTML = `
     <div class="page-header">
@@ -1806,32 +1832,89 @@ function renderDashboard(el) {
       return parts.length ? `<div class="alert alert-warn"><span class="material-icons-round">warning_amber</span><div>${parts.join(' · ')} &nbsp;<a href="#" onclick="navigate('allotments');return false" style="color:inherit">Review now →</a></div></div>` : '';
     })()}
 
-    ${currentUser.role === 'overseer' ? (()=>{
-      if (!DB.bdoStockEntries) DB.bdoStockEntries = [];
-      const blockEntries = DB.bdoStockEntries.filter(e=>!e.block||e.block===currentUser.block);
-      const totalCement  = blockEntries.reduce((t,e)=>t+e.bags,0);
-      const issuedCement = DB.issuances.filter(i=>i.block===currentUser.block).reduce((t,i)=>t+i.bags,0);
-      const available    = Math.max(0, totalCement - issuedCement);
-      return `<div class="card" style="margin-bottom:16px;background:${available===0&&totalCement>0?'var(--red-light)':'var(--green-light)'}">
-        <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
-          <span class="material-icons-round" style="font-size:32px;color:${available===0&&totalCement>0?'var(--red)':'var(--green)'}">inventory_2</span>
-          <div style="flex:1">
-            <div style="font-size:13px;font-weight:700;color:var(--grey-700);margin-bottom:6px">Stock Details – ${currentUser.block} Block</div>
-            <div style="display:flex;gap:20px;flex-wrap:wrap;font-size:13px">
-              <span>Total Cement Bags: <strong>${totalCement}</strong></span>
-              <span>Issued Bags: <strong style="color:var(--red)">${issuedCement}</strong></span>
-              <span>Available Bags: <strong style="color:${available>0?'var(--green)':'var(--red)'}">${available}</strong></span>
-            </div>
-            ${available===0&&totalCement>0 ? `<div style="color:var(--red);font-weight:700;margin-top:6px;font-size:12px">⚠ No stock available – cement allotment not allowed</div>` : ''}
-          </div>
+    ${isBlockOfficer ? `
+    <!-- ═══ BLOCK STOCK POSITION BANNER ═══ -->
+    <div class="card" style="margin-bottom:16px;border-left:4px solid ${bdoStockBal===0&&bdoStockRecv>0?'var(--red)':bdoStockBal<50?'var(--yellow)':'var(--blue)'}">
+      <div style="font-size:12px;font-weight:700;color:var(--grey-700);margin-bottom:10px;letter-spacing:.3px">
+        <span class="material-icons-round" style="font-size:15px;vertical-align:middle;color:var(--blue)">inventory_2</span>
+        STOCK POSITION — ${currentUser.block} Block
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px">
+        <div style="background:var(--blue-light);border-radius:8px;padding:12px;text-align:center">
+          <div style="font-size:22px;font-weight:700;color:var(--blue)">${bdoStockRecv}</div>
+          <div style="font-size:11px;color:var(--grey-700)">Stock Received</div>
         </div>
-      </div>`;
-    })() : ''}
+        <div style="background:var(--red-light);border-radius:8px;padding:12px;text-align:center">
+          <div style="font-size:22px;font-weight:700;color:var(--red)">${blkIssBags}</div>
+          <div style="font-size:11px;color:var(--grey-700)">Issued to Beneficiaries</div>
+        </div>
+        <div style="background:${bdoStockBal>0?'var(--green-light)':'var(--red-light)'};border-radius:8px;padding:12px;text-align:center">
+          <div style="font-size:22px;font-weight:700;color:${bdoStockBal>0?'var(--green)':'var(--red)'}">${bdoStockBal}</div>
+          <div style="font-size:11px;color:var(--grey-700)">Stock Balance</div>
+        </div>
+        <div style="background:var(--yellow-light);border-radius:8px;padding:12px;text-align:center">
+          <div style="font-size:22px;font-weight:700;color:#9c6e00">${blkSanc}</div>
+          <div style="font-size:11px;color:var(--grey-700)">Total Sanctioned</div>
+        </div>
+        <div style="background:var(--grey-100);border-radius:8px;padding:12px;text-align:center">
+          <div style="font-size:22px;font-weight:700;color:var(--grey-900)">${blkBalance}</div>
+          <div style="font-size:11px;color:var(--grey-700)">Sanctioned – Pending Issue</div>
+        </div>
+      </div>
+      <div style="margin-top:10px">
+        <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--grey-700);margin-bottom:4px">
+          <span>Issuance Progress</span><span>${blkIssBags} of ${blkSanc} bags (${blkPct}%)</span>
+        </div>
+        <div class="progress-bar" style="height:8px">
+          <div class="progress-fill" style="width:${blkPct}%;background:${blkPct>85?'var(--green)':blkPct>50?'var(--blue)':'var(--yellow)'}"></div>
+        </div>
+      </div>
+    </div>
 
+    <!-- ═══ BLOCK STAT CARDS ═══ -->
     <div class="stat-grid">
       <div class="stat-card">
         <div class="stat-icon blue"><span class="material-icons-round">people</span></div>
-        <div><div class="stat-val">${myBens.length}</div><div class="stat-label">Beneficiaries</div><div class="stat-sub">${currentUser.block||'District total'}</div></div>
+        <div><div class="stat-val">${blkBens.length}</div><div class="stat-label">Beneficiaries</div><div class="stat-sub">${currentUser.block} block</div></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon yellow"><span class="material-icons-round">assignment</span></div>
+        <div><div class="stat-val">${blkAllots.length}</div><div class="stat-label">Allotments</div><div class="stat-sub">${blkPending} pending · ${blkApproved} approved</div></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon green"><span class="material-icons-round">output</span></div>
+        <div><div class="stat-val">${blkIssBags}</div><div class="stat-label">Bags Issued</div><div class="stat-sub">${blkIss.length} transactions</div></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon ${bdoStockBal<50?'red':bdoStockBal<200?'yellow':'green'}"><span class="material-icons-round">inventory_2</span></div>
+        <div><div class="stat-val">${bdoStockBal}</div><div class="stat-label">Stock Balance</div><div class="stat-sub">Available in depot</div></div>
+      </div>
+    </div>
+
+    <!-- ═══ WORKFLOW STATUS FOR BLOCK ═══ -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:0">
+      <div class="card">
+        <div class="section-title">Workflow Status – ${currentUser.block}</div>
+        <div class="info-row"><span class="info-key">⏳ Awaiting Engineer Verification</span><span class="info-val">${blkAllots.filter(a=>a.status==='Pending'&&!a.engineerVerified).length}</span></div>
+        <div class="info-row"><span class="info-key">🔧 Engineer Verified – Awaiting BDO</span><span class="info-val">${blkAllots.filter(a=>a.status==='Pending'&&a.engineerVerified).length}</span></div>
+        <div class="info-row"><span class="info-key">✅ BDO Approved – Ready to Issue</span><span class="info-val">${blkApproved}</span></div>
+        <div class="info-row"><span class="info-key">📦 Issued</span><span class="info-val">${blkIss.length} records</span></div>
+        <div class="info-row"><span class="info-key">❌ Rejected</span><span class="info-val">${blkAllots.filter(a=>a.status==='Rejected').length}</span></div>
+      </div>
+      <div class="card">
+        <div class="section-title">Recent Issuances – ${currentUser.block}</div>
+        ${blkIss.slice(-5).reverse().map(i=>`
+          <div class="info-row">
+            <span class="info-key" style="font-size:12px"><span class="material-icons-round" style="font-size:14px;vertical-align:middle;color:var(--green)">output</span> ${i.beneficiaryName}</span>
+            <span style="font-size:12px"><strong>${i.bags} bags</strong></span>
+          </div>`).join('') || '<div style="color:var(--grey-500);font-size:13px">No issuances yet</div>'}
+      </div>
+    </div>` : `
+    <!-- ═══ COLLECTOR STAT CARDS ═══ -->
+    <div class="stat-grid">
+      <div class="stat-card">
+        <div class="stat-icon blue"><span class="material-icons-round">people</span></div>
+        <div><div class="stat-val">${myBens.length}</div><div class="stat-label">Beneficiaries</div><div class="stat-sub">District total</div></div>
       </div>
       <div class="stat-card">
         <div class="stat-icon yellow"><span class="material-icons-round">assignment</span></div>
@@ -1839,75 +1922,78 @@ function renderDashboard(el) {
       </div>
       <div class="stat-card">
         <div class="stat-icon green"><span class="material-icons-round">output</span></div>
-        <div><div class="stat-val">${totalBagsIssued}</div><div class="stat-label">Bags Issued</div><div class="stat-sub">From store</div></div>
+        <div><div class="stat-val">${totalBagsIssued}</div><div class="stat-label">Bags Issued</div><div class="stat-sub">District total</div></div>
       </div>
       <div class="stat-card">
         <div class="stat-icon purple"><span class="material-icons-round">inventory_2</span></div>
-        <div><div class="stat-val">${DB.stock.balance}</div><div class="stat-label">Stock Balance</div><div class="stat-sub">Bags available</div></div>
+        <div><div class="stat-val">${DB.stock.balance}</div><div class="stat-label">Central Stock Balance</div><div class="stat-sub">Bags available</div></div>
       </div>
-    </div>
+    </div>`}
 
     ${blockSummary.length ? `
+    <!-- ═══ COLLECTOR: BLOCK-WISE SUMMARY ═══ -->
     <div class="card" style="margin-top:0">
-      <div class="section-title">Block-wise Summary</div>
+      <div class="section-title">Block-wise Summary – All Blocks</div>
       <div class="table-wrap">
         <table>
-          <thead><tr><th>Block</th><th>Beneficiaries</th><th>Allotments</th><th>Bags Issued</th><th>Pending</th></tr></thead>
+          <thead><tr><th>Block</th><th style="text-align:right">Beneficiaries</th><th style="text-align:right">Sanctioned (bags)</th><th style="text-align:right">Stock Received</th><th style="text-align:right">Bags Issued</th><th style="text-align:right">Balance</th><th>Progress</th><th>Pending</th></tr></thead>
           <tbody>
-            ${blockSummary.map(({blk,bens,issued})=>{
-              const allots = DB.allotments.filter(a=>a.block===blk);
-              const pend   = allots.filter(a=>a.status==='Pending').length;
-              return `<tr>
+            ${blockSummary.map(({blk,bens,issued,allots,pend,stockRecv,sanctioned})=>{
+              const pctB = sanctioned ? Math.round(issued/sanctioned*100) : 0;
+              const bal = Math.max(0, sanctioned - issued);
+              return `<tr style="cursor:pointer" onclick="navigate('reports')" title="View ${blk} reports">
                 <td><strong>${blk}</strong></td>
-                <td>${bens}</td>
-                <td>${allots.length}</td>
-                <td><strong>${issued}</strong></td>
+                <td style="text-align:right">${bens}</td>
+                <td style="text-align:right">${sanctioned}</td>
+                <td style="text-align:right;color:var(--blue);font-weight:600">${stockRecv||'—'}</td>
+                <td style="text-align:right;color:var(--green);font-weight:600">${issued}</td>
+                <td style="text-align:right;color:${bal>0?'var(--blue)':'var(--grey-400)'};font-weight:600">${bal}</td>
+                <td style="min-width:80px"><div class="progress-bar"><div class="progress-fill" style="width:${pctB}%"></div></div><div style="font-size:10px;color:var(--grey-500);margin-top:1px">${pctB}%</div></td>
                 <td>${pend>0?`<span class="chip chip-pending">${pend}</span>`:'—'}</td>
               </tr>`;
             }).join('')}
           </tbody>
         </table>
       </div>
-    </div>` : ''}
+    </div>
 
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
       <div class="card">
-        <div class="section-title">Stock Utilization</div>
+        <div class="section-title">Central Stock Utilization</div>
         <div style="margin-bottom:8px;display:flex;justify-content:space-between;font-size:13px">
-          <span>Used: <strong>${DB.stock.total - DB.stock.balance} bags</strong></span>
+          <span>Issued: <strong>${DB.stock.total - DB.stock.balance} bags</strong></span>
           <span>Total: <strong>${DB.stock.total} bags</strong></span>
         </div>
         <div class="progress-bar"><div class="progress-fill" style="width:${DB.stock.total?Math.round((DB.stock.total-DB.stock.balance)/DB.stock.total*100):0}%"></div></div>
         <div style="font-size:11px;color:var(--grey-500);margin-top:6px">${DB.stock.total?Math.round((DB.stock.total-DB.stock.balance)/DB.stock.total*100):0}% utilized</div>
       </div>
-
       <div class="card">
-        <div class="section-title">Workflow Status</div>
-        <div class="info-row"><span class="info-key">⏳ Awaiting Engineer</span><span class="info-val">${myAllots.filter(a=>a.status==='Pending' && !a.engineerVerified).length} orders</span></div>
-        <div class="info-row"><span class="info-key">🔧 Engineer Verified – Awaiting BDO</span><span class="info-val">${myAllots.filter(a=>a.status==='Pending' && a.engineerVerified).length} orders</span></div>
-        <div class="info-row"><span class="info-key">✅ BDO Approved – Ready to Issue</span><span class="info-val">${myAllots.filter(a=>a.status==='Approved').length} orders</span></div>
+        <div class="section-title">District Workflow Status</div>
+        <div class="info-row"><span class="info-key">⏳ Awaiting Engineer</span><span class="info-val">${myAllots.filter(a=>a.status==='Pending'&&!a.engineerVerified).length}</span></div>
+        <div class="info-row"><span class="info-key">🔧 Awaiting BDO</span><span class="info-val">${myAllots.filter(a=>a.status==='Pending'&&a.engineerVerified).length}</span></div>
+        <div class="info-row"><span class="info-key">✅ Ready to Issue</span><span class="info-val">${myAllots.filter(a=>a.status==='Approved').length}</span></div>
         <div class="info-row"><span class="info-key">📦 Issued</span><span class="info-val">${myIss.length} records</span></div>
       </div>
     </div>
 
     <div class="card" style="margin-top:16px">
-      <div class="section-title">Recent Activity</div>
+      <div class="section-title">Recent Activity (District)</div>
       ${myIss.slice(-5).reverse().map(i=>`
         <div class="info-row">
-          <span class="info-key"><span class="material-icons-round" style="font-size:16px;vertical-align:middle;color:var(--green)">output</span> Issued to ${i.beneficiaryName}</span>
+          <span class="info-key"><span class="material-icons-round" style="font-size:16px;vertical-align:middle;color:var(--green)">output</span> ${i.beneficiaryName} <span style="color:var(--grey-500);font-size:11px">(${i.block})</span></span>
           <span><strong>${i.bags} bags</strong> &nbsp;<span class="chip chip-issued">Issued</span></span>
         </div>`).join('') || '<div style="color:var(--grey-500);font-size:13px">No activity yet</div>'}
-    </div>
+    </div>` : ''}
 
-    ${currentUser.role === 'overseer' && userPanchayats() ? `
+    ${role === 'overseer' && myPanchs ? `
+    <!-- ═══ OVERSEER PANCHAYAT TABLE ═══ -->
     <div class="card" style="margin-top:16px">
-      <div class="section-title">My Assigned Panchayats (${userPanchayats().length})</div>
-      <div style="font-size:12px;color:var(--grey-500);margin-bottom:10px">${currentUser.block} Block · ${currentUser.name}</div>
+      <div class="section-title">My Assigned Panchayats (${myPanchs.length}) – ${currentUser.name}</div>
       <div class="table-wrap">
         <table style="font-size:12px">
-          <thead><tr><th>#</th><th>Panchayat</th><th style="text-align:right">Beneficiaries</th><th style="text-align:right">Sanctioned Bags</th><th style="text-align:right">Issued Bags</th><th style="text-align:right">Balance Bags</th><th>Progress</th></tr></thead>
+          <thead><tr><th>#</th><th>Panchayat</th><th style="text-align:right">Beneficiaries</th><th style="text-align:right">Sanctioned</th><th style="text-align:right">Issued</th><th style="text-align:right">Pending</th><th>Progress</th></tr></thead>
           <tbody>
-            ${userPanchayats().map((panch, pi) => {
+            ${myPanchs.map((panch, pi) => {
               const pBens = DB.beneficiaries.filter(b=>b.block===currentUser.block && (b.village||'').toUpperCase()===panch.toUpperCase());
               const pIss  = DB.issuances.filter(i=>i.block===currentUser.block && (i.village||'').toUpperCase()===panch.toUpperCase());
               const sanc  = pBens.reduce((t,b)=>t+(b.sanctionedBags||0),0);
@@ -1927,6 +2013,14 @@ function renderDashboard(el) {
                 </td>
               </tr>`;
             }).join('')}
+            <tr style="background:var(--blue-light);font-weight:700;font-size:12px">
+              <td colspan="2">TOTAL</td>
+              <td style="text-align:right">${myPanchs.reduce((t,p)=>{const pb=DB.beneficiaries.filter(b=>b.block===currentUser.block&&(b.village||'').toUpperCase()===p.toUpperCase());return t+pb.length;},0)}</td>
+              <td style="text-align:right">${myPanchs.reduce((t,p)=>{const pb=DB.beneficiaries.filter(b=>b.block===currentUser.block&&(b.village||'').toUpperCase()===p.toUpperCase());return t+pb.reduce((s,b)=>s+(b.sanctionedBags||0),0);},0)}</td>
+              <td style="text-align:right;color:var(--green)">${myPanchs.reduce((t,p)=>{const pi=DB.issuances.filter(i=>i.block===currentUser.block&&(i.village||'').toUpperCase()===p.toUpperCase());return t+pi.reduce((s,i)=>s+i.bags,0);},0)}</td>
+              <td style="text-align:right;color:var(--blue)">${myPanchs.reduce((t,p)=>{const pb=DB.beneficiaries.filter(b=>b.block===currentUser.block&&(b.village||'').toUpperCase()===p.toUpperCase());const pi=DB.issuances.filter(i=>i.block===currentUser.block&&(i.village||'').toUpperCase()===p.toUpperCase());const s=pb.reduce((x,b)=>x+(b.sanctionedBags||0),0);const iss=pi.reduce((x,i)=>x+i.bags,0);return t+Math.max(0,s-iss);},0)}</td>
+              <td></td>
+            </tr>
           </tbody>
         </table>
       </div>
@@ -3516,6 +3610,12 @@ function renderStock(el) {
   // Store Keeper: show view-only BDO stock register
   if (currentUser.role === 'store') { renderStoreKeeperStock(el); return; }
 
+  // For engineer/overseer: show scoped block stock view
+  if (currentUser.block && currentUser.role !== 'admin') {
+    renderBlockStockView(el);
+    return;
+  }
+
   const s = DB.stock;
   if (!DB.stockLedger) DB.stockLedger = [];
   const ledger = DB.stockLedger.slice().sort((a,b)=>new Date(b.date)-new Date(a.date));
@@ -3523,28 +3623,31 @@ function renderStock(el) {
   const totalIssued   = ledger.filter(l=>l.type==='ISSUE').reduce((t,l)=>t+l.bags,0);
   const pct = s.total ? Math.round((s.issued||0)/s.total*100) : 0;
 
-  // Block-wise issued
+  // Block-wise received, issued, balance
   const blockStats = BLOCKS.map(blk=>{
     const blkIss = DB.issuances.filter(i=>i.block===blk).reduce((t,i)=>t+i.bags,0);
     const blkBens = DB.beneficiaries.filter(b=>b.block===blk);
     const blkSanc = blkBens.reduce((t,b)=>t+(b.sanctionedBags||0),0);
+    const blkEntries = (DB.bdoStockEntries||[]).filter(e=>e.block===blk);
+    const blkRecv = blkEntries.reduce((t,e)=>t+e.bags,0);
+    const blkBal = Math.max(0, blkRecv - blkIss);
     return {blk, issued: blkIss, sanctioned: blkSanc, bens: blkBens.length,
-            bal: Math.max(0, blkSanc - blkIss) };
+            bal: Math.max(0, blkSanc - blkIss), received: blkRecv, stockBal: blkBal };
   });
 
   el.innerHTML = `
     <div class="page-header">
-      <div><div class="page-title">Stock Register</div><div class="page-sub">Block-wise Cement Stock & Panchayat Details</div></div>
+      <div><div class="page-title">Stock Register</div><div class="page-sub">District-wide Cement Stock · All Blocks</div></div>
       ${can('addStock')?`<button class="btn btn-primary" onclick="openAddStock()"><span class="material-icons-round">add</span> Add Receipt</button>`:''}
     </div>
 
     ${s.balance<50?`<div class="alert alert-danger"><span class="material-icons-round">warning</span><strong>Critical stock!</strong> Only ${s.balance} bags remaining.</div>`:
       s.balance<150?`<div class="alert alert-warn"><span class="material-icons-round">warning_amber</span><strong>Low stock warning.</strong> ${s.balance} bags remaining.</div>`:''}
 
-    <!-- Dashboard stats -->
+    <!-- Summary stats -->
     <div class="stat-grid" style="grid-template-columns:repeat(auto-fit,minmax(160px,1fr));margin-bottom:16px">
-      <div class="stat-card"><div class="stat-icon blue"><span class="material-icons-round">inventory_2</span></div><div><div class="stat-val">${s.total}</div><div class="stat-label">Total Received</div><div class="stat-sub">All receipts</div></div></div>
-      <div class="stat-card"><div class="stat-icon green"><span class="material-icons-round">output</span></div><div><div class="stat-val">${s.issued||0}</div><div class="stat-label">Total Issued</div><div class="stat-sub">Debited</div></div></div>
+      <div class="stat-card"><div class="stat-icon blue"><span class="material-icons-round">inventory_2</span></div><div><div class="stat-val">${s.total}</div><div class="stat-label">Total Received</div><div class="stat-sub">Central depot</div></div></div>
+      <div class="stat-card"><div class="stat-icon green"><span class="material-icons-round">output</span></div><div><div class="stat-val">${s.issued||0}</div><div class="stat-label">Total Issued</div><div class="stat-sub">To beneficiaries</div></div></div>
       <div class="stat-card"><div class="stat-icon ${s.balance<100?'red':s.balance<300?'yellow':'green'}"><span class="material-icons-round">balance</span></div><div><div class="stat-val">${s.balance}</div><div class="stat-label">Current Balance</div><div class="stat-sub">${pct}% utilized</div></div></div>
       <div class="stat-card"><div class="stat-icon purple"><span class="material-icons-round">receipt_long</span></div><div><div class="stat-val">${ledger.length}</div><div class="stat-label">Ledger Entries</div><div class="stat-sub">All movements</div></div></div>
     </div>
@@ -3558,40 +3661,59 @@ function renderStock(el) {
         <div class="progress-fill" style="width:${pct}%;background:${pct>85?'var(--red)':pct>60?'var(--yellow)':'var(--blue)'}"></div>
       </div>
       <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--grey-500);margin-top:6px;flex-wrap:wrap;gap:8px">
-        <span>Opening Balance: <strong>${s.openingBalance||s.total}</strong> bags</span>
         <span>Type: <strong>${s.type||'OPC 43 Grade'}</strong></span>
         <span>Updated: ${s.lastUpdated?new Date(s.lastUpdated).toLocaleString('en-IN'):'—'}</span>
       </div>
     </div>
 
-    <!-- Block-wise Summary -->
+    <!-- Block-wise Stock Summary — CLICKABLE for drill-down -->
     <div class="card" style="margin-bottom:16px">
-      <div class="section-title">Block-wise Stock Summary</div>
-      <div style="font-size:12px;color:var(--grey-500);margin-bottom:12px">Click a block to view panchayat-wise details below</div>
+      <div class="section-title">Block-wise Stock Summary <span style="font-size:11px;font-weight:400;color:var(--grey-500)">· Click a row to drill down date-wise</span></div>
       <div class="table-wrap">
         <table>
-          <thead><tr><th>Block</th><th style="text-align:right">Beneficiaries</th><th style="text-align:right">Total Sanctioned</th><th style="text-align:right">Issued</th><th style="text-align:right">Balance</th><th>Progress</th><th>Action</th></tr></thead>
+          <thead><tr>
+            <th>Block</th>
+            <th style="text-align:right">Beneficiaries</th>
+            <th style="text-align:right">Sanctioned (bags)</th>
+            <th style="text-align:right">Stock Received</th>
+            <th style="text-align:right">Issued</th>
+            <th style="text-align:right">Stock Balance</th>
+            <th style="text-align:right">Sanction Balance</th>
+            <th>Progress</th>
+          </tr></thead>
           <tbody>
-            ${blockStats.map(({blk,issued,sanctioned,bens,bal})=>{
+            ${blockStats.map(({blk,issued,sanctioned,bens,bal,received,stockBal})=>{
               const pctBlk = sanctioned ? Math.round(issued/sanctioned*100) : 0;
-              return `<tr>
-                <td><strong>${blk}</strong></td>
+              return `<tr style="cursor:pointer;transition:background .15s" onmouseover="this.style.background='var(--blue-light)'" onmouseout="this.style.background=''" onclick="showBlockStockDrilldown('${blk}')">
+                <td><strong style="color:var(--blue)">${blk}</strong> <span style="font-size:10px;color:var(--grey-500)">↓ drill down</span></td>
                 <td style="text-align:right">${bens}</td>
                 <td style="text-align:right">${sanctioned}</td>
-                <td style="text-align:right;color:var(--green);font-weight:600">${issued}</td>
+                <td style="text-align:right;color:var(--blue);font-weight:700">${received||'—'}</td>
+                <td style="text-align:right;color:var(--green);font-weight:700">${issued}</td>
+                <td style="text-align:right;color:${stockBal>0?'var(--green)':'var(--grey-400)'};font-weight:700">${stockBal}</td>
                 <td style="text-align:right;color:${bal>0?'var(--blue)':'var(--grey-400)'};font-weight:600">${bal}</td>
                 <td style="min-width:100px"><div class="progress-bar"><div class="progress-fill" style="width:${pctBlk}%"></div></div><div style="font-size:10px;color:var(--grey-500);margin-top:2px">${pctBlk}%</div></td>
-                <td><button class="btn btn-outlined btn-sm" onclick="showPanchayatStock('${blk}')">
-                  <span class="material-icons-round">visibility</span> View Panchayats
-                </button></td>
               </tr>`;
             }).join('')}
+            <tr style="background:var(--blue-light);font-weight:700">
+              <td>DISTRICT TOTAL</td>
+              <td style="text-align:right">${blockStats.reduce((t,b)=>t+b.bens,0)}</td>
+              <td style="text-align:right">${blockStats.reduce((t,b)=>t+b.sanctioned,0)}</td>
+              <td style="text-align:right;color:var(--blue)">${blockStats.reduce((t,b)=>t+b.received,0)}</td>
+              <td style="text-align:right;color:var(--green)">${blockStats.reduce((t,b)=>t+b.issued,0)}</td>
+              <td style="text-align:right">${blockStats.reduce((t,b)=>t+b.stockBal,0)}</td>
+              <td style="text-align:right">${blockStats.reduce((t,b)=>t+b.bal,0)}</td>
+              <td></td>
+            </tr>
           </tbody>
         </table>
       </div>
     </div>
 
-    <!-- Panchayat-wise details (shown when block selected) -->
+    <!-- Drill-down panel (shown on block row click) -->
+    <div id="blockStockDrilldown" style="display:none" class="card" style="margin-bottom:16px"></div>
+
+    <!-- Panchayat-wise details -->
     <div id="panchayatStockSection" style="display:none" class="card" style="margin-bottom:16px"></div>
 
     <!-- Ledger table -->
@@ -3607,11 +3729,236 @@ function renderStock(el) {
           <span class="chip chip-rejected">▼ Issue</span>
         </div>
       </div>
-      <div class="table-wrap" id="stockLedgerTable">
-      </div>
+      <div class="table-wrap" id="stockLedgerTable"></div>
     </div>`;
 
   renderStockLedger();
+}
+
+// Block stock view for engineer / overseer (scoped to their block)
+function renderBlockStockView(el) {
+  const blk = currentUser.block;
+  const blkBens  = DB.beneficiaries.filter(b=>b.block===blk);
+  const blkIss   = DB.issuances.filter(i=>i.block===blk).sort((a,b)=>new Date(b.issuedAt)-new Date(a.issuedAt));
+  const blkSanc  = blkBens.reduce((t,b)=>t+(b.sanctionedBags||0),0);
+  const blkIssBags = blkIss.reduce((t,i)=>t+i.bags,0);
+  const blkEntries = (DB.bdoStockEntries||[]).filter(e=>e.block===blk);
+  const blkRecv  = blkEntries.reduce((t,e)=>t+e.bags,0);
+  const blkBal   = Math.max(0, blkRecv - blkIssBags);
+  const blkSancBal = Math.max(0, blkSanc - blkIssBags);
+  const pct = blkSanc ? Math.round(blkIssBags/blkSanc*100) : 0;
+
+  // Date-wise issuance grouped by date
+  const dateMap = {};
+  blkIss.forEach(i=>{
+    const d = new Date(i.issuedAt).toLocaleDateString('en-IN');
+    if (!dateMap[d]) dateMap[d]={date:d,count:0,bags:0,beneficiaries:[]};
+    dateMap[d].count++;
+    dateMap[d].bags+=i.bags;
+    dateMap[d].beneficiaries.push(i.beneficiaryName);
+  });
+  const dateRows = Object.values(dateMap);
+
+  el.innerHTML = `
+    <div class="page-header">
+      <div><div class="page-title">Stock Register</div><div class="page-sub">${blk} Block · ${currentUser.designation}</div></div>
+    </div>
+
+    <!-- Block stock summary cards -->
+    <div class="stat-grid" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr));margin-bottom:16px">
+      <div class="stat-card"><div class="stat-icon blue"><span class="material-icons-round">inventory_2</span></div><div><div class="stat-val">${blkRecv}</div><div class="stat-label">Stock Received</div><div class="stat-sub">Into depot</div></div></div>
+      <div class="stat-card"><div class="stat-icon green"><span class="material-icons-round">output</span></div><div><div class="stat-val">${blkIssBags}</div><div class="stat-label">Issued</div><div class="stat-sub">${blkIss.length} transactions</div></div></div>
+      <div class="stat-card"><div class="stat-icon ${blkBal<50?'red':blkBal<200?'yellow':'green'}"><span class="material-icons-round">balance</span></div><div><div class="stat-val">${blkBal}</div><div class="stat-label">Stock Balance</div><div class="stat-sub">In depot</div></div></div>
+      <div class="stat-card"><div class="stat-icon purple"><span class="material-icons-round">people</span></div><div><div class="stat-val">${blkSancBal}</div><div class="stat-label">Sanction Pending</div><div class="stat-sub">Yet to be issued</div></div></div>
+    </div>
+
+    <div class="card" style="margin-bottom:16px">
+      <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px">
+        <span>Block Issuance Progress</span><span>${blkIssBags} of ${blkSanc} bags (${pct}%)</span>
+      </div>
+      <div class="progress-bar" style="height:10px">
+        <div class="progress-fill" style="width:${pct}%;background:${pct>85?'var(--green)':pct>50?'var(--blue)':'var(--yellow)'}"></div>
+      </div>
+    </div>
+
+    <!-- Stock receipts (BDO entries) -->
+    <div class="card" style="margin-bottom:16px">
+      <div class="section-title">Stock Receipts – ${blk} Block</div>
+      ${blkEntries.length ? `<div class="table-wrap"><table>
+        <thead><tr><th>#</th><th>Date</th><th>Bags Received</th><th>GRN/Ref</th><th>Supplier</th><th>Entered By</th></tr></thead>
+        <tbody>
+          ${blkEntries.slice().sort((a,b)=>new Date(b.date)-new Date(a.date)).map((e,idx)=>`
+          <tr>
+            <td style="color:var(--grey-400)">${idx+1}</td>
+            <td>${new Date(e.date).toLocaleDateString('en-IN')}</td>
+            <td style="font-weight:700;color:var(--blue)">${e.bags}</td>
+            <td style="font-family:monospace;font-size:11px">${e.grn||'—'}</td>
+            <td>${e.supplier||'—'}</td>
+            <td style="font-size:12px">${e.enteredBy||'—'}</td>
+          </tr>`).join('')}
+          <tr style="background:var(--blue-light);font-weight:700">
+            <td colspan="2">TOTAL</td>
+            <td colspan="4" style="color:var(--blue)">${blkRecv} bags</td>
+          </tr>
+        </tbody>
+      </table></div>` : '<div style="color:var(--grey-500);font-size:13px">No stock receipts recorded yet.</div>'}
+    </div>
+
+    <!-- Date-wise issuance drill-down -->
+    <div class="card" style="margin-bottom:16px">
+      <div class="section-title">Issuance – Date-wise Summary <span style="font-size:11px;font-weight:400;color:var(--grey-500)">· Click row to see individual records</span></div>
+      ${dateRows.length ? `<div class="table-wrap"><table>
+        <thead><tr><th>Date</th><th style="text-align:right">No. of Beneficiaries</th><th style="text-align:right">Bags Issued</th><th>Details</th></tr></thead>
+        <tbody id="blkDateBody">
+          ${dateRows.map((dr,idx)=>`
+          <tr style="cursor:pointer" onmouseover="this.style.background='var(--blue-light)'" onmouseout="this.style.background=''" onclick="toggleDateDetail('blkdd_${idx}')">
+            <td><strong>${dr.date}</strong></td>
+            <td style="text-align:right">${dr.count}</td>
+            <td style="text-align:right;font-weight:700;color:var(--green)">${dr.bags}</td>
+            <td style="font-size:11px;color:var(--grey-500)">▼ expand</td>
+          </tr>
+          <tr id="blkdd_${idx}" style="display:none;background:var(--grey-50)">
+            <td colspan="4" style="padding:0">
+              <table style="width:100%;font-size:12px">
+                <thead><tr style="background:var(--grey-100)"><th>Beneficiary</th><th>Village</th><th>Scheme</th><th style="text-align:right">Bags</th><th>Issued By</th></tr></thead>
+                <tbody>
+                  ${blkIss.filter(i=>new Date(i.issuedAt).toLocaleDateString('en-IN')===dr.date).map(i=>`
+                  <tr><td>${i.beneficiaryName}</td><td>${i.village||'—'}</td><td>${i.scheme||'—'}</td><td style="text-align:right;font-weight:600;color:var(--green)">${i.bags}</td><td>${i.issuedBy||'—'}</td></tr>`).join('')}
+                </tbody>
+              </table>
+            </td>
+          </tr>`).join('')}
+          <tr style="background:var(--green-light);font-weight:700">
+            <td>TOTAL</td>
+            <td style="text-align:right">${blkIss.length}</td>
+            <td style="text-align:right;color:var(--green)">${blkIssBags}</td>
+            <td></td>
+          </tr>
+        </tbody>
+      </table></div>` : '<div style="color:var(--grey-500);font-size:13px">No issuances recorded for this block yet.</div>'}
+    </div>
+
+    <!-- Panchayat breakdown -->
+    <div class="card">
+      <div class="section-title">Panchayat-wise Summary – ${blk}</div>
+      <div class="table-wrap"><table style="font-size:12px">
+        <thead><tr><th>Panchayat</th><th style="text-align:right">Beneficiaries</th><th style="text-align:right">Sanctioned</th><th style="text-align:right">Issued</th><th style="text-align:right">Balance</th><th>Progress</th></tr></thead>
+        <tbody>
+          ${(BLOCK_DATA[blk]?.villages||[]).map(vil=>{
+            const vBens=DB.beneficiaries.filter(b=>b.block===blk&&(b.village||'').toUpperCase()===vil.toUpperCase());
+            const vIss=DB.issuances.filter(i=>i.block===blk&&(i.village||'').toUpperCase()===vil.toUpperCase());
+            const sanc=vBens.reduce((t,b)=>t+(b.sanctionedBags||0),0);
+            const iss=vIss.reduce((t,i)=>t+i.bags,0);
+            const bal=Math.max(0,sanc-iss);
+            const pctV=sanc?Math.round(iss/sanc*100):0;
+            if(!vBens.length)return '';
+            return `<tr>
+              <td>${vil}</td><td style="text-align:right">${vBens.length}</td>
+              <td style="text-align:right">${sanc}</td>
+              <td style="text-align:right;color:var(--green);font-weight:600">${iss}</td>
+              <td style="text-align:right;color:${bal>0?'var(--blue)':'var(--grey-400)'};font-weight:600">${bal}</td>
+              <td style="min-width:90px"><div class="progress-bar"><div class="progress-fill" style="width:${pctV}%"></div></div><div style="font-size:10px;color:var(--grey-500)">${pctV}%</div></td>
+            </tr>`;
+          }).filter(Boolean).join('')}
+        </tbody>
+      </table></div>
+    </div>`;
+}
+
+function toggleDateDetail(id) {
+  const row = document.getElementById(id);
+  if (!row) return;
+  row.style.display = row.style.display === 'none' ? 'table-row' : 'none';
+}
+
+function showBlockStockDrilldown(blk) {
+  const sec = document.getElementById('blockStockDrilldown');
+  if (!sec) return;
+
+  const blkBens  = DB.beneficiaries.filter(b=>b.block===blk);
+  const blkIss   = DB.issuances.filter(i=>i.block===blk).sort((a,b)=>new Date(a.issuedAt)-new Date(b.issuedAt));
+  const blkSanc  = blkBens.reduce((t,b)=>t+(b.sanctionedBags||0),0);
+  const blkIssBags = blkIss.reduce((t,i)=>t+i.bags,0);
+  const blkEntries = (DB.bdoStockEntries||[]).filter(e=>e.block===blk);
+  const blkRecv  = blkEntries.reduce((t,e)=>t+e.bags,0);
+
+  // Date-wise issuance groups
+  const dateMap = {};
+  blkIss.forEach(i=>{
+    const d = new Date(i.issuedAt).toLocaleDateString('en-IN');
+    if (!dateMap[d]) dateMap[d]={date:d,bags:0,count:0,items:[]};
+    dateMap[d].bags+=i.bags; dateMap[d].count++; dateMap[d].items.push(i);
+  });
+  const dateRows = Object.values(dateMap).sort((a,b)=>new Date(b.date)-new Date(a.date));
+
+  sec.style.display = 'block';
+  sec.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <div>
+        <div class="section-title" style="margin:0">${blk} Block – Stock Drill-down</div>
+        <div style="font-size:12px;color:var(--grey-500);margin-top:2px">Received: ${blkRecv} bags &nbsp;·&nbsp; Issued: ${blkIssBags} bags &nbsp;·&nbsp; Balance: ${Math.max(0,blkRecv-blkIssBags)} bags</div>
+      </div>
+      <button class="btn btn-text btn-sm" onclick="document.getElementById('blockStockDrilldown').style.display='none'">
+        <span class="material-icons-round">close</span>
+      </button>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+      <!-- Stock Receipts -->
+      <div>
+        <div style="font-size:12px;font-weight:700;color:var(--grey-700);margin-bottom:8px">▲ Stock Receipts into ${blk}</div>
+        ${blkEntries.length ? `<table style="width:100%;font-size:12px;border-collapse:collapse">
+          <thead><tr style="background:var(--grey-100)"><th style="padding:6px 10px;text-align:left">Date</th><th style="padding:6px 10px;text-align:right">Bags</th><th style="padding:6px 10px">GRN</th></tr></thead>
+          <tbody>
+            ${blkEntries.slice().sort((a,b)=>new Date(b.date)-new Date(a.date)).map(e=>`
+            <tr style="border-bottom:1px solid var(--grey-200)">
+              <td style="padding:5px 10px">${new Date(e.date).toLocaleDateString('en-IN')}</td>
+              <td style="padding:5px 10px;text-align:right;font-weight:700;color:var(--blue)">${e.bags}</td>
+              <td style="padding:5px 10px;font-size:10px;font-family:monospace;color:var(--grey-500)">${e.grn||'—'}</td>
+            </tr>`).join('')}
+            <tr style="background:var(--blue-light);font-weight:700">
+              <td style="padding:6px 10px">TOTAL</td>
+              <td style="padding:6px 10px;text-align:right;color:var(--blue)">${blkRecv}</td><td></td>
+            </tr>
+          </tbody>
+        </table>` : '<div style="font-size:12px;color:var(--grey-500)">No receipts recorded.</div>'}
+      </div>
+
+      <!-- Date-wise issuances -->
+      <div>
+        <div style="font-size:12px;font-weight:700;color:var(--grey-700);margin-bottom:8px">▼ Issuances from ${blk} — Date-wise <span style="font-weight:400;color:var(--grey-500)">(click to expand)</span></div>
+        ${dateRows.length ? `<table style="width:100%;font-size:12px;border-collapse:collapse" id="ddTable_${blk.replace(/\s/g,'')}">
+          <thead><tr style="background:var(--grey-100)"><th style="padding:6px 10px;text-align:left">Date</th><th style="padding:6px 10px;text-align:right">No.</th><th style="padding:6px 10px;text-align:right">Bags</th></tr></thead>
+          <tbody>
+            ${dateRows.map((dr,idx)=>`
+            <tr style="cursor:pointer;border-bottom:1px solid var(--grey-200)" onmouseover="this.style.background='var(--yellow-light)'" onmouseout="this.style.background=''" onclick="toggleDateDetail('blkdd2_${blk.replace(/\s/g,'')}_${idx}')">
+              <td style="padding:5px 10px"><strong>${dr.date}</strong></td>
+              <td style="padding:5px 10px;text-align:right">${dr.count}</td>
+              <td style="padding:5px 10px;text-align:right;font-weight:700;color:var(--green)">${dr.bags}</td>
+            </tr>
+            <tr id="blkdd2_${blk.replace(/\s/g,'')}_${idx}" style="display:none;background:var(--grey-50)">
+              <td colspan="3" style="padding:0">
+                <table style="width:100%;font-size:11px">
+                  <thead><tr style="background:var(--grey-100)"><th style="padding:4px 8px">Beneficiary</th><th style="padding:4px 8px">Village</th><th style="padding:4px 8px;text-align:right">Bags</th></tr></thead>
+                  <tbody>${dr.items.map(i=>`<tr><td style="padding:3px 8px">${i.beneficiaryName}</td><td style="padding:3px 8px;font-size:10px;color:var(--grey-500)">${i.village||'—'}</td><td style="padding:3px 8px;text-align:right;font-weight:600;color:var(--green)">${i.bags}</td></tr>`).join('')}</tbody>
+                </table>
+              </td>
+            </tr>`).join('')}
+            <tr style="background:var(--green-light);font-weight:700">
+              <td style="padding:6px 10px">TOTAL</td>
+              <td style="padding:6px 10px;text-align:right">${blkIss.length}</td>
+              <td style="padding:6px 10px;text-align:right;color:var(--green)">${blkIssBags}</td>
+            </tr>
+          </tbody>
+        </table>` : '<div style="font-size:12px;color:var(--grey-500)">No issuances recorded.</div>'}
+      </div>
+    </div>
+
+    <button class="btn btn-outlined btn-sm" onclick="showPanchayatStock('${blk}')">
+      <span class="material-icons-round">visibility</span> View Panchayat-wise Details
+    </button>`;
+
+  sec.scrollIntoView({behavior:'smooth', block:'start'});
 }
 
 function renderStockLedger() {
@@ -4233,7 +4580,8 @@ function renderStoreKeeperStock(el) {
 
 // ===== REPORTS =====
 function renderReports(el) {
-  if (currentUser.role === 'bdo' || currentUser.role === 'overseer') {
+  // All block-level officers get the scoped block report
+  if (currentUser.block && currentUser.role !== 'admin') {
     renderRoleAllotmentReport(el);
     return;
   }
@@ -5826,7 +6174,7 @@ function generateAllotmentSlipHTML(a, ben, qrData, copyLabel) {
     </div>
     <div class="slip-sign">
       <div class="slip-sign-line">Beneficiary Signature</div>
-      <div class="slip-sign-line">BDO / VAO</div>
+      <div class="slip-sign-line">BDO / Block Officer</div>
     </div>
     <div class="slip-footer">✓ APPROVED ORDER</div>
     <div class="slip-barcode">${a.id}|${challan}</div>
@@ -5949,6 +6297,15 @@ function printIssuanceSlip(issuance) {
 }
 
 function generateIssuanceSlipCopy(i, copyLabel, gpsStr, gpsUrl, dateStr) {
+  // Compute beneficiary-level cement summary
+  const ben = DB.beneficiaries.find(b=>b.id===i.beneficiaryId)||{};
+  const sanctionedBags = ben.sanctionedBags || i.bags;
+  // All issuances for this beneficiary (including current)
+  const allBenIss = DB.issuances.filter(x=>x.beneficiaryId===i.beneficiaryId);
+  const totalIssuedToBen = allBenIss.reduce((s,x)=>s+x.bags,0);
+  const prevIssued = totalIssuedToBen - i.bags;
+  const pendingBags = Math.max(0, sanctionedBags - totalIssuedToBen);
+
   return `
   <div class="slip-box">
     <div class="copy-label">${copyLabel}</div>
@@ -5969,12 +6326,18 @@ function generateIssuanceSlipCopy(i, copyLabel, gpsStr, gpsUrl, dateStr) {
       <tr><td>Permit No.</td><td style="font-weight:700;font-family:monospace">${i.permitNumber||i.challanNumber||i.allotmentId}</td></tr>
       <tr><td>Issued By</td><td>${i.issuedBy}</td></tr>
       <tr><td>Date &amp; Time</td><td>${dateStr}</td></tr>
-      <tr><td>Opening Balance</td><td>${i.openingBalance} bags</td></tr>
-      <tr><td>Closing Balance</td><td>${i.closingBalance} bags</td></tr>
+    </table>
+    <!-- Beneficiary cement entitlement summary -->
+    <table class="dt" style="margin-top:4px;border-top:1px dashed #ddd;padding-top:4px">
+      <tr><td colspan="2" style="font-weight:700;font-size:9px;letter-spacing:.5px;color:#555;padding-bottom:2px">CEMENT ENTITLEMENT SUMMARY</td></tr>
+      <tr><td>Total Sanctioned</td><td style="color:#1a73e8;font-weight:700">${sanctionedBags} bags</td></tr>
+      <tr><td>Previously Issued</td><td style="color:#5f6368">${prevIssued} bags</td></tr>
+      <tr><td>This Issuance</td><td style="color:#1e8e3e;font-weight:700">${i.bags} bags</td></tr>
+      <tr><td>Pending / Balance</td><td style="color:${pendingBags>0?'#e65100':'#aaa'};font-weight:700">${pendingBags} bags</td></tr>
     </table>
     <div class="bags-box">
       <div class="bags-num">${i.bags}</div>
-      <div class="bags-lbl">Bags Issued &nbsp;(${numberToWords(i.bags)} Bags · ${i.bags*50} kg total)</div>
+      <div class="bags-lbl">Bags Issued this Trip &nbsp;(${numberToWords(i.bags)} Bags · ${i.bags*50} kg)</div>
     </div>
     <div class="gps-box">
       📍 GPS: ${gpsStr}${i.gps ? ` (±${i.gps.accuracy||'?'}m)` : ''}
