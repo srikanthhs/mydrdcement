@@ -5272,16 +5272,20 @@ function renderUsers(el) {
     <!-- Users Table -->
     <div class="card" style="margin-bottom:16px">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
-        <div class="section-title" style="margin:0">Registered Users (${USERS.length})</div>
-        <div style="display:flex;gap:6px;flex-wrap:wrap">
-          <button class="btn btn-outlined btn-sm" onclick="filterUserTable('')">All</button>
-          <button class="btn btn-outlined btn-sm" onclick="filterUserTable('overseer')">Overseers only</button>
-          ${BLOCKS.map(b=>`<button class="btn btn-outlined btn-sm" onclick="filterUserTable('${b}')">${b}</button>`).join('')}
+        <div class="section-title" style="margin:0">Registered Users (<span id="usersCount">${USERS.length}</span>)</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+          <div class="search-input" style="width:200px;padding:6px 12px">
+            <span class="material-icons-round">search</span>
+            <input type="text" placeholder="Search name / username…" oninput="filterUserTable(window._umFilter||'', this.value)" id="umSearchBox">
+          </div>
+          <button class="btn btn-outlined btn-sm" onclick="umSetFilter('')">All</button>
+          <button class="btn btn-outlined btn-sm" onclick="umSetFilter('overseer')">Overseers</button>
+          ${BLOCKS.map(b=>`<button class="btn btn-outlined btn-sm" onclick="umSetFilter('${b}')">${b}</button>`).join('')}
         </div>
       </div>
       <div class="table-wrap">
         <table id="usersTable">
-          <thead><tr><th>User</th><th>Username / Password</th><th>Role</th><th>Block</th><th>Assigned Panchayats</th></tr></thead>
+          <thead><tr><th>User</th><th>Username / Password</th><th>Role</th><th>Block</th><th>Assigned Panchayats</th><th>Actions</th></tr></thead>
           <tbody id="usersBody"></tbody>
         </table>
       </div>
@@ -5350,35 +5354,195 @@ function renderUsers(el) {
   renderUsersTable('');
 }
 
-function renderUsersTable(filter) {
+function renderUsersTable(filter, search) {
   const tbody = document.getElementById('usersBody');
   if (!tbody) return;
   let users = USERS;
   if (filter === 'overseer') users = users.filter(u=>u.role==='overseer');
   else if (filter) users = users.filter(u=>u.block===filter||u.block===null);
+  if (search && search.trim()) {
+    const q = search.trim().toLowerCase();
+    users = users.filter(u => u.name.toLowerCase().includes(q) || u.username.toLowerCase().includes(q) || (u.designation||'').toLowerCase().includes(q));
+  }
+  const countEl = document.getElementById('usersCount');
+  if (countEl) countEl.textContent = users.length;
   tbody.innerHTML = users.map(u => {
     const rm = ROLE_META[u.role];
     const panch = u.panchayats;
+    const idx = USERS.indexOf(u);
     return '<tr>'
       + '<td><div style="display:flex;align-items:center;gap:8px">'
       + '<div class="u-avatar ' + u.avatarColor + '" style="width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0"><span class="material-icons-round" style="font-size:16px;color:#fff">' + u.icon + '</span></div>'
       + '<div><div style="font-weight:600;font-size:13px">' + u.name + '</div>'
-      + '<div style="font-size:10px;color:var(--grey-500)">' + u.designation + '</div></div></div></td>'
+      + '<div style="font-size:10px;color:var(--grey-500)">' + u.designation + '</div>'
+      + '<div style="font-size:10px;color:var(--grey-500)">' + (u.mobile||'') + '</div></div></div></td>'
       + '<td><code style="background:var(--grey-100);padding:2px 8px;border-radius:4px;font-size:11px;display:block">' + u.username + '</code>'
-      + '<code style="background:var(--grey-50);padding:2px 8px;border-radius:4px;font-size:10px;color:var(--grey-500);display:block;margin-top:2px">' + u.password + '</code></td>'
+      + '<code style="background:var(--grey-50);padding:2px 8px;border-radius:4px;font-size:10px;color:var(--grey-500);display:block;margin-top:2px">••••••••</code></td>'
       + '<td><span class="role-badge ' + rm.badge + '">' + rm.label + '</span></td>'
       + '<td style="font-size:12px">' + (u.block||'<span style="color:var(--grey-400)">All Blocks</span>') + '</td>'
-      + '<td style="max-width:260px">'
+      + '<td style="max-width:240px">'
       + (panch
-          ? '<div style="display:flex;flex-wrap:wrap;gap:3px">' + panch.map(v=>'<span style="background:var(--blue-light);color:var(--blue);border-radius:4px;padding:1px 6px;font-size:10px;font-weight:500">' + v + '</span>').join('') + '</div>'
+          ? '<div style="display:flex;flex-wrap:wrap;gap:3px">' + panch.slice(0,4).map(v=>'<span style="background:var(--blue-light);color:var(--blue);border-radius:4px;padding:1px 6px;font-size:10px;font-weight:500">' + v + '</span>').join('')
+            + (panch.length>4 ? '<span style="font-size:10px;color:var(--grey-500);padding:1px 4px">+' + (panch.length-4) + ' more</span>' : '')
+            + '</div>'
           : '<span style="font-size:11px;color:var(--grey-400)">All panchayats in block</span>')
       + '</td>'
+      + '<td><button class="btn btn-outlined btn-sm" onclick="openEditUser(' + idx + ')" title="Edit user"><span class="material-icons-round" style="font-size:15px">edit</span> Edit</button></td>'
       + '</tr>';
-  }).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--grey-400);padding:20px">No users found</td></tr>';
+  }).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--grey-400);padding:20px">No users found</td></tr>';
 }
 
-function filterUserTable(filter) {
-  renderUsersTable(filter);
+function umSetFilter(f) {
+  window._umFilter = f;
+  const box = document.getElementById('umSearchBox');
+  renderUsersTable(f, box ? box.value : '');
+}
+
+function filterUserTable(filter, search) {
+  renderUsersTable(filter, search||'');
+}
+
+function openEditUser(idx) {
+  const u = USERS[idx];
+  if (!u) return;
+  const rm = ROLE_META[u.role];
+  const blockVillages = u.block && BLOCK_DATA[u.block] ? BLOCK_DATA[u.block].villages : [];
+  const allPanch = u.panchayats || [];
+
+  // Build panchayat checkboxes grouped
+  let panchSection = '';
+  if (u.role === 'overseer' && blockVillages.length) {
+    const checked = new Set(allPanch.map(p=>p.toUpperCase()));
+    panchSection = `
+      <div style="margin-top:16px">
+        <div class="form-label">Assigned Panchayats / Villages <span style="color:var(--grey-500);font-weight:400">(${u.block})</span></div>
+        <div style="display:flex;gap:6px;margin:8px 0 6px;flex-wrap:wrap">
+          <button type="button" class="btn btn-outlined btn-sm" onclick="umSelectAll()">Select All</button>
+          <button type="button" class="btn btn-outlined btn-sm" onclick="umClearAll()">Clear All</button>
+          <span id="umSelCount" style="font-size:12px;color:var(--grey-700);align-self:center;margin-left:4px">${allPanch.length} selected</span>
+        </div>
+        <div id="umPanchList" style="max-height:220px;overflow-y:auto;border:1.5px solid var(--grey-300);border-radius:8px;padding:8px;display:grid;grid-template-columns:1fr 1fr;gap:4px;background:var(--grey-50)">
+          ${blockVillages.map(v=>`
+            <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;padding:3px 4px;border-radius:4px;transition:background .1s" onmouseover="this.style.background='var(--blue-light)'" onmouseout="this.style.background=''">
+              <input type="checkbox" value="${v}" ${checked.has(v.toUpperCase())?'checked':''} onchange="umUpdateCount()" style="cursor:pointer">
+              ${v}
+            </label>`).join('')}
+        </div>
+      </div>`;
+  } else if ((u.role === 'bdo' || u.role === 'store' || u.role === 'engineer' || u.role === 'inspector') && u.block) {
+    panchSection = `<div style="margin-top:12px"><div class="alert alert-info"><span class="material-icons-round">info</span> This role has access to all panchayats in <strong>${u.block}</strong> block. Panchayat filtering is not applicable.</div></div>`;
+  }
+
+  openModal(`Edit User – ${u.name}`, `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+      <div class="form-group">
+        <label class="form-label">Full Name</label>
+        <input id="umName" class="form-control" value="${u.name}" placeholder="Full name">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Mobile</label>
+        <input id="umMobile" class="form-control" value="${u.mobile||''}" placeholder="10-digit mobile">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Username</label>
+        <input id="umUsername" class="form-control" value="${u.username}" placeholder="Username">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Password <span style="color:var(--grey-500);font-weight:400">(leave blank to keep)</span></label>
+        <div style="position:relative">
+          <input id="umPassword" class="form-control" type="password" placeholder="New password (optional)" autocomplete="off" style="padding-right:40px">
+          <button type="button" onclick="const f=document.getElementById('umPassword');f.type=f.type==='password'?'text':'password';this.querySelector('span').textContent=f.type==='password'?'visibility':'visibility_off';" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--grey-500);padding:2px"><span class="material-icons-round" style="font-size:18px">visibility</span></button>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Designation</label>
+        <input id="umDesignation" class="form-control" value="${u.designation}" placeholder="Designation">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Role</label>
+        <div class="form-control" style="background:var(--grey-100);color:var(--grey-700)"><span class="role-badge ${rm.badge}" style="vertical-align:middle">${rm.label}</span> <span style="font-size:11px;margin-left:4px">(cannot change)</span></div>
+      </div>
+    </div>
+    ${panchSection}
+    <div id="umErr" style="display:none;color:var(--red);font-size:12px;margin-top:10px;padding:8px 12px;background:var(--red-light);border-radius:6px"></div>
+  `, [
+    { label: '<span class="material-icons-round" style="font-size:15px">close</span> Cancel', cls: 'btn-outlined', fn: closeModal },
+    { label: '<span class="material-icons-round" style="font-size:15px">save</span> Save Changes', cls: 'btn-primary', fn: () => saveEditUser(idx) }
+  ]);
+}
+
+function umUpdateCount() {
+  const boxes = document.querySelectorAll('#umPanchList input[type=checkbox]');
+  const cnt = [...boxes].filter(b=>b.checked).length;
+  const el = document.getElementById('umSelCount');
+  if (el) el.textContent = cnt + ' selected';
+}
+function umSelectAll() {
+  document.querySelectorAll('#umPanchList input[type=checkbox]').forEach(b=>b.checked=true);
+  umUpdateCount();
+}
+function umClearAll() {
+  document.querySelectorAll('#umPanchList input[type=checkbox]').forEach(b=>b.checked=false);
+  umUpdateCount();
+}
+
+function saveEditUser(idx) {
+  const u = USERS[idx];
+  if (!u) return;
+
+  const name = (document.getElementById('umName').value||'').trim();
+  const username = (document.getElementById('umUsername').value||'').trim();
+  const password = (document.getElementById('umPassword').value||'').trim();
+  const designation = (document.getElementById('umDesignation').value||'').trim();
+  const mobile = (document.getElementById('umMobile').value||'').trim();
+
+  const errEl = document.getElementById('umErr');
+  const showErr = (msg) => { errEl.textContent = msg; errEl.style.display = 'block'; };
+
+  if (!name) { showErr('Name cannot be empty.'); return; }
+  if (!username) { showErr('Username cannot be empty.'); return; }
+  // Check username uniqueness
+  const dup = USERS.find((uu,i) => i!==idx && uu.username===username);
+  if (dup) { showErr('Username "' + username + '" is already taken by ' + dup.name + '.'); return; }
+  if (mobile && !/^\d{10}$/.test(mobile)) { showErr('Mobile must be a 10-digit number.'); return; }
+
+  // Panchayat changes (overseers only)
+  const oldName = u.name; // capture before mutation
+  // Apply changes
+  u.name = name;
+  u.username = username;
+  if (password) u.password = password;
+  u.designation = designation;
+  u.mobile = mobile;
+
+  if (u.role === 'overseer') {
+    const boxes = document.querySelectorAll('#umPanchList input[type=checkbox]');
+    if (boxes.length) {
+      u.panchayats = [...boxes].filter(b=>b.checked).map(b=>b.value);
+      // Also update BLOCK_DATA.overseers mapping
+      if (u.block && BLOCK_DATA[u.block]) {
+        const overseers = BLOCK_DATA[u.block].overseers;
+        // Remove old name key if present
+        if (overseers[oldName] !== undefined) delete overseers[oldName];
+        overseers[name] = u.panchayats;
+      }
+    }
+  }
+
+  // If the edited user is the currently logged-in user, refresh header
+  if (currentUser && currentUser.id === u.id) {
+    currentUser.name = u.name;
+    currentUser.username = u.username;
+    currentUser.mobile = u.mobile;
+    currentUser.designation = u.designation;
+    document.getElementById('userLabel').textContent = u.name;
+    document.getElementById('avatarInitial').textContent = u.name.charAt(0).toUpperCase();
+  }
+
+  closeModal();
+  showToast('User "' + name + '" updated successfully');
+  renderUsersTable(window._umFilter||'');
+  filterPanchTable(''); // refresh panchayat reference table
 }
 
 function filterPanchTable(blk) {
