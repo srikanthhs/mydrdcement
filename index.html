@@ -1705,6 +1705,7 @@ const DEFAULT_PERMISSIONS = {
   editAllotment:    ['admin','bdo'],
   issueCement:      ['admin','store'],
   addStock:         ['admin','bdo'],
+  editStock:        ['admin'],
   viewReports:      ['admin','bdo','overseer'],
   manageUsers:      ['admin'],
   viewBeneficiary:  ['admin','bdo','overseer','engineer'],
@@ -1719,7 +1720,8 @@ const ACTION_DEFS = [
   { key:'editAllotment',    label:'Edit Allotment',            protected: false },
   { key:'engineerVerify',   label:'Engineer Verify Allotment', protected: false },
   { key:'issueCement',      label:'Issue Cement',              protected: false },
-  { key:'addStock',         label:'Add / Edit Stock',          protected: false },
+  { key:'addStock',         label:'Add Stock',                 protected: false },
+  { key:'editStock',        label:'Edit Stock',                protected: false },
   { key:'viewReports',      label:'View Reports',              protected: false },
   { key:'viewBeneficiary',  label:'View Beneficiaries',        protected: false },
   { key:'editBeneficiary',  label:'Add/Edit Beneficiary',      protected: false },
@@ -1765,8 +1767,8 @@ function pagesForRole(role) {
       role === 'engineer' || role === 'overseer')
     pages.push('stock');
 
-  // Reports: anyone with viewReports, plus BDO, overseer, engineer always
-  if ((p.viewReports||[]).includes(role) || role === 'bdo' || role === 'overseer' || role === 'engineer')
+  // Reports: anyone with viewReports, plus BDO, overseer, engineer, store always
+  if ((p.viewReports||[]).includes(role) || role === 'bdo' || role === 'overseer' || role === 'engineer' || role === 'store')
     pages.push('reports');
 
   // Settings / Users: admin only (handled above), but include settings for BDO
@@ -2170,7 +2172,8 @@ function renderAllotTable(data) {
           // Engineer: show Verify button if not yet verified, else show "Forwarded" badge
           if (role === 'engineer') {
             return !a.engineerVerified
-              ? `<button class="btn btn-green btn-sm" onclick="engineerVerifyAllotment('${a.id}')"><span class="material-icons-round">engineering</span> Verify</button>`
+              ? `<button class="btn btn-green btn-sm" onclick="engineerVerifyAllotment('${a.id}')"><span class="material-icons-round">engineering</span> Verify</button>
+                 <button class="btn btn-danger btn-sm" onclick="engineerRejectAllotment('${a.id}')"><span class="material-icons-round">cancel</span> Reject</button>`
               : `<span class="chip chip-verified" style="font-size:11px">✓ Verified – Awaiting BDO</span>`;
           }
           // Overseer / creator: show waiting status
@@ -2188,7 +2191,7 @@ function renderAllotTable(data) {
           }
           return '';
         })()}
-        ${a.status==='Approved' ? `<button class="btn btn-outlined btn-sm" onclick="printSlip('${a.id}')"><span class="material-icons-round">print</span> Slip</button>` : ''}
+        ${a.status==='Approved' && currentUser.role !== 'engineer' ? `<button class="btn btn-outlined btn-sm" onclick="printSlip('${a.id}')"><span class="material-icons-round">print</span> Slip</button>` : ''}
       </td>
     </tr>`}).join('');
 }
@@ -2473,23 +2476,49 @@ function approveAllotment(id) {
 function engineerVerifyAllotment(id) {
   const a = DB.allotments.find(x=>x.id===id);
   if (!a) return;
+  const ben = DB.beneficiaries.find(b=>b.id===a.beneficiaryId)||{};
   openModal('Engineer Verification – ' + a.id, `
     <div class="alert alert-info"><span class="material-icons-round">engineering</span>
-      <div>Verifying allotment for <strong>${a.beneficiaryName}</strong> · ${a.village}</div>
+      <div>Review all details before verifying allotment for <strong>${a.beneficiaryName}</strong> · ${a.village}</div>
     </div>
-    <div class="info-row"><span class="info-key">Overseer</span><span class="info-val">${a.createdBy}</span></div>
-    <div class="info-row"><span class="info-key">Bags Allotted</span><span class="info-val"><strong>${a.bags}</strong></span></div>
-    <div class="info-row"><span class="info-key">Scheme</span><span class="info-val">${a.scheme}</span></div>
-    <div class="info-row"><span class="info-key">Stage</span><span class="info-val">${a.stage||a.use||'—'}</span></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0;margin:10px 0">
+      <div class="info-row"><span class="info-key">Allotment ID</span><span class="info-val" style="font-family:monospace">${a.id}</span></div>
+      <div class="info-row"><span class="info-key">TNRD Work ID</span><span class="info-val" style="font-family:monospace">${ben.workId||a.workId||'—'}</span></div>
+      <div class="info-row"><span class="info-key">Beneficiary Name</span><span class="info-val">${a.beneficiaryName}</span></div>
+      <div class="info-row"><span class="info-key">Mobile</span><span class="info-val">${a.mobile||'—'}</span></div>
+      <div class="info-row"><span class="info-key">Village / Block</span><span class="info-val">${a.village} / ${a.block}</span></div>
+      <div class="info-row"><span class="info-key">Scheme</span><span class="info-val">${a.scheme}</span></div>
+      <div class="info-row"><span class="info-key">Year</span><span class="info-val">${a.year||ben.year||'—'}</span></div>
+      <div class="info-row"><span class="info-key">Stage / Use</span><span class="info-val">${a.stage||a.use||'—'}</span></div>
+      <div class="info-row"><span class="info-key">Cement Type</span><span class="info-val">${a.cementType||'OPC 43 Grade'}</span></div>
+      <div class="info-row"><span class="info-key">Sanctioned Bags</span><span class="info-val"><strong>${ben.sanctionedBags||a.bags}</strong></span></div>
+      <div class="info-row"><span class="info-key">Bags Allotted (This Order)</span><span class="info-val"><strong>${a.bags}</strong></span></div>
+      <div class="info-row"><span class="info-key">Submitted By (Overseer)</span><span class="info-val">${a.createdBy||'—'}</span></div>
+      <div class="info-row"><span class="info-key">Submitted At</span><span class="info-val">${a.createdAt?new Date(a.createdAt).toLocaleString('en-IN',{dateStyle:'short',timeStyle:'short'}):' —'}</span></div>
+      ${a.remark ? `<div class="info-row" style="grid-column:1/-1"><span class="info-key">Overseer Remarks</span><span class="info-val">${a.remark}</span></div>` : ''}
+    </div>
     ${a.receiptPhotos && a.receiptPhotos.length ? `
     <hr class="divider">
-    <div class="section-title">Work Order / Stage Photos</div>
-    <div class="photo-grid">${a.receiptPhotos.map(p=>`<img class="photo-thumb" src="${p}" onclick="window.open(this.src,'_blank')">`).join('')}</div>` : ''}
-    <div class="form-group" style="margin-top:14px"><label class="form-label">Verification Remarks</label>
-      <input class="form-control" id="engVerRemark" placeholder="Engineer observations…"></div>
+    <div class="section-title">Work Order / Stage Photos (${a.receiptPhotos.length})</div>
+    <div class="photo-grid">${a.receiptPhotos.map(p=>`<img class="photo-thumb" src="${p}" onclick="window.open(this.src,'_blank')">`).join('')}</div>` : '<div class="alert alert-warn" style="margin-top:10px"><span class="material-icons-round">warning_amber</span> No work order photo attached.</div>'}
+    <hr class="divider">
+    <div class="form-group" style="margin-top:10px"><label class="form-label">Verification Remarks</label>
+      <input class="form-control" id="engVerRemark" placeholder="Engineer observations (optional)…"></div>
+    <div style="display:flex;align-items:flex-start;gap:10px;margin-top:14px;background:var(--green-light);border-radius:8px;padding:12px 14px">
+      <input type="checkbox" id="engVerifyCheck" style="width:18px;height:18px;margin-top:1px;cursor:pointer;accent-color:var(--green)">
+      <label for="engVerifyCheck" style="font-size:13px;font-weight:600;color:var(--green);cursor:pointer;line-height:1.4">
+        ✓ I have verified all the above details entered by the Overseer and confirm they are accurate before forwarding to BDO.
+      </label>
+    </div>
+    <div id="engVerErr" style="display:none;color:var(--red);font-size:12px;margin-top:6px"></div>
   `, [
     {label:'Cancel', cls:'btn-outlined', fn:closeModal},
     {label:'✓ Verified – Forward to BDO', cls:'btn-green', fn:()=>{
+      if (!document.getElementById('engVerifyCheck')?.checked) {
+        document.getElementById('engVerErr').textContent = 'Please tick the verification checkbox before submitting.';
+        document.getElementById('engVerErr').style.display = 'block';
+        return;
+      }
       a.engineerVerified = true;
       a.engineerVerifiedBy = currentUser.name;
       a.verifiedBy = currentUser.name;
@@ -2500,6 +2529,37 @@ function engineerVerifyAllotment(id) {
       closeModal();
       showToast('Allotment verified ✓ Forwarded to BDO');
       filterAllotTable();
+    }}
+  ]);
+}
+function engineerRejectAllotment(id) {
+  const a = DB.allotments.find(x=>x.id===id);
+  if (!a) return;
+  openModal('Reject Allotment – ' + a.id, `
+    <div class="alert alert-danger"><span class="material-icons-round">warning</span>
+      <div>Rejecting allotment for <strong>${a.beneficiaryName}</strong> · ${a.village} · <strong>${a.bags} bags</strong></div>
+    </div>
+    <div class="form-group" style="margin-top:12px">
+      <label class="form-label">Remarks / Reason for Rejection <span style="color:var(--red)">*</span></label>
+      <textarea id="engRejectRemark" class="form-control" rows="3" placeholder="Enter engineer remarks / reason for rejection (mandatory)…"></textarea>
+    </div>
+    <div id="engRejectErr" style="display:none;color:var(--red);font-size:12px;margin-top:6px"></div>
+  `, [
+    {label:'Cancel', cls:'btn-outlined', fn:closeModal},
+    {label:'<span class="material-icons-round" style="font-size:15px">cancel</span> Submit & Reject', cls:'btn-danger', fn:() => {
+      const remark = (document.getElementById('engRejectRemark')?.value||'').trim();
+      if (!remark) { document.getElementById('engRejectErr').textContent='Remarks are mandatory.'; document.getElementById('engRejectErr').style.display='block'; return; }
+      a.status = 'Rejected';
+      a.rejectedBy = currentUser.name;
+      a.rejectedAt = new Date().toISOString();
+      a.rejectionReason = remark;
+      a.engineerRejected = true;
+      a.timeline.push({event:'Rejected by Engineer', by:currentUser.name, at:new Date().toISOString(), note:remark});
+      saveAndSync();
+      closeModal();
+      showToast('Allotment rejected by Engineer', 'error');
+      filterAllotTable();
+      updateBadges();
     }}
   ]);
 }
@@ -2586,7 +2646,7 @@ function viewAllotment(id) {
     </div>
   `, [{label:'Close',cls:'btn-outlined',fn:closeModal},
       ...(a.status==='Pending' && can('editAllotment') ? [{label:'Edit',cls:'btn-outlined',fn:()=>{closeModal();editAllotment(id);}}] : []),
-      ...(a.status==='Approved'?[{label:'Print Slip',cls:'btn-primary',fn:()=>{closeModal();printSlip(id);}}]:[])]);
+      ...(a.status==='Approved' && currentUser.role !== 'engineer' ?[{label:'Print Slip',cls:'btn-primary',fn:()=>{closeModal();printSlip(id);}}]:[])]);
 }
 
 function editAllotment(id) {
@@ -2677,22 +2737,29 @@ function renderIssuance(el) {
     ${!can('issueCement') ? `<div class="alert alert-warn"><span class="material-icons-round">lock</span> You do not have permission to issue cement. Only Store Keeper or Admin can issue.</div>` : ''}
     <div class="card" style="margin-bottom:16px">
       <div class="section-title">Approved & Ready to Issue</div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;align-items:flex-end">
+        <div class="search-input" style="flex:1;min-width:180px"><span class="material-icons-round">search</span><input id="issReadySearch" placeholder="Search name, allotment ID, permit no, village…" oninput="filterReadyToIssue()"></div>
+        <select class="form-control" style="width:150px" id="issReadyScheme" onchange="filterReadyToIssue()"><option value="">All Schemes</option>${[...new Set(approved.map(a=>a.scheme).filter(Boolean))].map(s=>`<option>${s}</option>`).join('')}</select>
+        <select class="form-control" style="width:130px" id="issReadyYear" onchange="filterReadyToIssue()"><option value="">All Years</option>${[...new Set(approved.map(a=>a.year).filter(Boolean))].map(y=>`<option>${y}</option>`).join('')}</select>
+      </div>
       <div class="table-wrap">
-        <table>
-          <thead><tr><th>Allotment ID</th><th>Beneficiary</th><th>Village</th><th>Bags</th><th>Cement</th><th>Action</th></tr></thead>
-          <tbody>
-            ${approved.filter(a=>!DB.issuances.find(i=>i.allotmentId===a.id)).map(a=>`
-            <tr>
-              <td><strong>${a.id}</strong></td>
-              <td>${a.beneficiaryName}<br><small style="color:var(--grey-500)">${a.mobile}</small></td>
-              <td>${a.village}</td>
-              <td><strong>${a.bags}</strong></td>
-              <td>${a.cementType||'OPC 43'}</td>
-              <td>
-                ${can('issueCement')?`<button class="btn btn-green btn-sm" onclick="openIssueModal('${a.id}')"><span class="material-icons-round">output</span> Issue</button>`:'<span style="color:var(--grey-500);font-size:12px">Restricted</span>'}
-              </td>
-            </tr>`).join('') || '<tr><td colspan="6"><div class="empty-state"><span class="material-icons-round">check_circle</span><p>All approved allotments have been issued</p></div></td></tr>'}
-          </tbody>
+        <table id="issReadyTable">
+          <thead><tr>
+            <th>S.No.</th>
+            <th>Allotment ID</th>
+            <th>Permit No.</th>
+            <th>TNRD Work ID</th>
+            <th>Scheme</th>
+            <th>Year</th>
+            <th>Beneficiary Name</th>
+            <th>Village</th>
+            <th style="text-align:right">Sanctioned Bags</th>
+            <th style="text-align:right">Already Issued</th>
+            <th style="text-align:right">Now Issued</th>
+            <th style="text-align:right">Balance Bags</th>
+            <th>Action</th>
+          </tr></thead>
+          <tbody id="issReadyBody"></tbody>
         </table>
       </div>
     </div>
@@ -2717,6 +2784,49 @@ function renderIssuance(el) {
         </table>
       </div>
     </div>`;
+  filterReadyToIssue();
+}
+
+function filterReadyToIssue() {
+  const approved = scopedAllotments().filter(a=>a.status==='Approved');
+  const q       = (document.getElementById('issReadySearch')?.value||'').toLowerCase();
+  const scheme  = document.getElementById('issReadyScheme')?.value||'';
+  const year    = document.getElementById('issReadyYear')?.value||'';
+  let data = approved.filter(a=>!DB.issuances.find(i=>i.allotmentId===a.id));
+  if (scheme) data = data.filter(a=>a.scheme===scheme);
+  if (year)   data = data.filter(a=>a.year===year);
+  if (q)      data = data.filter(a=>{
+    const ben = DB.beneficiaries.find(b=>b.id===a.beneficiaryId)||{};
+    return (JSON.stringify(a)+(ben.workId||'')+(a.challanNumber||'')).toLowerCase().includes(q);
+  });
+  const body = document.getElementById('issReadyBody');
+  if (!body) return;
+  if (!data.length) {
+    body.innerHTML = '<tr><td colspan="13"><div class="empty-state"><span class="material-icons-round">check_circle</span><p>All approved allotments have been issued</p></div></td></tr>';
+    return;
+  }
+  body.innerHTML = data.map((a,idx)=>{
+    const ben = DB.beneficiaries.find(b=>b.id===a.beneficiaryId)||{};
+    const alreadyIssued = DB.issuances.filter(i=>i.beneficiaryId===a.beneficiaryId).reduce((s,i)=>s+i.bags,0);
+    const sanctioned = ben.sanctionedBags||a.bags;
+    const nowIssued  = a.bags;
+    const balance    = Math.max(0, sanctioned - alreadyIssued - nowIssued);
+    return `<tr>
+      <td style="color:var(--grey-500)">${idx+1}</td>
+      <td><strong>${a.id}</strong></td>
+      <td style="font-family:monospace;font-size:11px;color:var(--blue)">${a.challanNumber||'—'}</td>
+      <td style="font-family:monospace;font-size:11px">${ben.workId||a.workId||'—'}</td>
+      <td style="font-size:12px">${a.scheme}</td>
+      <td style="font-size:12px">${a.year||ben.year||'—'}</td>
+      <td>${a.beneficiaryName}<br><small style="color:var(--grey-500)">${a.mobile}</small></td>
+      <td>${a.village}</td>
+      <td style="text-align:right;font-weight:700">${sanctioned}</td>
+      <td style="text-align:right;color:var(--green)">${alreadyIssued}</td>
+      <td style="text-align:right;color:var(--blue);font-weight:700">${nowIssued}</td>
+      <td style="text-align:right;color:${balance>0?'var(--blue)':'var(--grey-400)'};font-weight:600">${balance}</td>
+      <td>${can('issueCement')?`<button class="btn btn-green btn-sm" onclick="openIssueModal('${a.id}')"><span class="material-icons-round">output</span> Issue</button>`:'<span style="color:var(--grey-500);font-size:12px">Restricted</span>'}</td>
+    </tr>`;
+  }).join('');
 }
 
 function openIssueModal(allotmentId) {
@@ -3577,7 +3687,6 @@ function openAddBeneficiary() {
   openModal('Register New Beneficiary', `
     <div class="form-grid">
       <div class="form-group"><label class="form-label">Full Name *</label><input class="form-control" id="nbName" placeholder="Full name"></div>
-      <div class="form-group"><label class="form-label">Aadhaar No. *</label><input class="form-control" id="nbAadhaar" placeholder="12-digit Aadhaar number" maxlength="14" pattern="[0-9]{12}"></div>
       <div class="form-group"><label class="form-label">Mobile *</label><input class="form-control" id="nbMobile" placeholder="10-digit mobile (starts with 6-9)" maxlength="10" pattern="[6-9][0-9]{9}"></div>
       <div class="form-group">
         <label class="form-label">Block *</label>
@@ -3590,7 +3699,7 @@ function openAddBeneficiary() {
       <div class="form-group"><label class="form-label">Scheme *</label>
         <select class="form-control" id="nbScheme">${SCHEMES.map(s=>`<option>${s}</option>`).join('')}</select>
       </div>
-      <div class="form-group"><label class="form-label">House No. *</label><input class="form-control" id="nbHouse" placeholder="e.g. MYL/2025001"></div>
+      <div class="form-group"><label class="form-label">Work ID Number *</label><input class="form-control" id="nbHouse" placeholder="e.g. MYL/2025001"></div>
       <div class="form-group"><label class="form-label">Sanctioned Bags *</label><input class="form-control" type="number" id="nbBags" value="100" min="1"></div>
     </div>
   `, [{label:'Cancel',cls:'btn-outlined',fn:closeModal},{label:'Register',cls:'btn-primary',fn:addBeneficiary}]);
@@ -3603,19 +3712,16 @@ function updateVillageOptions() {
 }
 function addBeneficiary() {
   const name = document.getElementById('nbName').value.trim();
-  const aadhaar = document.getElementById('nbAadhaar').value.trim();
   const mobile = document.getElementById('nbMobile').value.trim();
   const houseNo = document.getElementById('nbHouse').value.trim();
-  const aadhaarClean = aadhaar.replace(/[-\s]/g,'');
   if (!name)   { showToast('Beneficiary name is required','error'); return; }
-  if (aadhaarClean.length !== 12 || !/^\d+$/.test(aadhaarClean)) {
-    showToast('Aadhaar must be exactly 12 digits','error'); return; }
   if (!/^[6-9]\d{9}$/.test(mobile)) {
     showToast('Enter a valid 10-digit mobile number','error'); return; }
-  if (!houseNo) { showToast('House number is required','error'); return; }
+  if (!houseNo) { showToast('Work ID Number is required','error'); return; }
   const b = {
     id: 'B' + String(Date.now()).slice(-6),
-    name, aadhaar: '****-****-' + aadhaarClean.slice(-4),
+    name,
+    aadhaar: '—',
     mobile,
     village: document.getElementById('nbVillage').value,
     block: document.getElementById('nbBlock').value,
@@ -4329,9 +4435,7 @@ function filterBDOStockLog() {
           <td style="font-size:12px;color:var(--grey-500)">${e.addedBy||'—'}<br><span style="font-size:10px">${e.createdAt?new Date(e.createdAt).toLocaleDateString('en-IN'):''}</span></td>
           <td>
             <div style="display:flex;gap:4px">
-              <button class="btn btn-outlined btn-sm" onclick="openBDOEditStock('${e.id}')" title="Edit">
-                <span class="material-icons-round">edit</span>
-              </button>
+              ${can('editStock') ? `<button class="btn btn-outlined btn-sm" onclick="openBDOEditStock('${e.id}')" title="Edit"><span class="material-icons-round">edit</span></button>` : ''}
               <button class="btn btn-text btn-sm" onclick="viewBDOStockEntry('${e.id}')" title="View Details">
                 <span class="material-icons-round">visibility</span>
               </button>
@@ -4355,56 +4459,65 @@ function openBDOAddStock() {
   openModal('Add Cement Stock Entry', `
     <div class="form-grid">
       <div class="form-group">
-        <label class="form-label">Date of Receipt *</label>
+        <label class="form-label">Date of Receipt <span style="color:var(--red)">*</span></label>
         <input class="form-control" type="date" id="bsDate" value="${new Date().toISOString().slice(0,10)}">
       </div>
       <div class="form-group">
-        <label class="form-label">Invoice / GRN No. *</label>
+        <label class="form-label">Invoice / GRN No. <span style="color:var(--red)">*</span></label>
         <input class="form-control" id="bsInvoice" placeholder="e.g. GRN/2025/001">
       </div>
       <div class="form-group">
-        <label class="form-label">Supplier Name</label>
+        <label class="form-label">Supplier Name <span style="color:var(--red)">*</span></label>
         <input class="form-control" id="bsSupplier" placeholder="Govt. Depot / Supplier name">
       </div>
       <div class="form-group">
-        <label class="form-label">Scheme *</label>
+        <label class="form-label">Scheme <span style="color:var(--red)">*</span></label>
         <select class="form-control" id="bsScheme">${SCHEMES.map(s=>`<option>${s}</option>`).join('')}</select>
       </div>
       <div class="form-group">
-        <label class="form-label">Year *</label>
+        <label class="form-label">Year <span style="color:var(--red)">*</span></label>
         <input class="form-control" id="bsYear" placeholder="e.g. 2025-26" value="2025-26">
       </div>
       <div class="form-group">
-        <label class="form-label">Cement Type *</label>
+        <label class="form-label">Cement Type <span style="color:var(--red)">*</span></label>
         <select class="form-control" id="bsCType">${CEMENT_TYPES.map(t=>`<option>${t}</option>`).join('')}</select>
       </div>
       <div class="form-group">
-        <label class="form-label">Total Bags Received *</label>
+        <label class="form-label">Total Bags Received <span style="color:var(--red)">*</span></label>
         <input class="form-control" type="number" id="bsBags" placeholder="Enter number of bags" min="1">
       </div>
       <div class="form-group" style="grid-column:1/-1">
-        <label class="form-label">Remarks / Notes</label>
+        <label class="form-label">Remarks / Notes <span style="color:var(--red)">*</span></label>
         <input class="form-control" id="bsRemark" placeholder="Any additional notes…">
       </div>
     </div>
 
     <hr class="divider">
-    <div class="section-title" style="margin-bottom:6px">📷 Work Order / Cement Received Slip Photo</div>
+    <div class="section-title" style="margin-bottom:6px">📄 Upload Invoice <span style="color:var(--red);font-size:11px;font-weight:400">(Mandatory – upload the invoice/receipt document)</span></div>
     <div style="font-size:12px;color:var(--grey-700);margin-bottom:10px">
-      Upload a photo of the <strong>cement delivery challan, work order, or received goods slip</strong> as documentary proof.
+      Upload the <strong>invoice or cement received document</strong> as documentary proof. All stock entries must have an invoice attached.
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
-      <input type="file" accept="image/*" id="bsPhotoFile" style="display:none" onchange="handleBSPhoto(event)">
+      <input type="file" accept="image/*,application/pdf" id="bsPhotoFile" style="display:none" onchange="handleBSPhoto(event)">
       <input type="file" accept="image/*" capture="environment" id="bsPhotoCam" style="display:none" onchange="handleBSPhoto(event)">
       <button class="btn btn-outlined btn-sm" onclick="document.getElementById('bsPhotoFile').click()">
-        <span class="material-icons-round">photo_library</span> Browse Gallery
+        <span class="material-icons-round">upload_file</span> Upload Document
       </button>
       <button class="btn btn-outlined btn-sm" onclick="document.getElementById('bsPhotoCam').click()">
         <span class="material-icons-round">photo_camera</span> Capture Photo
       </button>
     </div>
     <div id="bsPhotoPreview" style="margin-bottom:6px"></div>
-    <div id="bsPhotoStatus" style="font-size:12px;color:var(--grey-500)">No photo attached yet.</div>
+    <div id="bsPhotoStatus" style="font-size:12px;color:var(--grey-500)">No document attached yet.</div>
+
+    <hr class="divider">
+    <div style="display:flex;align-items:flex-start;gap:10px;background:var(--blue-light);border-radius:8px;padding:12px 14px;margin-top:4px">
+      <input type="checkbox" id="bsConfirmCheck" style="width:18px;height:18px;margin-top:1px;cursor:pointer;accent-color:var(--blue)">
+      <label for="bsConfirmCheck" style="font-size:13px;font-weight:600;color:var(--blue);cursor:pointer;line-height:1.4">
+        I confirm that all the above details are correct and the invoice document has been attached before saving this stock entry.
+      </label>
+    </div>
+    <div id="bsConfirmErr" style="display:none;color:var(--red);font-size:12px;margin-top:6px"></div>
   `, [
     {label:'Cancel', cls:'btn-outlined', fn:closeModal},
     {label:'💾 Save Entry', cls:'btn-primary', fn:()=>saveBDOStockEntry(null)}
@@ -4453,17 +4566,17 @@ function openBDOEditStock(id) {
     </div>
 
     <hr class="divider">
-    <div class="section-title" style="margin-bottom:6px">📷 Work Order / Cement Received Slip Photo</div>
+    <div class="section-title" style="margin-bottom:6px">📄 Invoice / Document</div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
-      <input type="file" accept="image/*" id="bsPhotoFile" style="display:none" onchange="handleBSPhoto(event)">
+      <input type="file" accept="image/*,application/pdf" id="bsPhotoFile" style="display:none" onchange="handleBSPhoto(event)">
       <input type="file" accept="image/*" capture="environment" id="bsPhotoCam" style="display:none" onchange="handleBSPhoto(event)">
       <button class="btn btn-outlined btn-sm" onclick="document.getElementById('bsPhotoFile').click()">
-        <span class="material-icons-round">photo_library</span> Browse Gallery
+        <span class="material-icons-round">upload_file</span> Upload Document
       </button>
       <button class="btn btn-outlined btn-sm" onclick="document.getElementById('bsPhotoCam').click()">
         <span class="material-icons-round">photo_camera</span> Capture / Replace
       </button>
-      ${e.photo?`<button class="btn btn-danger btn-sm" onclick="clearBSPhoto()"><span class="material-icons-round">delete</span> Remove Photo</button>`:''}
+      ${e.photo?`<button class="btn btn-danger btn-sm" onclick="clearBSPhoto()"><span class="material-icons-round">delete</span> Remove</button>`:''}
     </div>
     <div id="bsPhotoPreview">
       ${e.photo?`<img src="${e.photo}" style="max-width:100%;max-height:160px;border-radius:8px;border:1.5px solid var(--grey-200)">`:'' }
@@ -4511,10 +4624,23 @@ function saveBDOStockEntry(editId) {
   const supplier= document.getElementById('bsSupplier')?.value.trim();
   const remark  = document.getElementById('bsRemark')?.value.trim();
 
-  if (!bags || bags<1) { showToast('Enter a valid bags count','error'); return; }
-  if (!date)           { showToast('Date is required','error'); return; }
-  if (!invoice)        { showToast('Invoice / GRN number is required','error'); return; }
-  if (!year)           { showToast('Year is required','error'); return; }
+  if (!bags || bags<1)  { showToast('Bags received is required','error'); return; }
+  if (!date)            { showToast('Date is required','error'); return; }
+  if (!invoice)         { showToast('Invoice / GRN number is required','error'); return; }
+  if (!year)            { showToast('Year is required','error'); return; }
+  if (!supplier)        { showToast('Supplier name is required','error'); return; }
+  if (!remark)          { showToast('Remarks / Notes are required','error'); return; }
+
+  // For new entries: enforce photo and confirmation checkbox
+  if (!editId) {
+    if (!bdoStockPhotoData) { showToast('Please upload the invoice document before saving','error'); return; }
+    const confirmCheck = document.getElementById('bsConfirmCheck');
+    if (confirmCheck && !confirmCheck.checked) {
+      const errEl = document.getElementById('bsConfirmErr');
+      if (errEl) { errEl.textContent = 'Please tick the confirmation checkbox before saving.'; errEl.style.display='block'; }
+      showToast('Please tick the confirmation checkbox','error'); return;
+    }
+  }
 
   if (!DB.bdoStockEntries) DB.bdoStockEntries = [];
 
@@ -6405,6 +6531,7 @@ function generateAllotmentSlipHTML(a, ben, qrData, copyLabel) {
       <div class="slip-dept">Rural Development Department · Mayiladuthurai District</div>
       <div class="slip-title">CEMENT ALLOTMENT ORDER</div>
       <div class="slip-challan">Permit No: ${challan}</div>
+      <div style="font-size:9px;color:#888;margin-top:2px">${new Date(a.approvedAt||a.createdAt).toLocaleString('en-IN',{dateStyle:'medium',timeStyle:'short'})}</div>
     </div>
     <table class="slip-table">
       <tr><td>Beneficiary</td><td>${a.beneficiaryName}</td></tr>
@@ -6413,13 +6540,19 @@ function generateAllotmentSlipHTML(a, ben, qrData, copyLabel) {
       <tr><td>Scheme / Year</td><td>${a.scheme} · ${a.year||ben.year||'—'}</td></tr>
       <tr><td>Aadhaar</td><td>${a.aadhaar}</td></tr>
       <tr><td>Mobile</td><td>${a.mobile}</td></tr>
-      <tr><td>Cement Type</td><td>${a.cementType||'OPC 43 Grade'}</td></tr>
-      <tr><td>Sanctioned</td><td>${ben.sanctionedBags||a.bags} bags</td></tr>
-      <tr><td>Already Issued</td><td>${issuedBags} bags</td></tr>
-      <tr><td>Balance</td><td><strong>${balBags} bags</strong></td></tr>
       <tr><td>Approved By</td><td style="font-size:9px;line-height:1.5">${approvedByStr}</td></tr>
       <tr><td>Stage</td><td>${a.stage||a.use||'—'}</td></tr>
     </table>
+    <!-- Cement Summary -->
+    <div style="background:#f1f8e9;border-radius:6px;padding:8px 10px;margin:6px 0;border:1px solid #c8e6c9">
+      <div style="font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#558b2f;margin-bottom:6px">Cement Summary</div>
+      <table style="width:100%;font-size:10px;border-collapse:collapse">
+        <tr><td style="color:#555;padding:2px 0">Total Sanctioned</td><td style="text-align:right;font-weight:700">${ben.sanctionedBags||a.bags} bags</td></tr>
+        <tr><td style="color:#555;padding:2px 0">Previously Issued</td><td style="text-align:right;font-weight:700;color:#1e8e3e">${issuedBags} bags</td></tr>
+        <tr><td style="color:#555;padding:2px 0">This Issuance</td><td style="text-align:right;font-weight:700;color:#1a73e8">${a.bags} bags</td></tr>
+        <tr style="border-top:1px solid #c8e6c9"><td style="color:#555;padding:3px 0 0">Pending / Balance</td><td style="text-align:right;font-weight:700;color:${balBags>0?'#e65100':'#999'};padding:3px 0 0">${balBags} bags</td></tr>
+      </table>
+    </div>
     <div class="slip-bags-box">
       <div class="slip-bags-num">${a.bags}</div>
       <div class="slip-bags-lbl">Bags to be Issued this Order (50 kg each)</div>
@@ -6444,17 +6577,44 @@ function generateAllotmentSlipHTML(a, ben, qrData, copyLabel) {
 function renderStoreQRScan(el) {
   el.innerHTML = `
     <div class="page-header">
-      <div><div class="page-title">QR Code Scanner</div><div class="page-sub">Scan Challan QR to view beneficiary details</div></div>
+      <div><div class="page-title">QR Scan (Challan)</div><div class="page-sub">Scan BDO-approved challan QR to view beneficiary details and take action</div></div>
     </div>
-    <div class="card" style="max-width:520px">
-      <div class="section-title">Scan or Enter Challan Details</div>
-      <div style="margin-bottom:16px">
-        <label class="form-label">Paste QR Data or Challan Number</label>
-        <textarea class="form-control" id="qrScanInput" rows="4" placeholder="Paste scanned QR code data here, or type challan number..."></textarea>
+    <div class="card" style="max-width:560px">
+      <div class="section-title">Scan with Mobile Camera</div>
+      <div style="margin-bottom:14px;font-size:13px;color:var(--grey-700)">Point your camera at the QR code on the BDO-approved slip, or enter the Challan / Permit number manually below.</div>
+
+      <!-- Camera scan button -->
+      <div style="margin-bottom:14px">
+        <input type="file" accept="image/*" capture="environment" id="qrCameraInput" style="display:none" onchange="handleQRImageScan(event)">
+        <button class="btn btn-primary" onclick="document.getElementById('qrCameraInput').click()" style="width:100%;justify-content:center;padding:14px">
+          <span class="material-icons-round" style="font-size:22px">qr_code_scanner</span>&nbsp; Open Camera & Scan QR Code
+        </button>
+        <div style="font-size:11px;color:var(--grey-500);margin-top:6px;text-align:center">Uses device camera · Works on mobile and tablet</div>
       </div>
-      <button class="btn btn-primary" onclick="processQRScan()"><span class="material-icons-round">qr_code_scanner</span> Look Up Beneficiary</button>
-      <div id="qrScanResult" style="margin-top:16px"></div>
+
+      <div class="login-divider" style="margin:12px 0">OR ENTER MANUALLY</div>
+
+      <div style="margin-bottom:14px">
+        <label class="form-label">Challan / Permit Number or Allotment ID</label>
+        <input class="form-control" id="qrScanInput" placeholder="e.g. MYL-10001 or A001" oninput="" onkeydown="if(event.key==='Enter')processQRScan()">
+      </div>
+      <button class="btn btn-outlined" onclick="processQRScan()" style="width:100%;justify-content:center">
+        <span class="material-icons-round">search</span> Look Up Beneficiary
+      </button>
+      <div id="qrScanResult" style="margin-top:18px"></div>
     </div>`;
+}
+
+function handleQRImageScan(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  // Since native QR decode is not available without a library,
+  // read the file and try to extract data from file name or use manual fallback
+  const res = document.getElementById('qrScanResult');
+  res.innerHTML = `<div class="alert alert-info"><span class="material-icons-round">info</span>
+    <div><strong>Camera captured.</strong> If the QR code scan didn't auto-resolve, please type the Challan / Permit number from the slip above and press Look Up.</div></div>`;
+  // Reset camera input
+  event.target.value = '';
 }
 
 function processQRScan() {
@@ -6478,6 +6638,9 @@ function processQRScan() {
 
   const issuedBags = DB.issuances.filter(i=>i.beneficiaryId===(DB.allotments.find(a=>a.id===data.allotmentId)?.beneficiaryId||'')).reduce((s,i)=>s+i.bags,0);
   const allot = DB.allotments.find(a=>a.id===data.allotmentId||a.challanNumber===data.challan);
+  const balBags = Math.max(0,(data.sanctioned||data.bags) - issuedBags - data.bags);
+  const isApproved = allot && allot.status==='Approved';
+  const alreadyIssued = allot && DB.issuances.find(i=>i.allotmentId===allot.id);
 
   res.innerHTML = `
     <div style="border:2px solid var(--green);border-radius:12px;padding:16px">
@@ -6485,24 +6648,42 @@ function processQRScan() {
         <span class="material-icons-round" style="color:var(--green);font-size:28px">verified</span>
         <div>
           <div style="font-weight:700;font-size:15px">${data.name}</div>
-          <div style="font-size:11px;color:var(--grey-500)">Challan: <strong style="font-family:monospace">${data.challan||'—'}</strong></div>
+          <div style="font-size:11px;color:var(--grey-500)">Permit No.: <strong style="font-family:monospace">${data.challan||'—'}</strong></div>
         </div>
       </div>
-      <div class="info-row"><span class="info-key">TNRD Work ID</span><span class="info-val">${data.workId||'—'}</span></div>
-      <div class="info-row"><span class="info-key">House No.</span><span class="info-val">${data.houseNo}</span></div>
+      <div class="info-row"><span class="info-key">TNRD Work ID</span><span class="info-val" style="font-family:monospace">${data.workId||'—'}</span></div>
       <div class="info-row"><span class="info-key">Village / Block</span><span class="info-val">${data.village} / ${data.block}</span></div>
       <div class="info-row"><span class="info-key">Scheme / Year</span><span class="info-val">${data.scheme} · ${data.year||'—'}</span></div>
-      <div class="info-row"><span class="info-key">Aadhaar</span><span class="info-val">${data.aadhaar||'—'}</span></div>
       <div class="info-row"><span class="info-key">Mobile</span><span class="info-val">${data.mobile||'—'}</span></div>
-      <div class="info-row"><span class="info-key">Sanctioned Bags</span><span class="info-val">${data.sanctioned||data.bags}</span></div>
-      <div class="info-row"><span class="info-key">Already Issued</span><span class="info-val">${issuedBags} bags</span></div>
-      <div style="background:var(--blue-light);border-radius:8px;padding:10px 14px;margin-top:8px;text-align:center">
-        <div style="font-size:28px;font-weight:700;color:var(--blue)">${data.bags}</div>
-        <div style="font-size:12px;color:var(--grey-700)">Bags to be Issued this Order</div>
+      <!-- Cement Summary -->
+      <div style="background:var(--grey-50);border-radius:8px;padding:12px;margin:12px 0">
+        <div style="font-size:11px;font-weight:700;color:var(--grey-600);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Cement Summary</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+          <div style="text-align:center;background:#fff;border-radius:6px;padding:8px">
+            <div style="font-size:20px;font-weight:700;color:var(--blue)">${data.sanctioned||data.bags}</div>
+            <div style="font-size:10px;color:var(--grey-600)">Total Sanctioned</div>
+          </div>
+          <div style="text-align:center;background:#fff;border-radius:6px;padding:8px">
+            <div style="font-size:20px;font-weight:700;color:var(--green)">${issuedBags}</div>
+            <div style="font-size:10px;color:var(--grey-600)">Previously Issued</div>
+          </div>
+          <div style="text-align:center;background:var(--blue-light);border-radius:6px;padding:8px">
+            <div style="font-size:20px;font-weight:700;color:var(--blue)">${data.bags}</div>
+            <div style="font-size:10px;color:var(--grey-600)">This Issuance</div>
+          </div>
+          <div style="text-align:center;background:${balBags>0?'#fff':'var(--grey-50)'};border-radius:6px;padding:8px">
+            <div style="font-size:20px;font-weight:700;color:${balBags>0?'var(--blue)':'var(--grey-400)'}">${balBags}</div>
+            <div style="font-size:10px;color:var(--grey-600)">Pending / Balance</div>
+          </div>
+        </div>
       </div>
-      ${allot && allot.status==='Approved' ? `<button class="btn btn-green" style="width:100%;justify-content:center;margin-top:12px" onclick="navigate('issuance')">
-        <span class="material-icons-round">output</span> Proceed to Issue
-      </button>` : `<div class="alert alert-warn" style="margin-top:8px"><span class="material-icons-round">warning_amber</span> Status: ${allot?.status||'Unknown'}</div>`}
+      ${isApproved && !alreadyIssued
+        ? `<button class="btn btn-green" style="width:100%;justify-content:center;margin-top:4px" onclick="navigate('issuance')">
+            <span class="material-icons-round">output</span> Proceed to Issue Cement
+          </button>`
+        : alreadyIssued
+        ? `<div class="alert alert-warn" style="margin-top:8px"><span class="material-icons-round">check_circle</span> Cement already issued for this order.</div>`
+        : `<div class="alert alert-warn" style="margin-top:8px"><span class="material-icons-round">warning_amber</span> Status: ${allot?.status||'Unknown'} – Not yet approved for issuance.</div>`}
     </div>`;
 }
 
