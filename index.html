@@ -491,6 +491,13 @@
     <div style="display:flex;gap:8px;align-items:center">
       <div id="fbStatus" style="font-size:11px;color:var(--grey-500);display:flex;align-items:center;gap:4px;transition:color .3s"></div>
       <div id="syncIndicator" style="font-size:11px;color:var(--green);opacity:0;transition:opacity .5s;white-space:nowrap">↺ Synced</div>
+      <button id="realtimeToggleBtn" class="nav-icon-btn" title="Real-time Sync ON – click to pause" onclick="toggleRealtimeSync()" style="position:relative">
+        <span class="material-icons-round" id="realtimeToggleIcon">sync</span>
+        <span id="realtimeDot" style="position:absolute;top:7px;right:7px;width:7px;height:7px;border-radius:50%;background:#34a853;border:1.5px solid #1a73e8"></span>
+      </button>
+      <button class="nav-icon-btn" id="syncNowBtn" title="Sync Now – pull latest from cloud" onclick="manualSyncNow()">
+        <span class="material-icons-round">cloud_sync</span>
+      </button>
       <button class="nav-icon-btn" title="Notifications" onclick="navigate('alerts')">
         <span class="material-icons-round">notifications</span>
       </button>
@@ -594,8 +601,9 @@ function loadFirebaseSDK() {
           if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
           db = firebase.firestore();
           firebaseReady = true;
-          updateFirebaseIndicator(true);
-          console.log('Firebase connected ✓');
+          // Don't mark as "online" yet — wait for first successful Firestore snapshot
+          updateFirebaseIndicator(false, 'Connecting…');
+          console.log('Firebase SDK loaded ✓ — connecting to Firestore…');
           // If user is already logged in (reconnect after offline), restart listener
           if (currentUser) {
             loadFromFirebase().then(() => {
@@ -623,17 +631,21 @@ function loadFirebaseSDK() {
   });
 }
 
-function updateFirebaseIndicator(online) {
+function updateFirebaseIndicator(online, msg) {
   const el = document.getElementById('fbStatus');
+  const dot = document.getElementById('realtimeDot');
   if (!el) return;
   if (online) {
     el.innerHTML = '<span class=material-icons-round style=font-size:13px>cloud_done</span> Cloud Sync ON';
     el.style.color = 'var(--green)';
     el.title = 'Firebase Firestore connected';
+    if (dot) dot.style.background = '#34a853';
   } else {
-    el.innerHTML = '<span class=material-icons-round style=font-size:13px>cloud_off</span> Offline Mode';
+    const label = msg || 'Offline Mode';
+    el.innerHTML = `<span class=material-icons-round style=font-size:13px>cloud_off</span> ${label}`;
     el.style.color = 'var(--grey-500)';
-    el.title = 'No cloud sync – data saved locally';
+    el.title = msg || 'No cloud sync – data saved locally only';
+    if (dot) dot.style.background = 'var(--grey-500)';
   }
 }
 
@@ -1175,97 +1187,22 @@ const VILLAGES = Object.values(BLOCK_DATA).flatMap(b => b.villages);
 // ===== SEED DATA =====
 
 function seedData() {
-  // Seed 2 beneficiaries per overseer per block using actual panchayat names
-  const perBlock = [
-    { block:'Mayiladuthurai', overseers:[
-        {name:'R.Kayalvizhi',   bens:['Murugan R','Lakshmi D'],     vils:['AGARAKEERANGUDI','ANAIMELAGARAM']},
-        {name:'K.Oosainayagi',  bens:['Selvam K','Priya S'],        vils:['ANATHANDAVAPURAM','KADAKKAM']},
-        {name:'G.Tamilselvi',   bens:['Kavitha M','Rajan A'],       vils:['ARUNMOZHIDEVAN','IVANALLUR']},
-        {name:'K.Praveen',      bens:['Suresh B','Meena C'],        vils:['ARUVAPADI','ELANTHOPPU']},
-        {name:'R.Anbazhagan',   bens:['Geetha V','Mani T'],         vils:['AATHUR','BOOTHANGUDI']},
-        {name:'D.Praveena',     bens:['Balan P','Saroja N'],        vils:['DHARMATHANAPURAM','KODANGUDI']},
-    ]},
-    { block:'Kuthalam', overseers:[
-        {name:'C.Muthu',        bens:['Pandi R','Kamala S'],        vils:['Alangudi','Asikkadu']},
-        {name:'K.Nagendira',    bens:['Arjun M','Valli K'],         vils:['Gangatharapuram','Kazhanivasal']},
-        {name:'K.Prasanna',     bens:['Babu L','Devi A'],           vils:['Arivalur','Thathangudi']},
-        {name:'R.Chandrasekar', bens:['Ramu G','Usha P'],          vils:['Anandhanallur','Kappur']},
-        {name:'S.Gowri',        bens:['Karthik B','Nila C'],        vils:['Therazhandur','Kokkur']},
-        {name:'S.Manisangar',   bens:['Velan D','Shanthi E'],      vils:['Ezhumagalur','Kodimangalam']},
-    ]},
-    { block:'Sembanarkoil', overseers:[
-        {name:'U.Rajalakshmi',  bens:['Murugesan F','Janaki G'],    vils:['AKKUR','KEELAPERUMPALLAM']},
-        {name:'N.Akila',        bens:['Selvi H','Rajan I'],         vils:['ALAVELI','KALAHASTHINATHAPURAM']},
-        {name:'V.Manimaran',    bens:['Mani J','Lakshmi K'],        vils:['ANNAVASAL','ELAIYALUR']},
-        {name:'R.Balaji',       bens:['Balaji L','Kaveri M'],       vils:['ARASUR','ARUPATHY']},
-        {name:'K.Bharathi',     bens:['Bharath N','Priya O'],       vils:['CHANDRAPADI','EDUTHUKATTI']},
-        {name:'K.Keerthana',    bens:['Kumar P','Rekha Q'],         vils:['KALAMANALLUR','KAZHIYAPPANALLUR']},
-        {name:'N.Babu',         bens:['Babu R','Geetha S'],         vils:['KANJANAGARAM','KARUVAZHAKARAI']},
-        {name:'J.Saravanan',    bens:['Saravanan T','Vani U'],      vils:['KILLIYUR','KOTHANGUDI']},
-    ]},
-    { block:'Sirkali', overseers:[
-        {name:'M.Umamaheshwari',bens:['Uma V','Suresh W'],          vils:['AGANI','ATHIYUR']},
-        {name:'R.Kala',         bens:['Kala X','Vijay Y'],          vils:['EDAKUDIVADAPATHY','KATHIRUPPU']},
-        {name:'M.Govindharaj',  bens:['Govind Z','Malathi A'],      vils:['KANNIYAKUDI','KARKOIL']},
-        {name:'M.Amalarani',    bens:['Amala B','Ravi C'],          vils:['KARAIMEDU','KEELASATTANATHAPURAM']},
-        {name:'M.Kavitha',      bens:['Kavitha D','Murugan E'],     vils:['MANGAIMADAM','NANGOORE']},
-    ]},
-    { block:'Kollidam', overseers:[
-        {name:'Thiruselvan',    bens:['Thirusel F','Rani G'],       vils:['Achalpuram','Alakkudi']},
-        {name:'A.Shruthi',      bens:['Shruthi H','Kumar I'],       vils:['Agaraelathur','Arappallam']},
-        {name:'D.Vijayakanth',  bens:['Vijay J','Mala K'],          vils:['Agaravattaram','Alangadu']},
-        {name:'Biruntha',       bens:['Biruntha L','Vel M'],        vils:['Alalasundaram','Arppakkam']},
-        {name:'Aruldoss',       bens:['Aruldoss N','Vasantha O'],   vils:['Edamanal','Kadavasal']},
-        {name:'S.Priya',        bens:['Priya P','Anand Q'],         vils:['Gopalasamuthiram','Koothiyampeetai']},
-    ]},
-  ];
-
-  let idx = 0;
-  DB.beneficiaries = perBlock.flatMap(({block, overseers}) =>
-    overseers.flatMap(({bens, vils}) =>
-      bens.map((name, j) => {
-        idx++;
-        return {
-          id: 'B' + String(idx).padStart(4,'0'),
-          name,
-          aadhaar: '****-****-' + String(1000+idx*77).slice(-4),
-          mobile: '9' + String(8000000000+idx*1234567).slice(0,9),
-          village: vils[j % vils.length],
-          block,
-          scheme: SCHEMES[idx % SCHEMES.length],
-          houseNo: block.slice(0,3).toUpperCase() + '/' + String(2025001+idx),
-          workId: 'TNRD/' + block.slice(0,3).toUpperCase() + '/' + String(1000+idx),
-          year: '2025-26',
-          sanctionedBags: [50,75,100,120][idx%4],
-          issuedBags: 0,
-          receivedBags: 0,
-          status: 'Active',
-          uploadedBy: 'Collector',
-          uploadedAt: new Date(2025,0,idx).toISOString(),
-          createdAt: new Date(2025, 0, idx).toISOString()
-        };
-      })
-    )
-  );
-
-  DB.stock = { total: 2500, issued: 0, balance: 2500, openingBalance: 2500, type: 'OPC 43 Grade', lastUpdated: new Date().toISOString() };
-  DB.stockLedger = [{
-    id: 'GRN001', type: 'RECEIPT', date: new Date().toISOString(),
-    bags: 2500, openingBalance: 0, closingBalance: 2500,
-    cementType: 'OPC 43 Grade', supplier: 'Govt. Depot – Nagapattinam',
-    grn: 'GRN/2025/001', addedBy: 'Admin', remark: 'Initial stock loaded'
-  }];
-  DB.allotments = [];
-  DB.issuances = [];
-  DB.inspections = [];
-  DB.bdoStockEntries = [];
+  // Fresh empty state — no dummy data.
+  // Beneficiaries are uploaded by the Collector via Master Upload.
+  DB.beneficiaries  = [];
+  DB.stock          = { total: 0, issued: 0, balance: 0, openingBalance: 0, type: 'OPC 43 Grade', lastUpdated: new Date().toISOString() };
+  DB.stockLedger    = [];
+  DB.allotments     = [];
+  DB.issuances      = [];
+  DB.inspections    = [];
+  DB.bdoStockEntries= [];
   DB.challanCounter = 10000;
   saveDB();
 }
 
 // Current valid blocks — any saved data with different blocks is stale and must be cleaned
 const VALID_BLOCKS = ['Mayiladuthurai', 'Kuthalam', 'Sembanarkoil', 'Sirkali', 'Kollidam'];
-const DB_VERSION = 5; // increment whenever block list or schema changes
+const DB_VERSION = 7; // v7: fully empty seed — no dummy beneficiaries, no GRN001
 
 function saveDB() {
   try {
@@ -1315,111 +1252,152 @@ function loadDB() {
 //   A real-time onSnapshot listener on every device picks up
 //   changes written by OTHER devices within ~1 second.
 
-let _firestoreUnsubscribe = null;   // holds the onSnapshot cleanup fn
-let _lastLocalWrite = 0;            // timestamp of our own last write
-                                    // so we don't re-apply our own echo
+let _firestoreUnsubscribe = null;
+let _lastLocalWrite = 0;
+let _firestoreNetworkOn = false;
+let _listenerFailCount = 0;
+let _listenerBackoffTimer = null;
+const MAX_LISTENER_FAILS = 3;
 
-// ── Write: merge entire DB into Firestore ────────────────────────────
+// ── Enable / disable Firestore's internal WebChannel ────────────────
+// db.disableNetwork() stops ALL WebChannel streams & kills the spam.
+// db.enableNetwork()  brings them back when we're ready to try again.
+async function _fsNetOn() {
+  if (!db || _firestoreNetworkOn) return;
+  try { await db.enableNetwork(); _firestoreNetworkOn = true; } catch(e) {}
+}
+async function _fsNetOff() {
+  if (!db || !_firestoreNetworkOn) return;
+  try { await db.disableNetwork(); _firestoreNetworkOn = false; } catch(e) {}
+}
+
+// ── Write ─────────────────────────────────────────────────────────────
 async function pushToFirebase() {
   if (!firebaseReady || !db) return;
   _lastLocalWrite = Date.now();
   try {
-    // Strip base64 photos before upload — they're too large for Firestore
+    await _fsNetOn();
     const safe = JSON.parse(JSON.stringify(DB));
-    (safe.issuances||[]).forEach(i => { if (i.photos) i.photos = i.photos.map((_,n)=>'[photo_'+n+']'); if (i.signature) i.signature='[sig]'; });
-    (safe.inspections||[]).forEach(i => { if (i.photos) i.photos = i.photos.map((_,n)=>'[photo_'+n+']'); });
-    (safe.beneficiaries||[]).forEach(b => { delete b._photos; });
-    await db.collection('drdData').doc('main').set(safe, { merge: true });
-  } catch(e) { console.warn('Firestore write failed:', e); }
+    (safe.issuances||[]).forEach(i=>{if(i.photos)i.photos=i.photos.map((_,n)=>'[photo_'+n+']');if(i.signature)i.signature='[sig]';});
+    (safe.inspections||[]).forEach(i=>{if(i.photos)i.photos=i.photos.map((_,n)=>'[photo_'+n+']');});
+    (safe.beneficiaries||[]).forEach(b=>{delete b._photos;});
+    await db.collection('drdData').doc('main').set(safe);
+    _listenerFailCount = 0;
+    updateFirebaseIndicator(true);
+  } catch(e) {
+    updateFirebaseIndicator(false, 'Write failed');
+  }
 }
 
-// ── Read: one-time pull on login ─────────────────────────────────────
+// ── Read ──────────────────────────────────────────────────────────────
 async function loadFromFirebase() {
   if (!firebaseReady || !db) return false;
   try {
-    const snap = await db.collection('drdData').doc('main').get();
+    await _fsNetOn();
+    const snap = await db.collection('drdData').doc('main').get({ source: 'server' });
     if (snap.exists) {
-      const remote = snap.data();
-      mergeRemoteIntoDB(remote);
+      mergeRemoteIntoDB(snap.data());
       saveDB();
+      updateFirebaseIndicator(true);
       return true;
     }
-  } catch(e) { console.warn('Firestore read failed:', e); }
+  } catch(e) {
+    // suppress — expected when offline
+  }
   return false;
 }
 
-// ── Real-time listener: fires whenever ANY device writes ─────────────
+// ── Real-time listener ────────────────────────────────────────────────
 function startFirestoreListener() {
-  if (!firebaseReady || !db) return;
-  if (_firestoreUnsubscribe) _firestoreUnsubscribe(); // detach old listener
+  if (!firebaseReady || !db || !_realtimeSyncEnabled) return;
+  if (_firestoreUnsubscribe) { _firestoreUnsubscribe(); _firestoreUnsubscribe = null; }
+  clearTimeout(_listenerBackoffTimer);
 
-  _firestoreUnsubscribe = db.collection('drdData').doc('main')
-    .onSnapshot(snap => {
-      if (!snap.exists) return;
-      // Ignore if we wrote this ourselves within the last 3 seconds
-      if (Date.now() - _lastLocalWrite < 3000) return;
-      const remote = snap.data();
-      mergeRemoteIntoDB(remote);
-      saveDB();
-      // Silently refresh the current page so the new data shows
-      refreshCurrentPage();
-      showSyncToast();
-    }, err => { console.warn('Firestore listener error:', err); });
+  _fsNetOn().then(() => {
+    _firestoreUnsubscribe = db.collection('drdData').doc('main')
+      .onSnapshot({ includeMetadataChanges: false }, snap => {
+        if (snap.metadata.fromCache) return;   // ignore offline cache hits
+        _listenerFailCount = 0;
+        updateFirebaseIndicator(true);
+        if (!snap.exists || Date.now() - _lastLocalWrite < 3000) return;
+        mergeRemoteIntoDB(snap.data());
+        saveDB();
+        refreshCurrentPage();
+        showSyncToast();
+      }, async err => {
+        if (_firestoreUnsubscribe) { _firestoreUnsubscribe(); _firestoreUnsubscribe = null; }
+        _listenerFailCount++;
+        if (_listenerFailCount >= MAX_LISTENER_FAILS) {
+          // ── Kill WebChannel entirely — no more spam ──
+          await _fsNetOff();
+          updateFirebaseIndicator(false, 'Offline – retry on reconnect');
+          // Wake up only when browser confirms network is back
+          window.addEventListener('online', async function retry() {
+            window.removeEventListener('online', retry);
+            _listenerFailCount = 0;
+            await _fsNetOn();
+            startFirestoreListener();
+          }, { once: true });
+        } else {
+          const delay = _listenerFailCount * 3000; // 3s, 6s, then give up
+          updateFirebaseIndicator(false, 'Reconnecting…');
+          _listenerBackoffTimer = setTimeout(() => {
+            if (currentUser && _realtimeSyncEnabled) startFirestoreListener();
+          }, delay);
+        }
+      });
+  });
 }
 
 // ── Merge strategy: remote wins for lists, local wins for photos ─────
 function mergeRemoteIntoDB(remote) {
   if (!remote) return;
 
-  // Beneficiaries: merge by id
-  if (remote.beneficiaries) {
+  // Beneficiaries: remote is authoritative list; keep local photo extras
+  if (Array.isArray(remote.beneficiaries)) {
     const localMap = {};
     (DB.beneficiaries||[]).forEach(b => localMap[b.id] = b);
-    remote.beneficiaries.forEach(b => { localMap[b.id] = {...(localMap[b.id]||{}), ...b}; });
-    DB.beneficiaries = Object.values(localMap);
+    // Remote list is authoritative — deleted items on remote should NOT come back
+    DB.beneficiaries = remote.beneficiaries.map(b => ({...(localMap[b.id]||{}), ...b}));
   }
 
-  // Allotments: merge by id
-  if (remote.allotments) {
+  // Allotments: remote is authoritative list
+  if (Array.isArray(remote.allotments)) {
     const localMap = {};
     (DB.allotments||[]).forEach(a => localMap[a.id] = a);
-    remote.allotments.forEach(a => { localMap[a.id] = {...(localMap[a.id]||{}), ...a}; });
-    DB.allotments = Object.values(localMap);
+    DB.allotments = remote.allotments.map(a => ({...(localMap[a.id]||{}), ...a}));
   }
 
-  // Issuances: merge by id, keep local photos (base64) if remote has placeholder
-  if (remote.issuances) {
+  // Issuances: remote is authoritative; keep local photos (base64) if remote has placeholder
+  if (Array.isArray(remote.issuances)) {
     const localMap = {};
     (DB.issuances||[]).forEach(i => localMap[i.id] = i);
-    remote.issuances.forEach(ri => {
+    DB.issuances = remote.issuances.map(ri => {
       const local = localMap[ri.id] || {};
-      // Keep local photos/signature if remote has placeholder strings
       const photos = (ri.photos||[]).some(p=>p.startsWith('[photo_'))
         ? (local.photos || []) : ri.photos;
       const signature = ri.signature === '[sig]' ? local.signature : ri.signature;
-      localMap[ri.id] = {...local, ...ri, photos, signature};
+      return {...local, ...ri, photos, signature};
     });
-    DB.issuances = Object.values(localMap);
   }
 
-  // Inspections: merge by id, keep local photos
-  if (remote.inspections) {
+  // Inspections: remote is authoritative; keep local photos
+  if (Array.isArray(remote.inspections)) {
     const localMap = {};
     (DB.inspections||[]).forEach(i => localMap[i.id] = i);
-    remote.inspections.forEach(ri => {
+    DB.inspections = remote.inspections.map(ri => {
       const local = localMap[ri.id] || {};
       const photos = (ri.photos||[]).some(p=>p.startsWith('[photo_'))
         ? (local.photos || []) : ri.photos;
-      localMap[ri.id] = {...local, ...ri, photos};
+      return {...local, ...ri, photos};
     });
-    DB.inspections = Object.values(localMap);
   }
 
-  // Stock + stockLedger: remote wins entirely
-  if (remote.stock)             DB.stock             = remote.stock;
-  if (remote.stockLedger)       DB.stockLedger       = remote.stockLedger;
-  if (remote.bdoStockEntries)   DB.bdoStockEntries   = remote.bdoStockEntries;
-  if (remote.authPin)           DB.authPin           = remote.authPin;
+  // Stock + stockLedger: remote wins entirely (including deletions)
+  if (remote.stock)                         DB.stock           = remote.stock;
+  if (Array.isArray(remote.stockLedger))    DB.stockLedger     = remote.stockLedger;
+  if (Array.isArray(remote.bdoStockEntries))DB.bdoStockEntries = remote.bdoStockEntries;
+  if (remote.authPin)                       DB.authPin         = remote.authPin;
 }
 
 // ── Silently refresh current page without losing scroll position ─────
@@ -1450,6 +1428,45 @@ function showSyncToast() {
   el.style.opacity = '1';
   clearTimeout(_syncToastTimer);
   _syncToastTimer = setTimeout(() => { el.style.opacity = '0'; }, 2500);
+}
+
+// ── Manual Sync Now ───────────────────────────────────────────────────
+async function manualSyncNow() {
+  const btn = document.getElementById('syncNowBtn');
+  if (btn) { btn.querySelector('.material-icons-round').style.animation='spin 1s linear infinite'; }
+  try {
+    await loadFromFirebase();
+    refreshCurrentPage();
+    showSyncToast();
+    showToast('✓ Synced from cloud successfully');
+  } catch(e) {
+    showToast('Sync failed – check connection', 'error');
+  } finally {
+    if (btn) { btn.querySelector('.material-icons-round').style.animation=''; }
+  }
+}
+
+// ── Real-time sync toggle ─────────────────────────────────────────────
+let _realtimeSyncEnabled = true;
+function toggleRealtimeSync() {
+  _realtimeSyncEnabled = !_realtimeSyncEnabled;
+  const icon = document.getElementById('realtimeToggleIcon');
+  const dot  = document.getElementById('realtimeDot');
+  const btn  = document.getElementById('realtimeToggleBtn');
+  if (_realtimeSyncEnabled) {
+    if (icon) icon.textContent = 'sync';
+    if (dot)  dot.style.background = '#34a853';
+    if (btn)  btn.title = 'Real-time Sync ON – click to pause';
+    startFirestoreListener();
+    showToast('Real-time sync enabled');
+  } else {
+    if (_firestoreUnsubscribe) { _firestoreUnsubscribe(); _firestoreUnsubscribe = null; }
+    _fsNetOff(); // kill WebChannel
+    if (icon) icon.textContent = 'sync_disabled';
+    if (dot)  dot.style.background = 'var(--grey-500)';
+    if (btn)  btn.title = 'Real-time Sync PAUSED – click to resume';
+    showToast('Real-time sync paused', 'error');
+  }
 }
 
 // ===== GOOGLE SHEETS WEBHOOK =====
@@ -1549,16 +1566,26 @@ function doLogin() {
   document.getElementById('avatarInitial').textContent  = user.name.split(' ').find(w=>w).charAt(0);
   document.getElementById('userLabel').textContent       = user.name.split(' ').slice(0,2).join(' ');
 
-  if (!loadDB()) seedData();
+  let _freshlySeeded = false;
+  if (!loadDB()) { seedData(); _freshlySeeded = true; }
   buildSidebar();
   navigate('dashboard');
-  // Load Firebase, then pull latest data and start live listener
+  // Load Firebase, then sync and start live listener
   loadFirebaseSDK().then(async () => {
-    if (firebaseReady) {
-      await loadFromFirebase();   // one-time pull
-      refreshCurrentPage();       // re-render with fresh data
-      startFirestoreListener();   // start live sync
+    if (!firebaseReady) return;
+    if (_freshlySeeded) {
+      // We just re-seeded locally (version bump / first install).
+      // PUSH our clean local state to Firebase FIRST so the old remote data
+      // (e.g. GRN001) gets overwritten, then start the live listener.
+      await pushToFirebase();
+      _lastLocalWrite = Date.now();
+      refreshCurrentPage();
+    } else {
+      // Normal login: pull latest from Firebase (may have changes from other devices)
+      await loadFromFirebase();
+      refreshCurrentPage();
     }
+    startFirestoreListener();
   });
 }
 
@@ -3675,6 +3702,7 @@ function filterBenTable() {
       <td style="text-align:right;color:${balBags>0?'var(--blue)':'var(--grey-400)'};font-weight:600">${balBags}</td>
       <td>
         <button class="btn btn-text btn-sm" onclick="viewBeneficiary('${b.id}')"><span class="material-icons-round">visibility</span></button>
+        ${can('editBeneficiary')?`<button class="btn btn-text btn-sm" style="color:var(--blue)" onclick="editBeneficiary('${b.id}')" title="Edit Beneficiary"><span class="material-icons-round">edit</span></button>`:''}
         ${can('createAllotment')?`<button class="btn btn-outlined btn-sm" onclick="openAllotForBen('${b.id}')">Allot</button>`:''}
       </td>
     </tr>`;
@@ -3795,6 +3823,135 @@ function openAllotForBen(id) {
       }
     }, 150);
   },100); },100);
+}
+
+// ===== EDIT BENEFICIARY (Collector / admin) =====
+function editBeneficiary(id) {
+  const b = DB.beneficiaries.find(x=>x.id===id);
+  if (!b) return;
+  if (!can('editBeneficiary')) { showToast('You do not have permission to edit beneficiaries','error'); return; }
+
+  const myBlocks = allowedBlocks();
+  const vilsForBlock = (blk) => BLOCK_DATA[blk]?.villages || [];
+  const curVils = vilsForBlock(b.block);
+
+  openModal('Edit Beneficiary – ' + b.name, `
+    <div class="alert alert-info" style="margin-bottom:14px">
+      <span class="material-icons-round">edit</span>
+      <div>Editing beneficiary <strong>${b.name}</strong> (ID: <code>${b.id}</code>). Changes sync to all devices instantly.</div>
+    </div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label class="form-label">Full Name *</label>
+        <input class="form-control" id="ebName" value="${b.name}" placeholder="Full name">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Mobile</label>
+        <input class="form-control" id="ebMobile" value="${b.mobile||''}" placeholder="10-digit mobile" maxlength="10">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Aadhaar</label>
+        <input class="form-control" id="ebAadhaar" value="${b.aadhaar||''}" placeholder="XXXX-XXXX-XXXX" maxlength="14">
+      </div>
+      <div class="form-group">
+        <label class="form-label">TNRD Work ID *</label>
+        <input class="form-control" id="ebWorkId" value="${b.workId||''}" placeholder="e.g. TNRD/MYL/1001">
+      </div>
+      <div class="form-group">
+        <label class="form-label">House No.</label>
+        <input class="form-control" id="ebHouseNo" value="${b.houseNo||''}" placeholder="House / door number">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Block *</label>
+        <select class="form-control" id="ebBlock" onchange="updateEditBenVillages()">
+          ${myBlocks.map(blk=>`<option value="${blk}"${blk===b.block?' selected':''}>${blk}</option>`).join('')}
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Village / Panchayat *</label>
+        <select class="form-control" id="ebVillage">
+          ${curVils.map(v=>`<option${v===b.village?' selected':''}>${v}</option>`).join('')}
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Scheme *</label>
+        <select class="form-control" id="ebScheme">
+          ${SCHEMES.map(s=>`<option${s===b.scheme?' selected':''}>${s}</option>`).join('')}
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Year</label>
+        <input class="form-control" id="ebYear" value="${b.year||'2025-26'}" placeholder="e.g. 2025-26">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Sanctioned Bags *</label>
+        <input class="form-control" type="number" id="ebSancBags" value="${b.sanctionedBags||100}" min="1" max="500">
+      </div>
+    </div>
+  `, [
+    {label:'Cancel', cls:'btn-outlined', fn:closeModal},
+    {label:'Save Changes', cls:'btn-primary', fn:()=>saveEditBeneficiary(id)}
+  ]);
+}
+function updateEditBenVillages() {
+  const blk = document.getElementById('ebBlock')?.value;
+  const vils = BLOCK_DATA[blk]?.villages || [];
+  const sel = document.getElementById('ebVillage');
+  if (sel) sel.innerHTML = vils.map(v=>`<option>${v}</option>`).join('');
+}
+function saveEditBeneficiary(id) {
+  const b = DB.beneficiaries.find(x=>x.id===id);
+  if (!b) return;
+  const name = document.getElementById('ebName').value.trim();
+  const workId = document.getElementById('ebWorkId').value.trim();
+  if (!name)   { showToast('Name is required','error'); return; }
+  if (!workId) { showToast('Work ID is required','error'); return; }
+  const prevName = b.name;
+  b.name          = name;
+  b.mobile        = document.getElementById('ebMobile').value.trim() || b.mobile;
+  b.aadhaar       = document.getElementById('ebAadhaar').value.trim() || b.aadhaar;
+  b.workId        = workId;
+  b.houseNo       = document.getElementById('ebHouseNo').value.trim() || b.houseNo;
+  b.block         = document.getElementById('ebBlock').value;
+  b.village       = document.getElementById('ebVillage').value;
+  b.scheme        = document.getElementById('ebScheme').value;
+  b.year          = document.getElementById('ebYear').value.trim() || b.year;
+  b.sanctionedBags = parseInt(document.getElementById('ebSancBags').value)||b.sanctionedBags;
+  b.editedBy      = currentUser.name;
+  b.editedAt      = new Date().toISOString();
+
+  // Update name in any linked allotments/issuances if name changed
+  if (prevName !== b.name) {
+    DB.allotments.forEach(a=>{ if(a.beneficiaryId===id) a.beneficiaryName=b.name; });
+    DB.issuances.forEach(i=>{ if(i.beneficiaryId===id) i.beneficiaryName=b.name; });
+  }
+
+  saveAndSync();
+  closeModal();
+  showToast('Beneficiary updated: ' + b.name);
+  filterBenTable();
+}
+
+// ===== HARD RESET (wipes Firebase too) =====
+async function hardResetAllData() {
+  if (!confirm('Reset ALL data and re-seed?\n\nThis will also wipe the cloud (Firebase) copy and cannot be undone.')) return;
+  // Wipe local and re-seed fresh (no GRN001)
+  localStorage.clear();
+  seedData();
+  // Immediately push the clean (empty-stock) state to Firebase
+  if (firebaseReady && db) {
+    try {
+      const safe = JSON.parse(JSON.stringify(DB));
+      await db.collection('drdData').doc('main').set(safe);
+      _lastLocalWrite = Date.now();
+      showToast('All data reset — local & cloud wiped. Add real stock via "Add Receipt".');
+    } catch(e) {
+      showToast('Local reset done. Cloud wipe failed: ' + e.message, 'error');
+    }
+  } else {
+    showToast('Data reset. (Offline — cloud not wiped yet. Will sync on reconnect.)');
+  }
+  navigate('dashboard');
 }
 
 // ===== STOCK REGISTER =====
@@ -4174,6 +4331,7 @@ function renderStockLedger() {
       <th style="text-align:right">Opening Bal</th>
       <th style="text-align:right">Closing Bal</th>
       <th>By</th>
+      <th></th>
     </tr></thead>
     <tbody>
       ${ledger.map((l, idx)=>`
@@ -4189,12 +4347,13 @@ function renderStockLedger() {
         <td style="text-align:right">${l.openingBalance}</td>
         <td style="text-align:right;font-weight:700;color:${l.closingBalance<100?'var(--red)':l.closingBalance<300?'var(--yellow)':'inherit'}">${l.closingBalance}</td>
         <td style="font-size:12px">${l.addedBy||l.issuedBy||'—'}</td>
-      </tr>`).join('')||'<tr><td colspan="9"><div class="empty-state"><span class="material-icons-round">inventory_2</span><p>No ledger entries yet</p></div></td></tr>'}
+        <td>${(currentUser?.role==='admin' && l.type==='RECEIPT') ? `<button class="btn btn-text btn-sm" style="color:var(--red);padding:4px 8px" title="Delete this entry" onclick="deleteStockLedgerEntry('${l.id}')"><span class="material-icons-round" style="font-size:16px">delete</span></button>` : ''}</td>
+      </tr>`).join('')||'<tr><td colspan="10"><div class="empty-state"><span class="material-icons-round">inventory_2</span><p>No ledger entries yet</p></div></td></tr>'}
       ${ledger.length?`<tr style="background:var(--grey-100);font-weight:700">
         <td colspan="4" style="text-align:right;padding:10px 14px">TOTALS</td>
         <td style="text-align:right;color:var(--green)">+${totalReceipts}</td>
         <td style="text-align:right;color:var(--red)">-${totalIssued}</td>
-        <td></td><td style="text-align:right">${s.balance}</td><td></td>
+        <td></td><td style="text-align:right">${s.balance}</td><td></td><td></td>
       </tr>`:''}
     </tbody>
   </table>`;
@@ -4288,6 +4447,59 @@ function addStock() {
   saveAndSync();
   closeModal();
   showToast(bags + ' bags added · New balance: ' + closingBal);
+  navigate('stock');
+}
+
+// ===== DELETE STOCK LEDGER RECEIPT ENTRY =====
+async function deleteStockLedgerEntry(entryId) {
+  const entry = (DB.stockLedger||[]).find(l=>l.id===entryId);
+  if (!entry) { showToast('Entry not found','error'); return; }
+  if (entry.type !== 'RECEIPT') { showToast('Only RECEIPT entries can be deleted','error'); return; }
+  if (!confirm(`Delete GRN entry?\n\nSupplier: ${entry.supplier||'—'}\nGRN: ${entry.grn||'—'}\nBags: ${entry.bags}\n\nThis will reduce stock balance by ${entry.bags} bags and cannot be undone.`)) return;
+
+  // Remove from ledger
+  DB.stockLedger = (DB.stockLedger||[]).filter(l=>l.id!==entryId);
+
+  // Recalculate stock totals from remaining ledger entries
+  const receipts = DB.stockLedger.filter(l=>l.type==='RECEIPT').reduce((t,l)=>t+l.bags,0);
+  const issues   = DB.stockLedger.filter(l=>l.type==='ISSUE').reduce((t,l)=>t+l.bags,0);
+  DB.stock.total   = receipts;
+  DB.stock.balance = Math.max(0, receipts - issues);
+  DB.stock.issued  = issues;
+  DB.stock.lastUpdated = new Date().toISOString();
+
+  // Re-calculate opening/closing balances on remaining ledger (running balance)
+  let runBal = 0;
+  const sorted = DB.stockLedger.slice().sort((a,b)=>new Date(a.date)-new Date(b.date));
+  sorted.forEach(l=>{
+    l.openingBalance = runBal;
+    if (l.type==='RECEIPT') runBal += l.bags;
+    else runBal = Math.max(0, runBal - l.bags);
+    l.closingBalance = runBal;
+  });
+
+  // Save locally first
+  saveDB();
+  showToast('Deleting & syncing to cloud…');
+
+  // ── CRITICAL: await Firebase write so the entry is truly gone before navigating ──
+  if (firebaseReady && db) {
+    try {
+      const safe = JSON.parse(JSON.stringify(DB));
+      (safe.issuances||[]).forEach(i=>{if(i.photos)i.photos=i.photos.map((_,n)=>'[photo_'+n+']');if(i.signature)i.signature='[sig]';});
+      (safe.inspections||[]).forEach(i=>{if(i.photos)i.photos=i.photos.map((_,n)=>'[photo_'+n+']');});
+      (safe.beneficiaries||[]).forEach(b=>{delete b._photos;});
+      // Use set() WITHOUT merge so deletions propagate — and AWAIT to confirm write
+      await db.collection('drdData').doc('main').set(safe);
+      _lastLocalWrite = Date.now(); // suppress the echo from our own write
+      showToast('✓ GRN entry deleted & synced to all devices · Balance: ' + DB.stock.balance + ' bags');
+    } catch(e) {
+      showToast('Deleted locally. Cloud sync failed — retry Sync Now', 'error');
+    }
+  } else {
+    showToast('GRN entry deleted · Balance: ' + DB.stock.balance + ' bags (offline)');
+  }
+
   navigate('stock');
 }
 
@@ -5511,7 +5723,7 @@ function renderSettings(el) {
     <div class="card" style="margin-top:16px">
       <div class="section-title">Data Management</div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
-        <button class="btn btn-danger btn-sm" onclick="if(confirm('Reset ALL data and re-seed? Cannot be undone.')){localStorage.clear();seedData();navigate('dashboard');showToast('Data reset to fresh state');}">
+        <button class="btn btn-danger btn-sm" onclick="hardResetAllData()">
           <span class="material-icons-round">delete_forever</span> Reset All Data
         </button>
         <button class="btn btn-outlined btn-sm" onclick="purgeInvalidBlocks()">
