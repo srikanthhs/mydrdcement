@@ -2427,10 +2427,17 @@ function submitAllotment() {
 
   if (!bags || bags < 1) { showToast('Enter valid bags count','error'); return; }
 
-  // Check balance bags
+  // Check beneficiary eligible balance (issued bags + active pending/approved allotments)
   const totalIssued = DB.issuances.filter(i=>i.beneficiaryId===benId).reduce((s,i)=>s+i.bags,0);
-  const balanceBags = Math.max(0, (b.sanctionedBags||0) - totalIssued);
-  if (bags > balanceBags) { showToast(`Only ${balanceBags} balance bags available for this beneficiary`,'error'); return; }
+  const totalActiveAllotments = DB.allotments
+    .filter(al => al.beneficiaryId===benId && (al.status==='Pending' || al.status==='Approved'))
+    .reduce((s,al)=>s+al.bags, 0);
+  const balanceBags = Math.max(0, (b.sanctionedBags||0) - totalIssued - totalActiveAllotments);
+  if (balanceBags <= 0) {
+    showToast(`No eligible balance! Sanctioned: ${b.sanctionedBags||0} bags, Issued: ${totalIssued}, Active allotments: ${totalActiveAllotments}`,'error');
+    return;
+  }
+  if (bags > balanceBags) { showToast(`Only ${balanceBags} eligible balance bags available (sanctioned: ${b.sanctionedBags||0} – issued: ${totalIssued} – active allotments: ${totalActiveAllotments})`,'error'); return; }
   // Check block stock balance (use BDO block entries if available, else central stock)
   const blkEntries = (DB.bdoStockEntries||[]).filter(e=>e.block===b.block);
   const blkRecvd = blkEntries.reduce((t,e)=>t+e.bags,0);
@@ -2858,10 +2865,52 @@ function filterReadyToIssue() {
 
 function openIssueModal(allotmentId) {
   const a = DB.allotments.find(x=>x.id===allotmentId);
+  if (!a) return;
+
+  // ── Beneficiary eligibility check ───────────────────────────────
+  const benElig = DB.beneficiaries.find(b=>b.id===a.beneficiaryId)||{};
+  const totalIssuedToBen = DB.issuances.filter(i=>i.beneficiaryId===a.beneficiaryId).reduce((s,i)=>s+i.bags,0);
+  const sanctionedQty = benElig.sanctionedBags || a.bags;
+  const benBalance = Math.max(0, sanctionedQty - totalIssuedToBen);
+  if (benBalance <= 0) {
+    openModal('Beneficiary Not Eligible for Issuance', `
+      <div class="alert alert-danger" style="margin-bottom:12px">
+        <span class="material-icons-round">block</span>
+        <div>
+          <strong>${a.beneficiaryName}</strong> has already received their full sanctioned cement quota and is not eligible for further issuance.
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;background:var(--grey-50);border-radius:8px;padding:12px;text-align:center">
+        <div><div style="font-size:20px;font-weight:700;color:var(--blue)">${sanctionedQty}</div><div style="font-size:11px;color:var(--grey-600)">Sanctioned</div></div>
+        <div><div style="font-size:20px;font-weight:700;color:var(--green)">${totalIssuedToBen}</div><div style="font-size:11px;color:var(--grey-600)">Already Issued</div></div>
+        <div><div style="font-size:20px;font-weight:700;color:var(--red)">0</div><div style="font-size:11px;color:var(--grey-600)">Remaining Balance</div></div>
+      </div>
+    `, [{label:'Close', cls:'btn-outlined', fn:closeModal}]);
+    return;
+  }
+
+  // ── Block stock balance check ────────────────────────────────────
+  const blkEntriesCheck = (DB.bdoStockEntries||[]).filter(e=>e.block===a.block);
+  const blkRecvdCheck   = blkEntriesCheck.reduce((t,e)=>t+e.bags, 0);
+  const blkIssuedCheck  = DB.issuances.filter(i=>i.block===a.block).reduce((t,i)=>t+i.bags, 0);
+  const effectiveStockBal = blkRecvdCheck > 0 ? Math.max(0, blkRecvdCheck - blkIssuedCheck) : DB.stock.balance;
+  if (effectiveStockBal <= 0) {
+    openModal('No Stock Available – Issuance Blocked', `
+      <div class="alert alert-danger" style="margin-bottom:12px">
+        <span class="material-icons-round">inventory_2</span>
+        <div><strong>No cement stock available</strong> in <strong>${a.block}</strong> block. Issuance cannot proceed until stock is replenished.</div>
+      </div>
+      <div class="info-row"><span class="info-key">Block Stock Received</span><span class="info-val">${blkRecvdCheck} bags</span></div>
+      <div class="info-row"><span class="info-key">Block Stock Issued</span><span class="info-val">${blkIssuedCheck} bags</span></div>
+      <div class="info-row"><span class="info-key">Available Balance</span><span class="info-val" style="color:var(--red);font-weight:700">0 bags</span></div>
+    `, [{label:'Close', cls:'btn-outlined', fn:closeModal}]);
+    return;
+  }
+
   issPhotosData = [];
   sigData = null;
   gpsCoords = null;
-  const stockBal = DB.stock.balance;
+  const stockBal = effectiveStockBal;
   openModal('Issue Cement – ' + allotmentId, `
     <div class="alert alert-info" style="margin-bottom:16px">
       <span class="material-icons-round">info</span>
@@ -3200,6 +3249,21 @@ function confirmIssue(allotmentId) {
 
   // ── All validations passed – proceed ────────────────────────────
   const a = DB.allotments.find(x=>x.id===allotmentId);
+
+  // ── Beneficiary eligibility check (final gate) ──────────────────
+  // Ensure beneficiary has not already exhausted their sanctioned quota
+  const benFinal = DB.beneficiaries.find(b=>b.id===a.beneficiaryId)||{};
+  const totalIssuedToBenFinal = DB.issuances.filter(i=>i.beneficiaryId===a.beneficiaryId).reduce((s,i)=>s+i.bags,0);
+  const sanctionedFinal = benFinal.sanctionedBags || a.bags;
+  const benBalanceFinal = Math.max(0, sanctionedFinal - totalIssuedToBenFinal);
+  if (benBalanceFinal <= 0) {
+    showToast(`Issuance blocked! ${a.beneficiaryName} has no remaining cement entitlement (${totalIssuedToBenFinal}/${sanctionedFinal} bags already issued).`, 'error');
+    return;
+  }
+  if (bags > benBalanceFinal) {
+    showToast(`Cannot issue ${bags} bags – ${a.beneficiaryName} is only eligible for ${benBalanceFinal} more bags (${totalIssuedToBenFinal} of ${sanctionedFinal} already issued).`, 'error');
+    return;
+  }
 
   // ── Stock balance check (both central depot and block BDO stock) ──
   const blockEntries = (DB.bdoStockEntries||[]).filter(e=>e.block===a.block);
