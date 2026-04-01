@@ -1072,7 +1072,7 @@ let DB = {
 };
 
 // ===== DISTRICT STRUCTURE =====
-const SCHEMES = ['KKI-2024-25', 'KKI-2025-26', 'KKI-2025-26 Additional Allocation', 'PMAY(G) - 2024-25', 'PMAY(G) - Spill over houses', 'MVMT-2025-26'];
+const SCHEMES = ['Opening Balance', 'KKI-2024-25', 'KKI-2025-26', 'KKI-2025-26 Additional Allocation', 'PMAY(G) - 2024-25', 'PMAY(G) - Spill over houses', 'MVMT-2025-26'];
 const CEMENT_TYPES = ['OPC 43 Grade', 'OPC 53 Grade', 'PPC Cement', 'PSC Cement'];
 
 // The 5 blocks with all real panchayats and overseer assignments from official records
@@ -1396,14 +1396,31 @@ function mergeRemoteIntoDB(remote) {
   // Stock + stockLedger: remote wins entirely (including deletions)
   if (remote.stock)                         DB.stock           = remote.stock;
   if (Array.isArray(remote.stockLedger))    DB.stockLedger     = remote.stockLedger;
-  if (Array.isArray(remote.bdoStockEntries))DB.bdoStockEntries = remote.bdoStockEntries;
+
+  // bdoStockEntries: merge remote + local so locally-saved entries are never lost
+  if (Array.isArray(remote.bdoStockEntries)) {
+    const remoteMap = {};
+    remote.bdoStockEntries.forEach(e => remoteMap[e.id] = e);
+    // Keep local entries not yet on remote (newly saved), and take remote version for all others
+    const localOnly = (DB.bdoStockEntries||[]).filter(e => !remoteMap[e.id]);
+    DB.bdoStockEntries = [...remote.bdoStockEntries, ...localOnly];
+  }
+
   if (remote.authPin)                       DB.authPin         = remote.authPin;
+  // Permissions: remote wins so Collector's permission changes propagate to all logins
+  if (remote.permissions)                   DB.permissions     = remote.permissions;
+  if (remote.challanCounter)                DB.challanCounter  = remote.challanCounter;
 }
 
 // ── Silently refresh current page without losing scroll position ─────
 function refreshCurrentPage() {
   const main = document.getElementById('mainContent');
   if (!main || !currentPage) return;
+  // Rebuild sidebar so permission changes from remote are reflected in nav
+  if (currentUser && currentUser.role !== 'admin') {
+    currentUser.pages = pagesForRole(currentUser.role);
+    buildSidebar();
+  }
   const pages = {
     dashboard: renderDashboard, allotments: renderAllotments,
     issuance: renderIssuance, beneficiaries: renderBeneficiaries,
@@ -1435,7 +1452,15 @@ async function manualSyncNow() {
   const btn = document.getElementById('syncNowBtn');
   if (btn) { btn.querySelector('.material-icons-round').style.animation='spin 1s linear infinite'; }
   try {
+    // Save local state first so it is not lost during the pull
+    saveDB();
+    // Use a short guard during the pull; after pull, push local state back so
+    // any locally-saved entries that aren't on remote yet are preserved
     await loadFromFirebase();
+    // Re-push to ensure local-only entries (not yet on remote) are sent up
+    _lastLocalWrite = Date.now() + 5000;
+    await pushToFirebase();
+    _lastLocalWrite = Date.now();
     refreshCurrentPage();
     showSyncToast();
     showToast('✓ Synced from cloud successfully');
@@ -1488,7 +1513,13 @@ function pingSheetWebhook() {
 // ── Save + push combined ─────────────────────────────────────────────
 function saveAndSync() {
   saveDB();          // write to localStorage (immediate, always works)
-  pushToFirebase();  // async push to Firestore (fires and forgets)
+  // 10-second guard: prevent the real-time listener from echoing our own write
+  // back and overwriting the just-saved local data before the push settles.
+  _lastLocalWrite = Date.now() + 10000;
+  pushToFirebase().then(() => {
+    // After confirmed push, reset to normal 3-second window
+    _lastLocalWrite = Date.now();
+  }).catch(() => {});
   pingSheetWebhook(); // notify Google Sheet to pull latest data
 }
 
@@ -1995,6 +2026,16 @@ function renderDashboard(el) {
                 <td>${pend>0?`<span class="chip chip-pending">${pend}</span>`:'—'}</td>
               </tr>`;
             }).join('')}
+            <tr style="background:var(--blue-light);font-weight:700;font-size:13px">
+              <td>GRAND TOTAL</td>
+              <td style="text-align:right">${blockSummary.reduce((t,r)=>t+r.bens,0)}</td>
+              <td style="text-align:right">${blockSummary.reduce((t,r)=>t+r.sanctioned,0)}</td>
+              <td style="text-align:right;color:var(--blue)">${blockSummary.reduce((t,r)=>t+(r.stockRecv||0),0)||'—'}</td>
+              <td style="text-align:right;color:var(--green)">${blockSummary.reduce((t,r)=>t+r.issued,0)}</td>
+              <td style="text-align:right;color:var(--blue)">${blockSummary.reduce((t,r)=>t+Math.max(0,r.sanctioned-r.issued),0)}</td>
+              <td></td>
+              <td>${blockSummary.reduce((t,r)=>t+r.pend,0)>0?`<span class="chip chip-pending">${blockSummary.reduce((t,r)=>t+r.pend,0)}</span>`:'—'}</td>
+            </tr>
           </tbody>
         </table>
       </div>
@@ -2089,6 +2130,16 @@ function generateChallanNumber(block) {
 function renderAllotments(el) {
   const isAdmin = currentUser.role === 'admin';
   const isBDO   = currentUser.role === 'bdo';
+
+  // For engineer: silently pull latest from Firebase so new overseer allotments
+  // appear immediately without needing a manual refresh
+  if (currentUser.role === 'engineer' && firebaseReady) {
+    loadFromFirebase().then(() => {
+      const body = document.getElementById('allotBody');
+      if (body) filterAllotTable();
+      updateBadges();
+    }).catch(()=>{});
+  }
 
   // Unique years and schemes from beneficiaries for filter
   const allBens  = scopedBeneficiaries();
@@ -2526,7 +2577,6 @@ function engineerVerifyAllotment(id) {
       <div class="info-row"><span class="info-key">Stage / Use</span><span class="info-val">${a.stage||a.use||'—'}</span></div>
       <div class="info-row"><span class="info-key">Cement Type</span><span class="info-val">${a.cementType||'OPC 43 Grade'}</span></div>
       <div class="info-row"><span class="info-key">Sanctioned Bags</span><span class="info-val"><strong>${ben.sanctionedBags||a.bags}</strong></span></div>
-      <div class="info-row"><span class="info-key">Bags Allotted (This Order)</span><span class="info-val"><strong>${a.bags}</strong></span></div>
       <div class="info-row"><span class="info-key">Submitted By (Overseer)</span><span class="info-val">${a.createdBy||'—'}</span></div>
       <div class="info-row"><span class="info-key">Submitted At</span><span class="info-val">${a.createdAt?new Date(a.createdAt).toLocaleString('en-IN',{dateStyle:'short',timeStyle:'short'}):' —'}</span></div>
       ${a.remark ? `<div class="info-row" style="grid-column:1/-1"><span class="info-key">Overseer Remarks</span><span class="info-val">${a.remark}</span></div>` : ''}
@@ -2536,8 +2586,26 @@ function engineerVerifyAllotment(id) {
     <div class="section-title">Work Order / Stage Photos (${a.receiptPhotos.length})</div>
     <div class="photo-grid">${a.receiptPhotos.map(p=>`<img class="photo-thumb" src="${p}" onclick="window.open(this.src,'_blank')">`).join('')}</div>` : '<div class="alert alert-warn" style="margin-top:10px"><span class="material-icons-round">warning_amber</span> No work order photo attached.</div>'}
     <hr class="divider">
-    <div class="form-group" style="margin-top:10px"><label class="form-label">Verification Remarks</label>
-      <input class="form-control" id="engVerRemark" placeholder="Engineer observations (optional)…"></div>
+    <div class="form-group" style="margin-top:10px">
+      <label class="form-label">Bags to Approve <span style="color:var(--grey-500);font-weight:400">(Overseer requested: <strong>${a.bags}</strong> bags — reduce if needed)</span></label>
+      <input class="form-control" type="number" id="engVerBags" value="${a.bags}" min="1" max="${a.bags}"
+        oninput="
+          const reduced = parseInt(this.value) < ${a.bags};
+          const rmkLbl = document.getElementById('engVerRemarkLabel');
+          const rmkEl  = document.getElementById('engVerRemark');
+          if(rmkLbl) rmkLbl.innerHTML = 'Engineer Remarks' + (reduced ? ' <span style=\\'color:var(--red)\\'>* (mandatory – bags were reduced)</span>' : ' <span style=\\'color:var(--grey-500);font-weight:400\\'>(optional)</span>');
+          if(rmkEl)  rmkEl.style.borderColor = reduced ? 'var(--red)' : '';
+          document.getElementById('engBagsNote').style.display = reduced ? 'flex' : 'none';
+        ">
+      <div id="engBagsNote" style="display:none;margin-top:6px" class="alert alert-warn">
+        <span class="material-icons-round">warning_amber</span>
+        <div>You are reducing the bags from <strong>${a.bags}</strong> to the entered amount. Remarks are <strong>mandatory</strong>.</div>
+      </div>
+    </div>
+    <div class="form-group" style="margin-top:10px">
+      <label class="form-label" id="engVerRemarkLabel">Engineer Remarks <span style="color:var(--grey-500);font-weight:400">(optional)</span></label>
+      <textarea class="form-control" id="engVerRemark" rows="3" placeholder="Engineer observations, reasons for bag reduction, or other notes…"></textarea>
+    </div>
     <div style="display:flex;align-items:flex-start;gap:10px;margin-top:14px;background:var(--green-light);border-radius:8px;padding:12px 14px">
       <input type="checkbox" id="engVerifyCheck" style="width:18px;height:18px;margin-top:1px;cursor:pointer;accent-color:var(--green)">
       <label for="engVerifyCheck" style="font-size:13px;font-weight:600;color:var(--green);cursor:pointer;line-height:1.4">
@@ -2548,21 +2616,44 @@ function engineerVerifyAllotment(id) {
   `, [
     {label:'Cancel', cls:'btn-outlined', fn:closeModal},
     {label:'✓ Verified – Forward to BDO', cls:'btn-green', fn:()=>{
+      const errEl = document.getElementById('engVerErr');
       if (!document.getElementById('engVerifyCheck')?.checked) {
-        document.getElementById('engVerErr').textContent = 'Please tick the verification checkbox before submitting.';
-        document.getElementById('engVerErr').style.display = 'block';
+        errEl.textContent = 'Please tick the verification checkbox before submitting.';
+        errEl.style.display = 'block';
         return;
       }
+      const approvedBags = parseInt(document.getElementById('engVerBags')?.value||a.bags);
+      const remark = (document.getElementById('engVerRemark')?.value||'').trim();
+      // Remarks are mandatory if bags were reduced
+      if (approvedBags < a.bags && !remark) {
+        errEl.textContent = 'Remarks are mandatory when reducing the number of bags. Please enter the reason.';
+        errEl.style.display = 'block';
+        document.getElementById('engVerRemark').focus();
+        return;
+      }
+      if (approvedBags < 1 || approvedBags > a.bags) {
+        errEl.textContent = `Bags must be between 1 and ${a.bags}.`;
+        errEl.style.display = 'block';
+        return;
+      }
+      const originalBags = a.bags;
+      a.bags = approvedBags;
       a.engineerVerified = true;
       a.engineerVerifiedBy = currentUser.name;
       a.verifiedBy = currentUser.name;
       a.engineerVerifiedAt = new Date().toISOString();
-      a.engineerRemark = document.getElementById('engVerRemark').value;
-      a.timeline.push({event:'Engineer Verified', by:currentUser.name, at:new Date().toISOString(), note:'Forwarded to BDO for approval'});
+      a.engineerRemark = remark;
+      const noteText = approvedBags < originalBags
+        ? `Bags reduced from ${originalBags} to ${approvedBags}. Reason: ${remark}`
+        : 'Forwarded to BDO for approval' + (remark ? `. Note: ${remark}` : '');
+      a.timeline.push({event:'Engineer Verified', by:currentUser.name, at:new Date().toISOString(), note:noteText});
       saveAndSync();
       closeModal();
-      showToast('Allotment verified ✓ Forwarded to BDO');
+      showToast(approvedBags < originalBags
+        ? `Verified ✓ – Bags reduced to ${approvedBags} & forwarded to BDO`
+        : 'Allotment verified ✓ Forwarded to BDO');
       filterAllotTable();
+      updateBadges();
     }}
   ]);
 }
@@ -2656,7 +2747,8 @@ function viewAllotment(id) {
       <div class="info-row"><span class="info-key">Status</span><span class="info-val"><span class="chip chip-${a.status.toLowerCase()}">${a.status}</span></span></div>
       <div class="info-row"><span class="info-key">Created By</span><span class="info-val">${a.createdBy||'—'} · ${new Date(a.createdAt).toLocaleDateString('en-IN')}</span></div>
       ${a.engineerVerified
-        ? `<div class="info-row"><span class="info-key">Engineer Verified</span><span class="info-val"><span class="chip chip-verified">✓ ${a.engineerVerifiedBy}</span> <span style="font-size:11px;color:var(--grey-500)">${a.engineerVerifiedAt ? new Date(a.engineerVerifiedAt).toLocaleString('en-IN',{dateStyle:'short',timeStyle:'short'}) : ''}</span></span></div>`
+        ? `<div class="info-row"><span class="info-key">Engineer Verified</span><span class="info-val"><span class="chip chip-verified">✓ ${a.engineerVerifiedBy}</span> <span style="font-size:11px;color:var(--grey-500)">${a.engineerVerifiedAt ? new Date(a.engineerVerifiedAt).toLocaleString('en-IN',{dateStyle:'short',timeStyle:'short'}) : ''}</span></span></div>
+           ${a.engineerRemark ? `<div class="info-row" style="grid-column:1/-1"><span class="info-key">Engineer Remarks</span><span class="info-val" style="background:var(--blue-light);padding:6px 10px;border-radius:6px;color:var(--blue);font-weight:500">${a.engineerRemark}</span></div>` : ''}`
         : `<div class="info-row"><span class="info-key">Engineer Verification</span><span class="info-val"><span class="chip chip-pending">⏳ Pending – AE/JE must verify</span></span></div>`}
       ${a.status==='Approved'
         ? `<div class="info-row"><span class="info-key">BDO Approved By</span><span class="info-val"><span class="chip chip-approved">✓ ${a.approvedBy}</span> <span style="font-size:11px;color:var(--grey-500)">${a.approvedAt?new Date(a.approvedAt).toLocaleString('en-IN',{dateStyle:'short',timeStyle:'short'}):''}</span></span></div>
@@ -4395,7 +4487,7 @@ function renderStockLedger() {
       <th style="text-align:right">Opening Bal</th>
       <th style="text-align:right">Closing Bal</th>
       <th>By</th>
-      <th></th>
+      <th>Actions</th>
     </tr></thead>
     <tbody>
       ${ledger.map((l, idx)=>`
@@ -4403,15 +4495,27 @@ function renderStockLedger() {
         <td style="color:var(--grey-500);font-size:11px">${ledger.length-idx}</td>
         <td style="font-size:12px">${new Date(l.date).toLocaleString('en-IN',{dateStyle:'short',timeStyle:'short'})}</td>
         <td>${l.type==='RECEIPT'?'<span class="chip chip-verified" style="font-size:10px">▲ RECEIPT</span>':'<span class="chip chip-rejected" style="font-size:10px">▼ ISSUE</span>'}</td>
-        <td style="max-width:200px;font-size:12px">
-          ${l.type==='RECEIPT'?`<strong>${l.supplier||'—'}</strong><br><span style="color:var(--grey-500)">GRN: ${l.grn||'—'}</span>`:`<strong>${l.beneficiaryName||'—'}</strong><br><span style="color:var(--grey-500)">${l.houseNo||''} · Veh: ${l.vehicle||'—'}</span>`}
+        <td style="max-width:220px;font-size:12px">
+          ${l.type==='RECEIPT'
+            ? `<strong>${l.supplier||'—'}</strong><br>
+               <span style="color:var(--grey-500)">GRN: ${l.grn||'—'}</span>
+               ${l.block   ? `<br><span style="color:var(--blue);font-size:11px">Block: ${l.block}</span>` : ''}
+               ${l.scheme  ? `<br><span style="color:var(--grey-600);font-size:11px">Scheme: ${l.scheme}</span>` : ''}
+               ${l.year    ? `<br><span style="color:var(--grey-600);font-size:11px">Year: ${l.year}</span>` : ''}`
+            : `<strong>${l.beneficiaryName||'—'}</strong><br>
+               <span style="color:var(--grey-500)">${l.houseNo||''} · Veh: ${l.vehicle||'—'}</span>`}
         </td>
         <td style="text-align:right;font-weight:700;color:var(--green)">${l.type==='RECEIPT'?'+'+l.bags:'—'}</td>
         <td style="text-align:right;font-weight:700;color:var(--red)">${l.type==='ISSUE'?'-'+l.bags:'—'}</td>
         <td style="text-align:right">${l.openingBalance}</td>
         <td style="text-align:right;font-weight:700;color:${l.closingBalance<100?'var(--red)':l.closingBalance<300?'var(--yellow)':'inherit'}">${l.closingBalance}</td>
         <td style="font-size:12px">${l.addedBy||l.issuedBy||'—'}</td>
-        <td>${(currentUser?.role==='admin' && l.type==='RECEIPT') ? `<button class="btn btn-text btn-sm" style="color:var(--red);padding:4px 8px" title="Delete this entry" onclick="deleteStockLedgerEntry('${l.id}')"><span class="material-icons-round" style="font-size:16px">delete</span></button>` : ''}</td>
+        <td style="white-space:nowrap">
+          ${(currentUser?.role==='admin' && l.type==='RECEIPT') ? `
+            <button class="btn btn-text btn-sm" style="color:var(--blue);padding:4px 8px" title="Edit this entry" onclick="editStockLedgerEntry('${l.id}')"><span class="material-icons-round" style="font-size:16px">edit</span></button>
+            <button class="btn btn-text btn-sm" style="color:var(--red);padding:4px 8px" title="Delete this entry" onclick="deleteStockLedgerEntry('${l.id}')"><span class="material-icons-round" style="font-size:16px">delete</span></button>
+          ` : ''}
+        </td>
       </tr>`).join('')||'<tr><td colspan="10"><div class="empty-state"><span class="material-icons-round">inventory_2</span><p>No ledger entries yet</p></div></td></tr>'}
       ${ledger.length?`<tr style="background:var(--grey-100);font-weight:700">
         <td colspan="4" style="text-align:right;padding:10px 14px">TOTALS</td>
@@ -4567,7 +4671,97 @@ async function deleteStockLedgerEntry(entryId) {
   navigate('stock');
 }
 
-// ===== BDO STOCK REGISTER (Full) =====
+// ===== EDIT STOCK LEDGER RECEIPT ENTRY =====
+function editStockLedgerEntry(entryId) {
+  const entry = (DB.stockLedger||[]).find(l=>l.id===entryId);
+  if (!entry) { showToast('Entry not found','error'); return; }
+  if (entry.type !== 'RECEIPT') { showToast('Only RECEIPT entries can be edited','error'); return; }
+
+  openModal('Edit Stock Ledger Entry – ' + (entry.grn||entry.id), `
+    <div class="alert alert-warn" style="margin-bottom:12px">
+      <span class="material-icons-round">edit</span>
+      Editing this entry will recalculate running balances across all ledger entries.
+    </div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label class="form-label">Date <span style="color:var(--red)">*</span></label>
+        <input class="form-control" type="date" id="slDate" value="${new Date(entry.date).toISOString().slice(0,10)}">
+      </div>
+      <div class="form-group">
+        <label class="form-label">GRN / Invoice No.</label>
+        <input class="form-control" id="slGrn" value="${entry.grn||''}">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Supplier</label>
+        <input class="form-control" id="slSupplier" value="${entry.supplier||''}">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Block</label>
+        <select class="form-control" id="slBlock">
+          <option value="">—</option>
+          ${BLOCKS.map(b=>`<option value="${b}" ${b===(entry.block||'')?' selected':''}>${b}</option>`).join('')}
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Scheme</label>
+        <select class="form-control" id="slScheme">
+          <option value="">—</option>
+          <option value="Opening Balance" ${entry.scheme==='Opening Balance'?' selected':''}>Opening Balance</option>
+          ${SCHEMES.map(s=>`<option value="${s}" ${s===entry.scheme?' selected':''}>${s}</option>`).join('')}
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Year</label>
+        <input class="form-control" id="slYear" value="${entry.year||''}">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Bags <span style="color:var(--red)">*</span></label>
+        <input class="form-control" type="number" id="slBags" value="${entry.bags}" min="1">
+      </div>
+    </div>
+  `, [
+    {label:'Cancel', cls:'btn-outlined', fn:closeModal},
+    {label:'Save Changes', cls:'btn-primary', fn:()=>{
+      const bags = parseInt(document.getElementById('slBags').value);
+      if (!bags||bags<1) { showToast('Enter valid bags count','error'); return; }
+      const date = document.getElementById('slDate').value;
+      if (!date) { showToast('Date is required','error'); return; }
+
+      // Apply changes
+      entry.bags     = bags;
+      entry.date     = new Date(date+'T00:00:00').toISOString();
+      entry.grn      = document.getElementById('slGrn').value.trim()||entry.grn;
+      entry.supplier = document.getElementById('slSupplier').value.trim()||entry.supplier;
+      entry.block    = document.getElementById('slBlock').value||entry.block;
+      entry.scheme   = document.getElementById('slScheme').value||entry.scheme;
+      entry.year     = document.getElementById('slYear').value.trim()||entry.year;
+      entry.editedBy = currentUser.name;
+      entry.editedAt = new Date().toISOString();
+
+      // Recalculate all running balances
+      const receipts = (DB.stockLedger||[]).filter(l=>l.type==='RECEIPT').reduce((t,l)=>t+l.bags,0);
+      const issues   = (DB.stockLedger||[]).filter(l=>l.type==='ISSUE').reduce((t,l)=>t+l.bags,0);
+      DB.stock.total   = receipts;
+      DB.stock.balance = Math.max(0, receipts - issues);
+      DB.stock.issued  = issues;
+      DB.stock.lastUpdated = new Date().toISOString();
+
+      let runBal = 0;
+      const sorted = (DB.stockLedger||[]).slice().sort((a,b)=>new Date(a.date)-new Date(b.date));
+      sorted.forEach(l=>{
+        l.openingBalance = runBal;
+        if (l.type==='RECEIPT') runBal += l.bags;
+        else runBal = Math.max(0, runBal - l.bags);
+        l.closingBalance = runBal;
+      });
+
+      saveAndSync();
+      closeModal();
+      showToast('Ledger entry updated ✓  Balance: ' + DB.stock.balance + ' bags');
+      navigate('stock');
+    }}
+  ]);
+}
 
 function renderBDOStock(el) {
   if (!DB.bdoStockEntries) DB.bdoStockEntries = [];
@@ -4748,7 +4942,9 @@ function openBDOAddStock() {
       </div>
       <div class="form-group">
         <label class="form-label">Scheme <span style="color:var(--red)">*</span></label>
-        <select class="form-control" id="bsScheme">${SCHEMES.map(s=>`<option>${s}</option>`).join('')}</select>
+        <select class="form-control" id="bsScheme">
+          ${SCHEMES.map(s=>`<option>${s}</option>`).join('')}
+        </select>
       </div>
       <div class="form-group">
         <label class="form-label">Year <span style="color:var(--red)">*</span></label>
@@ -4821,7 +5017,9 @@ function openBDOEditStock(id) {
       </div>
       <div class="form-group">
         <label class="form-label">Scheme *</label>
-        <select class="form-control" id="bsScheme">${SCHEMES.map(s=>`<option${s===e.scheme?' selected':''}>${s}</option>`).join('')}</select>
+        <select class="form-control" id="bsScheme">
+          ${SCHEMES.map(s=>`<option${s===e.scheme?' selected':''}>${s}</option>`).join('')}
+        </select>
       </div>
       <div class="form-group">
         <label class="form-label">Year *</label>
@@ -4971,7 +5169,13 @@ function saveBDOStockEntry(editId) {
   }
 
   bdoStockPhotoData = null;
-  saveAndSync();
+  saveDB();
+  _lastLocalWrite = Date.now() + 10000; // 10-second guard: block remote echo from overwriting just-saved data
+  pushToFirebase().then(() => {
+    // After confirmed push, update guard to normal 3s window
+    _lastLocalWrite = Date.now();
+  }).catch(() => {});
+  pingSheetWebhook();
   closeModal();
   renderBDOStock(document.getElementById('mainContent'));
 }
@@ -5907,7 +6111,7 @@ function renderMasterUpload(el) {
         <div id="uploadErrors" style="display:none" class="alert alert-danger"></div>
         <div class="table-wrap" style="max-height:320px;overflow-y:auto">
           <table id="previewTable">
-            <thead><tr><th>S.No.</th><th>Block</th><th>Village</th><th>Scheme</th><th>Year</th><th>Work ID No.</th><th>Name</th><th style="text-align:right">Sanctioned</th><th style="text-align:right">Issued</th><th style="text-align:right">Balance</th><th>Status</th></tr></thead>
+            <thead><tr><th>S.No.</th><th>Block</th><th>Village</th><th>Scheme</th><th>Year</th><th>Work ID No.</th><th>Name</th><th>Aadhaar No.</th><th>Mobile</th><th style="text-align:right">Sanctioned</th><th style="text-align:right">Issued</th><th style="text-align:right">Balance</th><th>Status</th></tr></thead>
             <tbody id="previewBody"></tbody>
           </table>
         </div>
@@ -5953,16 +6157,21 @@ function renderMasterUpload(el) {
       </div>
       <div class="table-wrap">
         <table>
-          <thead><tr><th>S.No.</th><th>Work ID No.</th><th>Name</th><th>Block</th><th>Village</th><th>Scheme</th><th>Year</th><th style="text-align:right">Sanctioned Bags</th><th style="text-align:right">Issued Bags</th><th style="text-align:right">Balance Bags</th><th>Uploaded By</th><th>Action</th></tr></thead>
+          <thead><tr><th>S.No.</th><th>Work ID No.</th><th>Name</th><th>Aadhaar No.</th><th>Mobile</th><th>Block</th><th>Village</th><th>Scheme</th><th>Year</th><th style="text-align:right">Sanctioned Bags</th><th style="text-align:right">Issued Bags</th><th style="text-align:right">Balance Bags</th><th>Uploaded By</th><th>Action</th></tr></thead>
           <tbody>
             ${DB.beneficiaries.map((b,idx)=>{
-              const issuedBags = DB.issuances.filter(i=>i.beneficiaryId===b.id).reduce((s,i)=>s+i.bags,0);
+              // Issued bags = CSV pre-existing + actual DB issuances (avoid double-count)
+              const issuedFromDB = DB.issuances.filter(i=>i.beneficiaryId===b.id).reduce((s,i)=>s+i.bags,0);
+              // Use whichever is greater (CSV pre-issued may already include DB issuances on re-upload)
+              const issuedBags = Math.max(issuedFromDB, b.issuedBags || 0);
               const balBags    = Math.max(0,(b.sanctionedBags||0)-issuedBags);
               return `
             <tr>
               <td style="color:var(--grey-500)">${idx+1}</td>
               <td style="font-size:11px;font-family:monospace">${b.workId||'—'}</td>
-              <td><strong>${b.name}</strong><br><small style="color:var(--grey-500)">${b.aadhaar}</small></td>
+              <td><strong>${b.name}</strong></td>
+              <td style="font-size:11px;font-family:monospace;color:var(--grey-700)">${b.aadhaar||'—'}</td>
+              <td style="font-size:12px">${b.mobile||'—'}</td>
               <td><span class="chip chip-approved" style="font-size:10px">${b.block}</span></td>
               <td style="font-size:12px">${b.village}</td>
               <td style="font-size:11px">${b.scheme}</td>
@@ -5979,7 +6188,7 @@ function renderMasterUpload(el) {
                   <span class="material-icons-round">delete</span>
                 </button>
               </td>
-            </tr>`;}).join('') || '<tr><td colspan="12"><div class="empty-state"><span class="material-icons-round">people</span><p>No beneficiaries uploaded yet</p></div></td></tr>'}
+            </tr>`;}).join('') || '<tr><td colspan="14"><div class="empty-state"><span class="material-icons-round">people</span><p>No beneficiaries uploaded yet</p></div></td></tr>'}
           </tbody>
         </table>
       </div>
@@ -6033,12 +6242,16 @@ function parseMasterFile(file) {
     const iSancBags = col('sanctioned');
     const iIssBags  = col('issued');
     const iBalBags  = col('balance');
+    const iAadhaar  = col('aadhaar') !== -1 ? col('aadhaar') : col('aadhar') !== -1 ? col('aadhar') : -1;
+    const iMobile   = col('mobile') !== -1 ? col('mobile') : col('phone') !== -1 ? col('phone') : -1;
 
     _masterPreviewData = [];
     const errors = [];
     for (let i=1; i<lines.length; i++) {
       const cols = lines[i].split(',').map(c=>c.trim());
       const blk  = (iBlk>=0 ? cols[iBlk] : '')||'';
+      const sanctBags = parseInt(iSancBags>=0 ? cols[iSancBags] : '100')||100;
+      const issBags   = parseInt(iIssBags>=0  ? cols[iIssBags]  : '0')||0;
       const row = {
         sno:          iSno>=0 ? (cols[iSno]||String(i)) : String(i),
         block:        blk,
@@ -6047,9 +6260,12 @@ function parseMasterFile(file) {
         year:         (iYear>=0 ? cols[iYear] : '')||'2025-26',
         workId:       (iWorkId>=0 ? cols[iWorkId] : '')||'',
         name:         (iName>=0 ? cols[iName] : '')||'',
-        sanctionedBags: parseInt(iSancBags>=0 ? cols[iSancBags] : '100')||100,
-        issuedBags:   parseInt(iIssBags>=0 ? cols[iIssBags] : '0')||0,
-        balanceBags:  parseInt(iBalBags>=0 ? cols[iBalBags] : '100')||0,
+        aadhaar:      (iAadhaar>=0 ? cols[iAadhaar] : '')||'',
+        mobile:       (iMobile>=0  ? cols[iMobile]  : '')||'',
+        sanctionedBags: sanctBags,
+        issuedBags:   issBags,
+        // Balance is always computed — don't trust CSV balance column
+        balanceBags:  Math.max(0, sanctBags - issBags),
         // Auto-generate houseNo from workId or sno
         houseNo:      (iWorkId>=0 ? cols[iWorkId] : '')||blk.slice(0,3).toUpperCase()+'/'+String(2025000+i),
         _valid: true, _error: ''
@@ -6094,9 +6310,11 @@ function showUploadPreview(data, errors) {
       <td>${r.year}</td>
       <td style="font-family:monospace;font-size:11px">${r.workId}</td>
       <td><strong>${r.name}</strong></td>
+      <td style="font-size:11px;font-family:monospace">${r.aadhaar||'—'}</td>
+      <td style="font-size:11px">${r.mobile||'—'}</td>
       <td style="text-align:right">${r.sanctionedBags}</td>
       <td style="text-align:right;color:var(--green)">${r.issuedBags}</td>
-      <td style="text-align:right;color:var(--blue)">${r.balanceBags}</td>
+      <td style="text-align:right;color:var(--blue);font-weight:600">${r.balanceBags}</td>
       <td>${r._valid?'<span class="chip chip-verified">✓ OK</span>':'<span class="chip chip-rejected">✗ '+r._error+'</span>'}</td>
     </tr>`).join('');
 }
@@ -6114,12 +6332,18 @@ function commitMasterUpload() {
   valid.forEach(r => {
     // Deduplicate by workId
     const existing = DB.beneficiaries.find(b=>b.workId===r.workId);
+    // Mask aadhaar – keep last 4 visible
+    const maskedAadhaar = r.aadhaar
+      ? (r.aadhaar.replace(/\D/g,'').length >= 4
+          ? '****-****-' + r.aadhaar.replace(/\D/g,'').slice(-4)
+          : r.aadhaar)
+      : '****-****-XXXX';
     if (!existing) {
       DB.beneficiaries.push({
         id: 'B' + String(Date.now()+added).slice(-7),
         name: r.name,
-        aadhaar: '****-****-XXXX',
-        mobile: '—',
+        aadhaar: maskedAadhaar,
+        mobile: r.mobile || '—',
         block: r.block,
         village: r.village,
         scheme: r.scheme,
@@ -6129,7 +6353,8 @@ function commitMasterUpload() {
         sanctionedBags: r.sanctionedBags,
         issuedBags: r.issuedBags,
         receivedBags: r.issuedBags,
-        balanceBags: r.balanceBags,
+        // balance = sanctioned – issued (always computed, not from CSV)
+        balanceBags: Math.max(0, r.sanctionedBags - r.issuedBags),
         status: 'Active',
         uploadedBy: currentUser.name,
         uploadedAt: new Date().toISOString(),
@@ -6139,6 +6364,8 @@ function commitMasterUpload() {
     } else {
       // Update existing record with latest data
       existing.name = r.name;
+      if (r.aadhaar) existing.aadhaar = maskedAadhaar;
+      if (r.mobile)  existing.mobile  = r.mobile;
       existing.block = r.block;
       existing.village = r.village;
       existing.scheme = r.scheme;
@@ -6146,7 +6373,7 @@ function commitMasterUpload() {
       existing.sanctionedBags = r.sanctionedBags;
       existing.issuedBags = r.issuedBags;
       existing.receivedBags = r.issuedBags;
-      existing.balanceBags = r.balanceBags;
+      existing.balanceBags = Math.max(0, r.sanctionedBags - r.issuedBags);
       updated++;
     }
   });
@@ -6645,11 +6872,14 @@ function savePermissions() {
   DB.permissions = _pendingPerms;
   _pendingPerms  = null;
   saveAndSync();
-  showToast('Permissions saved · All users updated');
+  showToast('Permissions saved · Changes will reflect in all logins after next sync');
   const notice = document.getElementById('permChangeNotice');
   if (notice) notice.style.display = 'none';
-  // Rebuild sidebar for current user in case their own pages changed
+  // Rebuild sidebar for current user — page access may have changed
+  currentUser.pages = pagesForRole(currentUser.role);
   buildSidebar();
+  // Rebuild the matrix to reflect the saved state
+  buildPermMatrix();
 }
 
 function resetPermissions() {
