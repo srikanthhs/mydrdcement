@@ -1361,24 +1361,35 @@ function mergeRemoteIntoDB(remote) {
     DB.beneficiaries = remote.beneficiaries.map(b => ({...(localMap[b.id]||{}), ...b}));
   }
 
-  // Allotments: remote is authoritative list
+  // Allotments: remote is authoritative; keep local allotments not yet pushed to remote
   if (Array.isArray(remote.allotments)) {
     const localMap = {};
     (DB.allotments||[]).forEach(a => localMap[a.id] = a);
-    DB.allotments = remote.allotments.map(a => ({...(localMap[a.id]||{}), ...a}));
+    const remoteMap = {};
+    remote.allotments.forEach(a => remoteMap[a.id] = a);
+    // Preserve locally-saved allotments not yet on remote (avoids delete on Sync Now)
+    const localOnly = (DB.allotments||[]).filter(a => !remoteMap[a.id]);
+    DB.allotments = [...remote.allotments.map(a => ({...(localMap[a.id]||{}), ...a})), ...localOnly];
   }
 
-  // Issuances: remote is authoritative; keep local photos (base64) if remote has placeholder
+  // Issuances: remote is authoritative; keep local photos + preserve local-only entries
   if (Array.isArray(remote.issuances)) {
     const localMap = {};
     (DB.issuances||[]).forEach(i => localMap[i.id] = i);
-    DB.issuances = remote.issuances.map(ri => {
-      const local = localMap[ri.id] || {};
-      const photos = (ri.photos||[]).some(p=>p.startsWith('[photo_'))
-        ? (local.photos || []) : ri.photos;
-      const signature = ri.signature === '[sig]' ? local.signature : ri.signature;
-      return {...local, ...ri, photos, signature};
-    });
+    const remoteMap = {};
+    remote.issuances.forEach(i => remoteMap[i.id] = i);
+    // Preserve locally-saved issuances not yet pushed to remote
+    const localOnly = (DB.issuances||[]).filter(i => !remoteMap[i.id]);
+    DB.issuances = [
+      ...remote.issuances.map(ri => {
+        const local = localMap[ri.id] || {};
+        const photos = (ri.photos||[]).some(p=>p.startsWith('[photo_'))
+          ? (local.photos || []) : ri.photos;
+        const signature = ri.signature === '[sig]' ? local.signature : ri.signature;
+        return {...local, ...ri, photos, signature};
+      }),
+      ...localOnly
+    ];
   }
 
   // Inspections: remote is authoritative; keep local photos
@@ -1452,14 +1463,14 @@ async function manualSyncNow() {
   const btn = document.getElementById('syncNowBtn');
   if (btn) { btn.querySelector('.material-icons-round').style.animation='spin 1s linear infinite'; }
   try {
-    // Save local state first so it is not lost during the pull
+    // CRITICAL: Save and PUSH local state FIRST before pulling remote.
+    // This ensures locally-saved entries (allotments, issuances, stock)
+    // are on Firebase before the pull/merge — they are NEVER lost on sync.
     saveDB();
-    // Use a short guard during the pull; after pull, push local state back so
-    // any locally-saved entries that aren't on remote yet are preserved
-    await loadFromFirebase();
-    // Re-push to ensure local-only entries (not yet on remote) are sent up
     _lastLocalWrite = Date.now() + 5000;
     await pushToFirebase();
+    // Now safely pull remote — local data is already on Firebase, merge is safe
+    await loadFromFirebase();
     _lastLocalWrite = Date.now();
     refreshCurrentPage();
     showSyncToast();
@@ -2381,7 +2392,11 @@ function openNewAllotment() {
       </div>
       <div class="form-group"><label class="form-label">TNRD Work ID</label><input class="form-control" id="aWorkId" readonly style="background:var(--grey-50)"></div>
       ${!isOverseer ? `<div class="form-group"><label class="form-label">House No.</label><input class="form-control" id="aHouseNo" readonly></div>` : '<div id="aHouseNo" style="display:none"></div>'}
-      <div class="form-group"><label class="form-label">Scheme</label><input class="form-control" id="aScheme" readonly></div>
+      <div class="form-group"><label class="form-label">Scheme *</label>
+        ${isOverseer
+          ? `<select class="form-control" id="aScheme">${SCHEMES.map(s=>`<option>${s}</option>`).join('')}</select>`
+          : `<input class="form-control" id="aScheme" readonly>`}
+      </div>
       <div class="form-group"><label class="form-label">Village / Block</label><input class="form-control" id="aVillage" readonly></div>
       <div class="form-group">
         <label class="form-label">Cement Type *</label>
@@ -2502,7 +2517,7 @@ function submitAllotment() {
     beneficiaryName: b.name,
     village: b.village,
     block: b.block,
-    scheme: b.scheme,
+    scheme: document.getElementById('aScheme').value || b.scheme,
     houseNo: b.houseNo,
     mobile: b.mobile,
     aadhaar: b.aadhaar,
@@ -3839,8 +3854,9 @@ function filterBenTable() {
   if (cnt) cnt.textContent = data.length + ' beneficiaries';
   if (!body) return;
   body.innerHTML = data.map((b,idx)=>{
-    const issuedBags = DB.issuances.filter(i=>i.beneficiaryId===b.id).reduce((s,i)=>s+i.bags,0);
-    const balBags    = Math.max(0,(b.sanctionedBags||0)-issuedBags);
+    const issuedFromDB = DB.issuances.filter(i=>i.beneficiaryId===b.id).reduce((s,i)=>s+i.bags,0);
+    const issuedBags   = Math.max(issuedFromDB, b.issuedBags || 0);
+    const balBags      = Math.max(0,(b.sanctionedBags||0)-issuedBags);
     const ovsr       = overseerForVillage(b.block, b.village);
     return `
     <tr>
@@ -4416,17 +4432,25 @@ function showBlockStockDrilldown(blk) {
       <div>
         <div style="font-size:12px;font-weight:700;color:var(--grey-700);margin-bottom:8px">▲ Stock Receipts into ${blk}</div>
         ${blkEntries.length ? `<table style="width:100%;font-size:12px;border-collapse:collapse">
-          <thead><tr style="background:var(--grey-100)"><th style="padding:6px 10px;text-align:left">Date</th><th style="padding:6px 10px;text-align:right">Bags</th><th style="padding:6px 10px">GRN</th></tr></thead>
+          <thead><tr style="background:var(--grey-100)"><th style="padding:6px 10px;text-align:left">Date</th><th style="padding:6px 10px;text-align:right">Bags</th><th style="padding:6px 10px">GRN</th><th style="padding:6px 10px">Scheme</th><th style="padding:6px 10px">Year</th><th style="padding:6px 10px">Actions</th></tr></thead>
           <tbody>
             ${blkEntries.slice().sort((a,b)=>new Date(b.date)-new Date(a.date)).map(e=>`
             <tr style="border-bottom:1px solid var(--grey-200)">
               <td style="padding:5px 10px">${new Date(e.date).toLocaleDateString('en-IN')}</td>
               <td style="padding:5px 10px;text-align:right;font-weight:700;color:var(--blue)">${e.bags}</td>
               <td style="padding:5px 10px;font-size:10px;font-family:monospace;color:var(--grey-500)">${e.grn||'—'}</td>
+              <td style="padding:5px 10px;font-size:11px;color:var(--grey-700)">${e.scheme||'—'}</td>
+              <td style="padding:5px 10px;font-size:11px;color:var(--grey-700)">${e.year||'—'}</td>
+              <td style="padding:5px 10px">
+                ${(currentUser?.role==='admin') ? `
+                  <button class="btn btn-text btn-sm" style="color:var(--blue);padding:2px 6px" title="Edit entry" onclick="openBDOEditStock('${e.id}')"><span class="material-icons-round" style="font-size:15px">edit</span></button>
+                  <button class="btn btn-text btn-sm" style="color:var(--red);padding:2px 6px" title="Delete entry" onclick="deleteBDOStockEntry('${e.id}')"><span class="material-icons-round" style="font-size:15px">delete</span></button>
+                ` : ''}
+              </td>
             </tr>`).join('')}
             <tr style="background:var(--blue-light);font-weight:700">
               <td style="padding:6px 10px">TOTAL</td>
-              <td style="padding:6px 10px;text-align:right;color:var(--blue)">${blkRecv}</td><td></td>
+              <td style="padding:6px 10px;text-align:right;color:var(--blue)">${blkRecv}</td><td></td><td></td><td></td><td></td>
             </tr>
           </tbody>
         </table>` : '<div style="font-size:12px;color:var(--grey-500)">No receipts recorded.</div>'}
@@ -4905,7 +4929,7 @@ function filterBDOStockLog() {
           <td style="font-size:12px;color:var(--grey-500)">${e.addedBy||'—'}<br><span style="font-size:10px">${e.createdAt?new Date(e.createdAt).toLocaleDateString('en-IN'):''}</span></td>
           <td>
             <div style="display:flex;gap:4px">
-              ${can('editStock') ? `<button class="btn btn-outlined btn-sm" onclick="openBDOEditStock('${e.id}')" title="Edit"><span class="material-icons-round">edit</span></button>` : ''}
+              ${can('editStock') && currentUser.role === 'admin' ? `<button class="btn btn-outlined btn-sm" onclick="openBDOEditStock('${e.id}')" title="Edit"><span class="material-icons-round">edit</span></button>` : ''}
               <button class="btn btn-text btn-sm" onclick="viewBDOStockEntry('${e.id}')" title="View Details">
                 <span class="material-icons-round">visibility</span>
               </button>
@@ -4994,6 +5018,36 @@ function openBDOAddStock() {
     {label:'Cancel', cls:'btn-outlined', fn:closeModal},
     {label:'💾 Save Entry', cls:'btn-primary', fn:()=>saveBDOStockEntry(null)}
   ]);
+}
+
+// ── Delete BDO Stock Entry (Admin / Collector only) ───────────────────
+async function deleteBDOStockEntry(id) {
+  const e = (DB.bdoStockEntries||[]).find(x=>x.id===id);
+  if (!e) { showToast('Entry not found','error'); return; }
+  if (!confirm(`Delete stock entry?\n\nSupplier: ${e.supplier||'—'}\nInvoice: ${e.invoice||'—'}\nBags: ${e.bags}\n\nThis cannot be undone.`)) return;
+  DB.bdoStockEntries = (DB.bdoStockEntries||[]).filter(x=>x.id!==id);
+  // Adjust global stock totals
+  DB.stock.total   = Math.max(0, (DB.stock.total||0) - e.bags);
+  DB.stock.balance = Math.max(0, (DB.stock.balance||0) - e.bags);
+  DB.stock.lastUpdated = new Date().toISOString();
+  saveDB();
+  showToast('Deleting & syncing to cloud…');
+  if (firebaseReady && db) {
+    try {
+      const safe = JSON.parse(JSON.stringify(DB));
+      (safe.issuances||[]).forEach(i=>{if(i.photos)i.photos=i.photos.map((_,n)=>'[photo_'+n+']');if(i.signature)i.signature='[sig]';});
+      (safe.inspections||[]).forEach(i=>{if(i.photos)i.photos=i.photos.map((_,n)=>'[photo_'+n+']');});
+      (safe.beneficiaries||[]).forEach(b=>{delete b._photos;});
+      await db.collection('drdData').doc('main').set(safe);
+      _lastLocalWrite = Date.now();
+      showToast('✓ Stock entry deleted & synced · Balance: ' + DB.stock.balance + ' bags');
+    } catch(ex) {
+      showToast('Deleted locally. Cloud sync failed — retry Sync Now', 'error');
+    }
+  } else {
+    showToast('Stock entry deleted (offline)');
+  }
+  navigate('stock');
 }
 
 // ── Edit Stock Entry modal ─────────────────────────────────────────────
@@ -5170,9 +5224,9 @@ function saveBDOStockEntry(editId) {
 
   bdoStockPhotoData = null;
   saveDB();
-  _lastLocalWrite = Date.now() + 10000; // 10-second guard: block remote echo from overwriting just-saved data
+  _lastLocalWrite = Date.now() + 3000; // 3-second guard: block remote echo briefly, then allow sync
   pushToFirebase().then(() => {
-    // After confirmed push, update guard to normal 3s window
+    // After confirmed push, reset guard — other logins will see it via real-time listener immediately
     _lastLocalWrite = Date.now();
   }).catch(() => {});
   pingSheetWebhook();
@@ -6077,7 +6131,7 @@ function renderMasterUpload(el) {
         Required columns (exact order):
       </div>
       <div style="background:var(--grey-50);border:1px solid var(--grey-200);border-radius:8px;padding:10px 14px;font-family:monospace;font-size:12px;margin-bottom:16px;color:var(--blue)">
-        S.No. | Block | Village | Scheme | Year | Work ID No. | Name | Sanctioned Bags | Issued Bags | Balance Bags
+        S.No. | Block | Village | Scheme | Year | Work ID No. | Name | Aadhaar | Mobile | Sanctioned Bags | Issued Bags | Balance Bags
       </div>
 
       <!-- Download template -->
@@ -6121,7 +6175,11 @@ function renderMasterUpload(el) {
     <!-- Method 2: Manual block-wise entry -->
     <div class="card">
       <div class="section-title">Method 2 · Manual Entry by Block</div>
-      <div style="font-size:13px;color:var(--grey-700);margin-bottom:14px">Add individual beneficiaries one at a time, selecting the block.</div>
+      <div style="font-size:13px;color:var(--grey-700);margin-bottom:8px">Add individual beneficiaries one at a time, selecting the block.</div>
+      <div class="alert alert-info" style="margin-bottom:14px">
+        <span class="material-icons-round">info</span>
+        <div>Beneficiaries added via <strong>Method 1 (CSV Upload)</strong> are also listed here. All entries from both methods are shown in the <strong>All Uploaded Beneficiaries</strong> table below.</div>
+      </div>
       <div class="form-grid">
         <div class="form-group"><label class="form-label">Full Name *</label><input class="form-control" id="muName" placeholder="Full name"></div>
         <div class="form-group"><label class="form-label">TNRD Work ID No. *</label><input class="form-control" id="muWorkId" placeholder="e.g. TNRD/MYL/1001"></div>
@@ -6198,11 +6256,11 @@ function renderMasterUpload(el) {
 let _masterPreviewData = [];
 
 function downloadCSVTemplate() {
-  const header = 'S.No.,Block,Village,Scheme,Year,Work ID No.,Name,Sanctioned Bags,Issued Bags,Balance Bags';
+  const header = 'S.No.,Block,Village,Scheme,Year,Work ID No.,Name,Aadhaar,Mobile,Sanctioned Bags,Issued Bags,Balance Bags';
   const sample = BLOCKS.flatMap((blk,bi) =>
     (BLOCK_DATA[blk].villages.slice(0,2)).map((vil,j) => {
       const sno = bi*2+j+1;
-      return `${sno},${blk},${vil},${SCHEMES[0]},2025-26,TNRD/${blk.slice(0,3).toUpperCase()}/${String(1001+sno)},Sample Name ${sno},100,0,100`;
+      return `${sno},${blk},${vil},${SCHEMES[0]},2025-26,TNRD/${blk.slice(0,3).toUpperCase()}/${String(1001+sno)},Sample Name ${sno},XXXX-XXXX-${String(1000+sno)},9${String(800000000+sno)},100,0,100`;
     })
   ).join('\n');
   const blob = new Blob([header + '\n' + sample], {type:'text/csv'});
