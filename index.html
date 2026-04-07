@@ -1068,7 +1068,8 @@ let DB = {
   issuances: [],
   inspections: [],
   stock: { total: 0, issued: 0, balance: 0 },
-  bdoStockEntries: []
+  bdoStockEntries: [],
+  customUsers: []
 };
 
 // ===== DISTRICT STRUCTURE =====
@@ -1197,6 +1198,7 @@ function seedData() {
   DB.inspections    = [];
   DB.bdoStockEntries= [];
   DB.challanCounter = 10000;
+  DB.customUsers    = [];
   saveDB();
 }
 
@@ -1319,7 +1321,7 @@ function startFirestoreListener() {
         if (snap.metadata.fromCache) return;   // ignore offline cache hits
         _listenerFailCount = 0;
         updateFirebaseIndicator(true);
-        if (!snap.exists || Date.now() - _lastLocalWrite < 3000) return;
+        if (!snap.exists || Date.now() - _lastLocalWrite < 800) return;
         mergeRemoteIntoDB(snap.data());
         saveDB();
         refreshCurrentPage();
@@ -1421,6 +1423,8 @@ function mergeRemoteIntoDB(remote) {
   // Permissions: remote wins so Collector's permission changes propagate to all logins
   if (remote.permissions)                   DB.permissions     = remote.permissions;
   if (remote.challanCounter)                DB.challanCounter  = remote.challanCounter;
+  // Custom users: remote wins (Collector adds/deletes propagate everywhere)
+  if (Array.isArray(remote.customUsers))    DB.customUsers     = remote.customUsers;
 }
 
 // ── Silently refresh current page without losing scroll position ─────
@@ -1467,7 +1471,7 @@ async function manualSyncNow() {
     // This ensures locally-saved entries (allotments, issuances, stock)
     // are on Firebase before the pull/merge — they are NEVER lost on sync.
     saveDB();
-    _lastLocalWrite = Date.now() + 5000;
+    _lastLocalWrite = Date.now() + 1500;
     await pushToFirebase();
     // Now safely pull remote — local data is already on Firebase, merge is safe
     await loadFromFirebase();
@@ -1526,9 +1530,8 @@ function saveAndSync() {
   saveDB();          // write to localStorage (immediate, always works)
   // 10-second guard: prevent the real-time listener from echoing our own write
   // back and overwriting the just-saved local data before the push settles.
-  _lastLocalWrite = Date.now() + 10000;
+  _lastLocalWrite = Date.now() + 1500;
   pushToFirebase().then(() => {
-    // After confirmed push, reset to normal 3-second window
     _lastLocalWrite = Date.now();
   }).catch(() => {});
   pingSheetWebhook(); // notify Google Sheet to pull latest data
@@ -1543,7 +1546,7 @@ function initLoginPage() {
 // Show role card as user types username (live feedback, no password exposed)
 function onUsernameInput(val) {
   const uname = val.trim().toLowerCase();
-  const user  = USERS.find(u => u.username === uname);
+  const user  = getAllUsers().find(u => u.username === uname);
   const box   = document.getElementById('roleDetected');
   if (user) {
     const rm = ROLE_META[user.role];
@@ -1570,6 +1573,11 @@ function togglePwd() {
 }
 
 let _loginAttempts = 0;
+// ── Unified user list: hardcoded USERS + dynamically added custom users ──────
+function getAllUsers() {
+  return [...USERS, ...(DB.customUsers||[])];
+}
+
 function doLogin() {
   const uname  = document.getElementById('loginUser').value.trim().toLowerCase();
   const pwd    = document.getElementById('loginPass').value;
@@ -1582,8 +1590,8 @@ function doLogin() {
     errEl.style.display = 'flex'; return;
   }
 
-  // Lookup user
-  const user = USERS.find(u => u.username === uname && u.password === pwd);
+  // Lookup user (hardcoded + custom)
+  const user = getAllUsers().find(u => u.username === uname && u.password === pwd);
 
   if (!user) {
     _loginAttempts++;
@@ -2021,16 +2029,28 @@ function renderDashboard(el) {
       <div class="section-title">Block-wise Summary – All Blocks</div>
       <div class="table-wrap">
         <table>
-          <thead><tr><th>Block</th><th style="text-align:right">Beneficiaries</th><th style="text-align:right">Sanctioned (bags)</th><th style="text-align:right">Stock Received</th><th style="text-align:right">Bags Issued</th><th style="text-align:right">Balance</th><th>Progress</th><th>Pending</th></tr></thead>
+          <thead><tr>
+            <th>Block</th>
+            <th style="text-align:right">Beneficiaries</th>
+            <th style="text-align:right">Sanctioned (bags)</th>
+            <th style="text-align:right">Stock Received</th>
+            <th style="text-align:right;color:var(--red)">Stock Pending</th>
+            <th style="text-align:right">Bags Issued</th>
+            <th style="text-align:right">Balance</th>
+            <th>Progress</th>
+            <th>Allot Pending</th>
+          </tr></thead>
           <tbody>
             ${blockSummary.map(({blk,bens,issued,allots,pend,stockRecv,sanctioned})=>{
               const pctB = sanctioned ? Math.round(issued/sanctioned*100) : 0;
               const bal = Math.max(0, sanctioned - issued);
+              const stockPending = Math.max(0, sanctioned - (stockRecv||0));
               return `<tr style="cursor:pointer" onclick="navigate('reports')" title="View ${blk} reports">
                 <td><strong>${blk}</strong></td>
                 <td style="text-align:right">${bens}</td>
                 <td style="text-align:right">${sanctioned}</td>
                 <td style="text-align:right;color:var(--blue);font-weight:600">${stockRecv||'—'}</td>
+                <td style="text-align:right;font-weight:700;color:${stockPending>0?'var(--red)':'var(--green)'}">${stockPending>0?stockPending:'✓ Nil'}</td>
                 <td style="text-align:right;color:var(--green);font-weight:600">${issued}</td>
                 <td style="text-align:right;color:${bal>0?'var(--blue)':'var(--grey-400)'};font-weight:600">${bal}</td>
                 <td style="min-width:80px"><div class="progress-bar"><div class="progress-fill" style="width:${pctB}%"></div></div><div style="font-size:10px;color:var(--grey-500);margin-top:1px">${pctB}%</div></td>
@@ -2042,6 +2062,7 @@ function renderDashboard(el) {
               <td style="text-align:right">${blockSummary.reduce((t,r)=>t+r.bens,0)}</td>
               <td style="text-align:right">${blockSummary.reduce((t,r)=>t+r.sanctioned,0)}</td>
               <td style="text-align:right;color:var(--blue)">${blockSummary.reduce((t,r)=>t+(r.stockRecv||0),0)||'—'}</td>
+              <td style="text-align:right;color:var(--red)">${blockSummary.reduce((t,r)=>t+Math.max(0,r.sanctioned-(r.stockRecv||0)),0)||'—'}</td>
               <td style="text-align:right;color:var(--green)">${blockSummary.reduce((t,r)=>t+r.issued,0)}</td>
               <td style="text-align:right;color:var(--blue)">${blockSummary.reduce((t,r)=>t+Math.max(0,r.sanctioned-r.issued),0)}</td>
               <td></td>
@@ -2402,7 +2423,7 @@ function openNewAllotment() {
         <label class="form-label">Cement Type *</label>
         <select class="form-control" id="aCType">${CEMENT_TYPES.map(t=>`<option>${t}</option>`).join('')}</select>
       </div>
-      <div class="form-group"><label class="form-label">Bags to Allot * (Balance only)</label><input class="form-control" type="number" id="aBags" min="1" max="200" value="0" oninput="const mx=parseInt(this.max)||0;if(mx>0&&parseInt(this.value)>mx){this.value=mx;showToast('Cannot exceed balance of '+mx+' bags','error');}"></div>
+      <div class="form-group"><label class="form-label">Balance to Allot * <span style="font-size:11px;color:var(--green);font-weight:600">(auto-filled from sanctioned − issued)</span></label><input class="form-control" type="number" id="aBags" min="1" max="200" value="0" oninput="const mx=parseInt(this.max)||0;if(mx>0&&parseInt(this.value)>mx){this.value=mx;showToast('Cannot exceed balance of '+mx+' bags','error');}"></div>
       <div class="form-group"><label class="form-label">Stage *</label>
         <select class="form-control" id="aUse">
           <option>Earthwork</option><option>FC Laid</option><option>Basement</option>
@@ -6202,6 +6223,7 @@ function renderMasterUpload(el) {
         </div>
         <div class="form-group"><label class="form-label">Year *</label><input class="form-control" id="muYear" placeholder="e.g. 2025-26" value="2025-26"></div>
         <div class="form-group"><label class="form-label">Sanctioned Bags *</label><input class="form-control" type="number" id="muBags" value="100" min="1"></div>
+        <div class="form-group"><label class="form-label">Issued Bags (pre-existing)</label><input class="form-control" type="number" id="muIssuedBags" value="0" min="0" placeholder="0 if none yet" title="Bags already issued before this upload"></div>
       </div>
       <button class="btn btn-primary" style="margin-top:12px" onclick="addMasterBeneficiary()">
         <span class="material-icons-round">person_add</span> Add Beneficiary
@@ -6526,7 +6548,7 @@ function addMasterBeneficiary() {
     year:    document.getElementById('muYear').value || '2025-26',
     houseNo: '',
     sanctionedBags: parseInt(document.getElementById('muBags').value)||100,
-    issuedBags: 0, balanceBags: parseInt(document.getElementById('muBags').value)||100, receivedBags: 0, status: 'Active',
+    issuedBags: parseInt(document.getElementById('muIssuedBags')?.value)||0, balanceBags: Math.max(0,(parseInt(document.getElementById('muBags').value)||100)-(parseInt(document.getElementById('muIssuedBags')?.value)||0)), receivedBags: parseInt(document.getElementById('muIssuedBags')?.value)||0, status: 'Active',
     uploadedBy: currentUser.name,
     uploadedAt: new Date().toISOString(),
     createdAt: new Date().toISOString()
@@ -6618,14 +6640,17 @@ function renderUsers(el) {
     <div class="page-header">
       <div>
         <div class="page-title">User Management &amp; Permissions</div>
-        <div class="page-sub">Configure what each role can do · Changes apply immediately across all logins</div>
+        <div class="page-sub">Add, edit or remove users · Configure role permissions · Changes sync instantly</div>
       </div>
+      <button class="btn btn-primary" onclick="openAddUser()">
+        <span class="material-icons-round">person_add</span> Add New User
+      </button>
     </div>
 
     <!-- Users Table -->
     <div class="card" style="margin-bottom:16px">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
-        <div class="section-title" style="margin:0">Registered Users (<span id="usersCount">${USERS.length}</span>)</div>
+        <div class="section-title" style="margin:0">Registered Users (<span id="usersCount">${getAllUsers().length}</span>)</div>
         <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
           <div class="search-input" style="width:200px;padding:6px 12px">
             <span class="material-icons-round">search</span>
@@ -6638,7 +6663,7 @@ function renderUsers(el) {
       </div>
       <div class="table-wrap">
         <table id="usersTable">
-          <thead><tr><th>User</th><th>Username / Password</th><th>Role</th><th>Block</th><th>Assigned Panchayats</th><th>Actions</th></tr></thead>
+          <thead><tr><th>User</th><th>Username / Password</th><th>Role</th><th>Block</th><th>Assigned Panchayats</th><th>Type</th><th>Actions</th></tr></thead>
           <tbody id="usersBody"></tbody>
         </table>
       </div>
@@ -6710,7 +6735,11 @@ function renderUsers(el) {
 function renderUsersTable(filter, search) {
   const tbody = document.getElementById('usersBody');
   if (!tbody) return;
-  let users = USERS;
+
+  const systemUsers = USERS.map(u => ({...u, _src:'system'}));
+  const customUsers = (DB.customUsers||[]).map(u => ({...u, _src:'custom'}));
+  let users = [...systemUsers, ...customUsers];
+
   if (filter === 'overseer') users = users.filter(u=>u.role==='overseer');
   else if (filter) users = users.filter(u=>u.block===filter||u.block===null);
   if (search && search.trim()) {
@@ -6719,31 +6748,47 @@ function renderUsersTable(filter, search) {
   }
   const countEl = document.getElementById('usersCount');
   if (countEl) countEl.textContent = users.length;
+
   tbody.innerHTML = users.map(u => {
-    const rm = ROLE_META[u.role];
+    const rm = ROLE_META[u.role] || {badge:'rb-bdo', label: u.role||'Unknown'};
     const panch = u.panchayats;
-    const idx = USERS.indexOf(u);
+    const isCustom = u._src === 'custom';
+    const editRef  = isCustom ? ("'" + u.id + "'") : USERS.findIndex(x=>x.id===u.id);
+    const iconName = u.icon || 'person';
     return '<tr>'
       + '<td><div style="display:flex;align-items:center;gap:8px">'
-      + '<div class="u-avatar ' + u.avatarColor + '" style="width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0"><span class="material-icons-round" style="font-size:16px;color:#fff">' + u.icon + '</span></div>'
+      + '<div style="width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:' + (isCustom?'#5f6368':(u.avatarColor?'':'var(--blue)')) + '" class="u-avatar ' + (u.avatarColor||'') + '">'
+      + '<span class="material-icons-round" style="font-size:16px;color:#fff">' + iconName + '</span></div>'
       + '<div><div style="font-weight:600;font-size:13px">' + u.name + '</div>'
-      + '<div style="font-size:10px;color:var(--grey-500)">' + u.designation + '</div>'
+      + '<div style="font-size:10px;color:var(--grey-500)">' + (u.designation||'') + '</div>'
       + '<div style="font-size:10px;color:var(--grey-500)">' + (u.mobile||'') + '</div></div></div></td>'
       + '<td><code style="background:var(--grey-100);padding:2px 8px;border-radius:4px;font-size:11px;display:block">' + u.username + '</code>'
       + '<code style="background:var(--grey-50);padding:2px 8px;border-radius:4px;font-size:10px;color:var(--grey-500);display:block;margin-top:2px">••••••••</code></td>'
       + '<td><span class="role-badge ' + rm.badge + '">' + rm.label + '</span></td>'
       + '<td style="font-size:12px">' + (u.block||'<span style="color:var(--grey-400)">All Blocks</span>') + '</td>'
-      + '<td style="max-width:240px">'
-      + (panch
-          ? '<div style="display:flex;flex-wrap:wrap;gap:3px">' + panch.slice(0,4).map(v=>'<span style="background:var(--blue-light);color:var(--blue);border-radius:4px;padding:1px 6px;font-size:10px;font-weight:500">' + v + '</span>').join('')
-            + (panch.length>4 ? '<span style="font-size:10px;color:var(--grey-500);padding:1px 4px">+' + (panch.length-4) + ' more</span>' : '')
+      + '<td style="max-width:180px">'
+      + (panch && panch.length
+          ? '<div style="display:flex;flex-wrap:wrap;gap:3px">'
+            + panch.slice(0,3).map(v=>'<span style="background:var(--blue-light);color:var(--blue);border-radius:4px;padding:1px 5px;font-size:10px">' + v + '</span>').join('')
+            + (panch.length>3 ? '<span style="font-size:10px;color:var(--grey-500);padding:1px 3px">+' + (panch.length-3) + ' more</span>' : '')
             + '</div>'
-          : '<span style="font-size:11px;color:var(--grey-400)">All panchayats in block</span>')
+          : '<span style="font-size:11px;color:var(--grey-400)">All in block</span>')
       + '</td>'
-      + '<td><button class="btn btn-outlined btn-sm" onclick="openEditUser(' + idx + ')" title="Edit user"><span class="material-icons-round" style="font-size:15px">edit</span> Edit</button></td>'
+      + '<td style="text-align:center">'
+      + (isCustom
+          ? '<span class="chip" style="font-size:10px;background:var(--green-light);color:var(--green)">Custom</span>'
+          : '<span class="chip" style="font-size:10px;background:var(--grey-100);color:var(--grey-700)">System</span>')
+      + '</td>'
+      + '<td><div style="display:flex;gap:4px">'
+      + '<button class="btn btn-outlined btn-sm" onclick="openEditUser(' + editRef + ')" title="Edit"><span class="material-icons-round" style="font-size:15px">edit</span></button>'
+      + (isCustom
+          ? '<button class="btn btn-danger btn-sm" onclick="deleteCustomUser(\'' + u.id + '\')" title="Delete"><span class="material-icons-round" style="font-size:15px">delete</span></button>'
+          : '<button class="btn btn-sm" style="background:var(--grey-100);color:var(--grey-400);cursor:not-allowed" disabled title="System users cannot be deleted"><span class="material-icons-round" style="font-size:15px">lock</span></button>')
+      + '</div></td>'
       + '</tr>';
-  }).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--grey-400);padding:20px">No users found</td></tr>';
+  }).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--grey-400);padding:20px">No users found</td></tr>';
 }
+
 
 function umSetFilter(f) {
   window._umFilter = f;
@@ -6755,14 +6800,21 @@ function filterUserTable(filter, search) {
   renderUsersTable(filter, search||'');
 }
 
-function openEditUser(idx) {
-  const u = USERS[idx];
+function openEditUser(ref) {
+  // ref = numeric index (system users) OR string id (custom users)
+  let u, isCustom = false, customIdx = -1;
+  if (typeof ref === 'string') {
+    customIdx = (DB.customUsers||[]).findIndex(x=>x.id===ref);
+    u = DB.customUsers[customIdx];
+    isCustom = true;
+  } else {
+    u = USERS[ref];
+  }
   if (!u) return;
-  const rm = ROLE_META[u.role];
+  const rm = ROLE_META[u.role] || {badge:'rb-bdo', label: u.role};
   const blockVillages = u.block && BLOCK_DATA[u.block] ? BLOCK_DATA[u.block].villages : [];
   const allPanch = u.panchayats || [];
 
-  // Build panchayat checkboxes grouped
   let panchSection = '';
   if (u.role === 'overseer' && blockVillages.length) {
     const checked = new Set(allPanch.map(p=>p.toUpperCase()));
@@ -6783,9 +6835,10 @@ function openEditUser(idx) {
         </div>
       </div>`;
   } else if ((u.role === 'bdo' || u.role === 'store' || u.role === 'engineer' || u.role === 'inspector') && u.block) {
-    panchSection = `<div style="margin-top:12px"><div class="alert alert-info"><span class="material-icons-round">info</span> This role has access to all panchayats in <strong>${u.block}</strong> block. Panchayat filtering is not applicable.</div></div>`;
+    panchSection = `<div style="margin-top:12px"><div class="alert alert-info"><span class="material-icons-round">info</span> This role has access to all panchayats in <strong>${u.block}</strong> block.</div></div>`;
   }
 
+  const saveRef = isCustom ? `'${u.id}'` : ref;
   openModal(`Edit User – ${u.name}`, `
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
       <div class="form-group">
@@ -6803,13 +6856,13 @@ function openEditUser(idx) {
       <div class="form-group">
         <label class="form-label">Password <span style="color:var(--grey-500);font-weight:400">(leave blank to keep)</span></label>
         <div style="position:relative">
-          <input id="umPassword" class="form-control" type="password" placeholder="New password (optional)" autocomplete="off" style="padding-right:40px">
+          <input id="umPassword" class="form-control" type="password" placeholder="New password" autocomplete="off" style="padding-right:40px">
           <button type="button" onclick="const f=document.getElementById('umPassword');f.type=f.type==='password'?'text':'password';this.querySelector('span').textContent=f.type==='password'?'visibility':'visibility_off';" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--grey-500);padding:2px"><span class="material-icons-round" style="font-size:18px">visibility</span></button>
         </div>
       </div>
       <div class="form-group">
         <label class="form-label">Designation</label>
-        <input id="umDesignation" class="form-control" value="${u.designation}" placeholder="Designation">
+        <input id="umDesignation" class="form-control" value="${u.designation||''}" placeholder="Designation">
       </div>
       <div class="form-group">
         <label class="form-label">Role</label>
@@ -6819,8 +6872,8 @@ function openEditUser(idx) {
     ${panchSection}
     <div id="umErr" style="display:none;color:var(--red);font-size:12px;margin-top:10px;padding:8px 12px;background:var(--red-light);border-radius:6px"></div>
   `, [
-    { label: '<span class="material-icons-round" style="font-size:15px">close</span> Cancel', cls: 'btn-outlined', fn: closeModal },
-    { label: '<span class="material-icons-round" style="font-size:15px">save</span> Save Changes', cls: 'btn-primary', fn: () => saveEditUser(idx) }
+    { label: 'Cancel', cls: 'btn-outlined', fn: closeModal },
+    { label: 'Save Changes', cls: 'btn-primary', fn: () => saveEditUser(saveRef) }
   ]);
 }
 
@@ -6839,64 +6892,238 @@ function umClearAll() {
   umUpdateCount();
 }
 
-function saveEditUser(idx) {
-  const u = USERS[idx];
+function saveEditUser(ref) {
+  // ref = numeric index (system users) OR string id (custom users)
+  let u, isCustom = false;
+  if (typeof ref === 'string') {
+    const ci = (DB.customUsers||[]).findIndex(x=>x.id===ref);
+    u = DB.customUsers[ci];
+    isCustom = true;
+  } else {
+    u = USERS[ref];
+  }
   if (!u) return;
 
-  const name = (document.getElementById('umName').value||'').trim();
-  const username = (document.getElementById('umUsername').value||'').trim();
-  const password = (document.getElementById('umPassword').value||'').trim();
+  const name        = (document.getElementById('umName').value||'').trim();
+  const username    = (document.getElementById('umUsername').value||'').trim();
+  const password    = (document.getElementById('umPassword').value||'').trim();
   const designation = (document.getElementById('umDesignation').value||'').trim();
-  const mobile = (document.getElementById('umMobile').value||'').trim();
-
+  const mobile      = (document.getElementById('umMobile').value||'').trim();
   const errEl = document.getElementById('umErr');
-  const showErr = (msg) => { errEl.textContent = msg; errEl.style.display = 'block'; };
+  const showErr = msg => { errEl.textContent = msg; errEl.style.display = 'block'; };
 
   if (!name) { showErr('Name cannot be empty.'); return; }
   if (!username) { showErr('Username cannot be empty.'); return; }
-  // Check username uniqueness
-  const dup = USERS.find((uu,i) => i!==idx && uu.username===username);
+  const dup = getAllUsers().find(uu => uu.id !== u.id && uu.username === username);
   if (dup) { showErr('Username "' + username + '" is already taken by ' + dup.name + '.'); return; }
-  if (mobile && !/^\d{10}$/.test(mobile)) { showErr('Mobile must be a 10-digit number.'); return; }
+  if (mobile && !/^\d{10}$/.test(mobile)) { showErr('Mobile must be 10 digits.'); return; }
 
-  // Panchayat changes (overseers only)
-  const oldName = u.name; // capture before mutation
-  // Apply changes
-  u.name = name;
-  u.username = username;
+  const oldName = u.name;
+  u.name = name; u.username = username;
   if (password) u.password = password;
-  u.designation = designation;
-  u.mobile = mobile;
+  u.designation = designation; u.mobile = mobile;
 
   if (u.role === 'overseer') {
     const boxes = document.querySelectorAll('#umPanchList input[type=checkbox]');
     if (boxes.length) {
       u.panchayats = [...boxes].filter(b=>b.checked).map(b=>b.value);
-      // Also update BLOCK_DATA.overseers mapping
       if (u.block && BLOCK_DATA[u.block]) {
-        const overseers = BLOCK_DATA[u.block].overseers;
-        // Remove old name key if present
-        if (overseers[oldName] !== undefined) delete overseers[oldName];
-        overseers[name] = u.panchayats;
+        const ov = BLOCK_DATA[u.block].overseers;
+        if (ov[oldName] !== undefined) delete ov[oldName];
+        ov[name] = u.panchayats;
       }
     }
   }
 
-  // If the edited user is the currently logged-in user, refresh header
   if (currentUser && currentUser.id === u.id) {
-    currentUser.name = u.name;
-    currentUser.username = u.username;
-    currentUser.mobile = u.mobile;
-    currentUser.designation = u.designation;
-    document.getElementById('userLabel').textContent = u.name;
-    document.getElementById('avatarInitial').textContent = u.name.charAt(0).toUpperCase();
+    Object.assign(currentUser, {name, username, mobile, designation});
+    document.getElementById('userLabel').textContent = name.split(' ').slice(0,2).join(' ');
+    document.getElementById('avatarInitial').textContent = name.charAt(0).toUpperCase();
   }
 
+  if (isCustom) saveAndSync(); // persist custom user changes to Firebase
   closeModal();
-  showToast('User "' + name + '" updated successfully');
+  showToast('User "' + name + '" updated');
   renderUsersTable(window._umFilter||'');
-  filterPanchTable(''); // refresh panchayat reference table
+  filterPanchTable('');
 }
+
+// ── Add New User ─────────────────────────────────────────────────────────────
+function openAddUser() {
+  const roleOpts = Object.entries(ROLE_META)
+    .map(([r,m]) => `<option value="${r}">${m.label}</option>`).join('');
+  const blockOpts = BLOCKS.map(b=>`<option value="${b}">${b}</option>`).join('');
+
+  openModal('Add New User', `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+      <div class="form-group">
+        <label class="form-label">Full Name <span style="color:var(--red)">*</span></label>
+        <input id="nuName" class="form-control" placeholder="e.g. S. Muthukumar">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Mobile</label>
+        <input id="nuMobile" class="form-control" placeholder="10-digit" maxlength="10">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Username <span style="color:var(--red)">*</span></label>
+        <input id="nuUsername" class="form-control" placeholder="e.g. bdo.kollidam" autocomplete="off">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Password <span style="color:var(--red)">*</span></label>
+        <div style="position:relative">
+          <input id="nuPassword" class="form-control" type="password" placeholder="Set a strong password" autocomplete="new-password" style="padding-right:40px">
+          <button type="button" onclick="const f=document.getElementById('nuPassword');f.type=f.type==='password'?'text':'password';this.querySelector('span').textContent=f.type==='password'?'visibility':'visibility_off';" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--grey-500);padding:2px"><span class="material-icons-round" style="font-size:18px">visibility</span></button>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Role <span style="color:var(--red)">*</span></label>
+        <select id="nuRole" class="form-control" onchange="nuRoleChanged()">${roleOpts}</select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Block <span style="color:var(--red)">*</span></label>
+        <select id="nuBlock" class="form-control" onchange="nuBlockChanged()">
+          ${blockOpts}
+        </select>
+      </div>
+      <div class="form-group" style="grid-column:1/-1">
+        <label class="form-label">Designation</label>
+        <input id="nuDesignation" class="form-control" placeholder="e.g. BDO – Kollidam Block">
+      </div>
+    </div>
+
+    <!-- Panchayat section for overseers -->
+    <div id="nuPanchSection" style="display:none;margin-top:14px">
+      <div class="form-label">Assigned Panchayats / Villages</div>
+      <div style="display:flex;gap:6px;margin:8px 0 6px;flex-wrap:wrap">
+        <button type="button" class="btn btn-outlined btn-sm" onclick="nuSelectAll()">Select All</button>
+        <button type="button" class="btn btn-outlined btn-sm" onclick="nuClearAll()">Clear All</button>
+        <span id="nuSelCount" style="font-size:12px;color:var(--grey-700);align-self:center;margin-left:4px">0 selected</span>
+      </div>
+      <div id="nuPanchList" style="max-height:200px;overflow-y:auto;border:1.5px solid var(--grey-300);border-radius:8px;padding:8px;display:grid;grid-template-columns:1fr 1fr;gap:4px;background:var(--grey-50)"></div>
+    </div>
+
+    <div id="nuErr" style="display:none;color:var(--red);font-size:12px;margin-top:10px;padding:8px 12px;background:var(--red-light);border-radius:6px"></div>
+  `, [
+    { label: 'Cancel', cls: 'btn-outlined', fn: closeModal },
+    { label: '<span class="material-icons-round" style="font-size:15px">person_add</span> Create User', cls: 'btn-primary', fn: saveNewUser }
+  ]);
+
+  // Init panchayat visibility
+  nuRoleChanged();
+}
+
+function nuRoleChanged() {
+  const role  = document.getElementById('nuRole')?.value;
+  const sec   = document.getElementById('nuPanchSection');
+  if (!sec) return;
+  if (role === 'overseer') { sec.style.display = 'block'; nuBlockChanged(); }
+  else sec.style.display = 'none';
+}
+
+function nuBlockChanged() {
+  const role  = document.getElementById('nuRole')?.value;
+  if (role !== 'overseer') return;
+  const blk   = document.getElementById('nuBlock')?.value;
+  const vils  = blk && BLOCK_DATA[blk] ? BLOCK_DATA[blk].villages : [];
+  const list  = document.getElementById('nuPanchList');
+  if (!list) return;
+  list.innerHTML = vils.map(v => `
+    <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;padding:3px 4px;border-radius:4px;transition:background .1s" onmouseover="this.style.background='var(--blue-light)'" onmouseout="this.style.background=''">
+      <input type="checkbox" value="${v}" onchange="nuUpdateCount()" style="cursor:pointer"> ${v}
+    </label>`).join('');
+  nuUpdateCount();
+}
+
+function nuUpdateCount() {
+  const cnt = [...document.querySelectorAll('#nuPanchList input[type=checkbox]')].filter(b=>b.checked).length;
+  const el  = document.getElementById('nuSelCount');
+  if (el) el.textContent = cnt + ' selected';
+}
+function nuSelectAll() { document.querySelectorAll('#nuPanchList input[type=checkbox]').forEach(b=>b.checked=true); nuUpdateCount(); }
+function nuClearAll()  { document.querySelectorAll('#nuPanchList input[type=checkbox]').forEach(b=>b.checked=false); nuUpdateCount(); }
+
+function saveNewUser() {
+  const name        = (document.getElementById('nuName')?.value||'').trim();
+  const username    = (document.getElementById('nuUsername')?.value||'').trim().toLowerCase();
+  const password    = (document.getElementById('nuPassword')?.value||'').trim();
+  const role        = document.getElementById('nuRole')?.value;
+  const block       = document.getElementById('nuBlock')?.value;
+  const designation = (document.getElementById('nuDesignation')?.value||'').trim();
+  const mobile      = (document.getElementById('nuMobile')?.value||'').trim();
+  const errEl       = document.getElementById('nuErr');
+  const showErr = msg => { errEl.textContent = msg; errEl.style.display = 'block'; };
+
+  if (!name)     { showErr('Full name is required.'); return; }
+  if (!username) { showErr('Username is required.'); return; }
+  if (!password) { showErr('Password is required.'); return; }
+  if (password.length < 6) { showErr('Password must be at least 6 characters.'); return; }
+  if (mobile && !/^\d{10}$/.test(mobile)) { showErr('Mobile must be 10 digits.'); return; }
+
+  const dup = getAllUsers().find(u => u.username === username);
+  if (dup) { showErr('Username "' + username + '" is already taken by ' + dup.name + '.'); return; }
+
+  // Role icon + color mapping
+  const iconMap  = {admin:'admin_panel_settings', bdo:'account_balance', store:'warehouse', engineer:'engineering', inspector:'search', overseer:'person_pin'};
+  const colorMap = {admin:'admin', bdo:'bdo', store:'store', engineer:'engineer', inspector:'inspector', overseer:'overseer'};
+
+  let panchayats = null;
+  if (role === 'overseer') {
+    const boxes = document.querySelectorAll('#nuPanchList input[type=checkbox]');
+    panchayats = [...boxes].filter(b=>b.checked).map(b=>b.value);
+    // Register in BLOCK_DATA.overseers
+    if (block && BLOCK_DATA[block]) {
+      BLOCK_DATA[block].overseers[name] = panchayats;
+    }
+  }
+
+  const rm = ROLE_META[role];
+  const pages = rm ? (role === 'bdo'
+    ? ['dashboard','allotments','beneficiaries','stock','reports','alerts']
+    : role === 'store'
+    ? ['dashboard','issuance','stock','qrscan','alerts']
+    : role === 'engineer'
+    ? ['dashboard','allotments','beneficiaries','stock','reports','alerts']
+    : role === 'overseer'
+    ? ['dashboard','allotments','beneficiaries','reports','alerts']
+    : ['dashboard','allotments','beneficiaries','reports','alerts']) : ['dashboard'];
+
+  const newUser = {
+    id:          'CU' + Date.now(),
+    username, password,
+    role, block: block||null, panchayats,
+    name, designation: designation || (rm ? rm.label + ' – ' + block : role),
+    dept:        'Rural Development Dept, ' + (block||'Mayiladuthurai'),
+    mobile:      mobile||'',
+    avatarColor: colorMap[role]||'bdo',
+    icon:        iconMap[role]||'person',
+    pages
+  };
+
+  if (!DB.customUsers) DB.customUsers = [];
+  DB.customUsers.push(newUser);
+  saveAndSync();
+  closeModal();
+  showToast('✓ User "' + name + '" created successfully (' + (rm?rm.label:role) + ' – ' + block + ')');
+  renderUsersTable(window._umFilter||'');
+  filterPanchTable('');
+}
+
+// ── Delete Custom User ────────────────────────────────────────────────────────
+function deleteCustomUser(id) {
+  const u = (DB.customUsers||[]).find(x=>x.id===id);
+  if (!u) return;
+  if (!confirm('Delete user "' + u.name + '" (' + u.username + ')? This cannot be undone.')) return;
+  DB.customUsers = (DB.customUsers||[]).filter(x=>x.id!==id);
+  // Remove from BLOCK_DATA.overseers if overseer
+  if (u.role === 'overseer' && u.block && BLOCK_DATA[u.block]) {
+    delete BLOCK_DATA[u.block].overseers[u.name];
+  }
+  saveAndSync();
+  showToast('User "' + u.name + '" deleted');
+  renderUsersTable(window._umFilter||'');
+  filterPanchTable('');
+}
+
 
 function filterPanchTable(blk) {
   const tbody = document.getElementById('panchRefBody');
@@ -7141,7 +7368,8 @@ function generateAllotmentSlipHTML(a, ben, qrData, copyLabel) {
   const challan = a.challanNumber || '—';
   const qr = qrCodeImg(qrData || challan, 75);
   const issuedBags = DB.issuances.filter(i=>i.beneficiaryId===a.beneficiaryId).reduce((s,i)=>s+i.bags,0);
-  const balBags = Math.max(0,(ben.sanctionedBags||a.bags)-issuedBags);
+  // Pending = Total Sanctioned − Previously Issued − This Allotment
+  const pendingAfterThis = Math.max(0, (ben.sanctionedBags||a.bags) - issuedBags - a.bags);
   // Overseer name for this beneficiary
   const overseerName = overseerForVillage(a.block, a.village);
   const approvedByStr = `Allotment – Overseer/${overseerName}<br>Verification – AE/JE/${a.verifiedBy||'—'}<br>Approved – BDO/${a.approvedBy||'—'}`;
@@ -7173,7 +7401,7 @@ function generateAllotmentSlipHTML(a, ben, qrData, copyLabel) {
         <tr><td style="color:#555;padding:2px 0">Total Sanctioned</td><td style="text-align:right;font-weight:700">${ben.sanctionedBags||a.bags} bags</td></tr>
         <tr><td style="color:#555;padding:2px 0">Previously Issued</td><td style="text-align:right;font-weight:700;color:#1e8e3e">${issuedBags} bags</td></tr>
         <tr><td style="color:#555;padding:2px 0">This Issuance</td><td style="text-align:right;font-weight:700;color:#1a73e8">${a.bags} bags</td></tr>
-        <tr style="border-top:1px solid #c8e6c9"><td style="color:#555;padding:3px 0 0">Pending / Balance</td><td style="text-align:right;font-weight:700;color:${balBags>0?'#e65100':'#999'};padding:3px 0 0">${balBags} bags</td></tr>
+        <tr style="border-top:1px solid #c8e6c9"><td style="color:#555;padding:3px 0 0">Pending / Balance</td><td style="text-align:right;font-weight:700;color:${pendingAfterThis>0?'#e65100':'#999'};padding:3px 0 0">${pendingAfterThis} bags</td></tr>
       </table>
     </div>
     <div class="slip-bags-box">
