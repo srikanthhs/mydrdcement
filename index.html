@@ -2402,7 +2402,7 @@ function openNewAllotment() {
         <label class="form-label">Cement Type *</label>
         <select class="form-control" id="aCType">${CEMENT_TYPES.map(t=>`<option>${t}</option>`).join('')}</select>
       </div>
-      <div class="form-group"><label class="form-label">Bags to Allot * (Balance only)</label><input class="form-control" type="number" id="aBags" min="1" max="200" value="0"></div>
+      <div class="form-group"><label class="form-label">Bags to Allot * (Balance only)</label><input class="form-control" type="number" id="aBags" min="1" max="200" value="0" oninput="const mx=parseInt(this.max)||0;if(mx>0&&parseInt(this.value)>mx){this.value=mx;showToast('Cannot exceed balance of '+mx+' bags','error');}"></div>
       <div class="form-group"><label class="form-label">Stage *</label>
         <select class="form-control" id="aUse">
           <option>Earthwork</option><option>FC Laid</option><option>Basement</option>
@@ -3456,7 +3456,15 @@ function confirmIssue(allotmentId) {
     note: `${bags} bags · vehicle ${veh||'N/A'} · GPS: ${gpsCoords.lat},${gpsCoords.lng} · balance now ${closingBalanceForEntry} bags`
   });
   const ben = DB.beneficiaries.find(b=>b.id===a.beneficiaryId);
-  if (ben) ben.receivedBags = (ben.receivedBags||0) + bags;
+  if (ben) {
+    ben.receivedBags = (ben.receivedBags||0) + bags;
+    // Keep issuedBags in sync so all logins see consistent cement calculations
+    const totalIssuedNow = DB.issuances
+      .filter(i=>i.beneficiaryId===a.beneficiaryId)
+      .reduce((s,i)=>s+i.bags, 0) + bags; // include current issuance (not yet pushed)
+    ben.issuedBags  = Math.max(ben.issuedBags||0, totalIssuedNow);
+    ben.balanceBags = Math.max(0, (ben.sanctionedBags||0) - ben.issuedBags);
+  }
 
   // ── Push to DB and Firebase ─────────────────────────────────────
   DB.issuances.push(issuance);
@@ -5223,12 +5231,7 @@ function saveBDOStockEntry(editId) {
   }
 
   bdoStockPhotoData = null;
-  saveDB();
-  _lastLocalWrite = Date.now() + 3000; // 3-second guard: block remote echo briefly, then allow sync
-  pushToFirebase().then(() => {
-    // After confirmed push, reset guard — other logins will see it via real-time listener immediately
-    _lastLocalWrite = Date.now();
-  }).catch(() => {});
+  saveAndSync();
   pingSheetWebhook();
   closeModal();
   renderBDOStock(document.getElementById('mainContent'));
@@ -6178,7 +6181,7 @@ function renderMasterUpload(el) {
       <div style="font-size:13px;color:var(--grey-700);margin-bottom:8px">Add individual beneficiaries one at a time, selecting the block.</div>
       <div class="alert alert-info" style="margin-bottom:14px">
         <span class="material-icons-round">info</span>
-        <div>Beneficiaries added via <strong>Method 1 (CSV Upload)</strong> are also listed here. All entries from both methods are shown in the <strong>All Uploaded Beneficiaries</strong> table below.</div>
+        <div>Beneficiaries added via <strong>Method 1 (CSV Upload)</strong> are also shown below by block. Both methods share the same master list.</div>
       </div>
       <div class="form-grid">
         <div class="form-group"><label class="form-label">Full Name *</label><input class="form-control" id="muName" placeholder="Full name"></div>
@@ -6203,6 +6206,9 @@ function renderMasterUpload(el) {
       <button class="btn btn-primary" style="margin-top:12px" onclick="addMasterBeneficiary()">
         <span class="material-icons-round">person_add</span> Add Beneficiary
       </button>
+
+      <!-- Block-wise beneficiary list (Method 1 + Method 2 combined) -->
+      <div id="mu2BenList" style="margin-top:20px"></div>
     </div>
 
     <!-- Existing list with Edit + Delete -->
@@ -6251,6 +6257,8 @@ function renderMasterUpload(el) {
         </table>
       </div>
     </div>`;
+  // Populate the block-wise list in Method 2 with the first block's data
+  renderMU2BenList();
 }
 
 let _masterPreviewData = [];
@@ -6446,6 +6454,57 @@ function updateMUVillages() {
   const vils = BLOCK_DATA[blk]?.villages||[];
   const sel  = document.getElementById('muVillage');
   if (sel) sel.innerHTML = vils.map(v=>`<option>${v}</option>`).join('');
+  renderMU2BenList();
+}
+
+function renderMU2BenList() {
+  const container = document.getElementById('mu2BenList');
+  if (!container) return;
+  const blk = document.getElementById('muBlock')?.value || BLOCKS[0];
+  const bens = DB.beneficiaries.filter(b => b.block === blk);
+  if (!bens.length) {
+    container.innerHTML = `<div style="font-size:13px;color:var(--grey-500);padding:10px 0">No beneficiaries uploaded for <strong>${blk}</strong> block yet.</div>`;
+    return;
+  }
+  container.innerHTML = `
+    <div style="font-size:12px;font-weight:700;color:var(--blue);margin-bottom:8px;letter-spacing:.3px">
+      ${blk} Block — ${bens.length} beneficiar${bens.length===1?'y':'ies'} (CSV + Manual entries combined)
+    </div>
+    <div class="table-wrap" style="max-height:280px;overflow-y:auto">
+      <table style="font-size:12px">
+        <thead>
+          <tr>
+            <th>#</th><th>Work ID</th><th>Name</th><th>Village</th><th>Scheme</th>
+            <th style="text-align:right">Sanctioned</th>
+            <th style="text-align:right">Issued</th>
+            <th style="text-align:right">Balance</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${bens.map((b, idx) => {
+            const issuedFromDB = DB.issuances.filter(i=>i.beneficiaryId===b.id).reduce((s,i)=>s+i.bags,0);
+            const issuedBags   = Math.max(issuedFromDB, b.issuedBags || 0);
+            const balBags      = Math.max(0, (b.sanctionedBags||0) - issuedBags);
+            return `<tr>
+              <td style="color:var(--grey-500)">${idx+1}</td>
+              <td style="font-family:monospace;font-size:11px;color:var(--blue)">${b.workId||'—'}</td>
+              <td><strong>${b.name}</strong></td>
+              <td style="font-size:11px">${b.village}</td>
+              <td style="font-size:11px">${b.scheme}</td>
+              <td style="text-align:right;font-weight:600">${b.sanctionedBags||0}</td>
+              <td style="text-align:right;color:var(--green);font-weight:600">${issuedBags}</td>
+              <td style="text-align:right;color:${balBags>0?'var(--blue)':'var(--grey-400)'};font-weight:600">${balBags}</td>
+            </tr>`;
+          }).join('')}
+          <tr style="background:var(--blue-light);font-weight:700;font-size:12px">
+            <td colspan="5" style="text-align:right">Block Total</td>
+            <td style="text-align:right">${bens.reduce((t,b)=>t+(b.sanctionedBags||0),0)}</td>
+            <td style="text-align:right;color:var(--green)">${bens.reduce((t,b)=>{const iss=Math.max(DB.issuances.filter(i=>i.beneficiaryId===b.id).reduce((s,i)=>s+i.bags,0),b.issuedBags||0);return t+iss;},0)}</td>
+            <td style="text-align:right;color:var(--blue)">${bens.reduce((t,b)=>{const iss=Math.max(DB.issuances.filter(i=>i.beneficiaryId===b.id).reduce((s,i)=>s+i.bags,0),b.issuedBags||0);return t+Math.max(0,(b.sanctionedBags||0)-iss);},0)}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>`;
 }
 
 function addMasterBeneficiary() {
@@ -6467,7 +6526,7 @@ function addMasterBeneficiary() {
     year:    document.getElementById('muYear').value || '2025-26',
     houseNo: '',
     sanctionedBags: parseInt(document.getElementById('muBags').value)||100,
-    issuedBags: 0, receivedBags: 0, status: 'Active',
+    issuedBags: 0, balanceBags: parseInt(document.getElementById('muBags').value)||100, receivedBags: 0, status: 'Active',
     uploadedBy: currentUser.name,
     uploadedAt: new Date().toISOString(),
     createdAt: new Date().toISOString()
