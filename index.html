@@ -2580,18 +2580,44 @@ function approveAllotment(id) {
     `, [{label:'Close',cls:'btn-outlined',fn:closeModal}]);
     return;
   }
-  a.status = 'Approved';
-  a.approvedBy = currentUser.name;
-  a.approvedAt = new Date().toISOString();
-  // Generate challan number on approval
-  if (!a.challanNumber) {
-    a.challanNumber = generateChallanNumber(a.block);
-  }
-  a.timeline.push({event:'Approved by BDO', by:currentUser.name, at:new Date().toISOString(), note:'Challan: ' + a.challanNumber});
-  saveAndSync();
-  showToast('Allotment approved ✓  Challan: ' + a.challanNumber);
-  filterAllotTable();
-  updateBadges();
+  // Show confirmation modal with cement summary before approving
+  const ben2 = DB.beneficiaries.find(b=>b.id===a.beneficiaryId)||{};
+  const sanctioned2 = ben2.sanctionedBags || a.bags;
+  const alreadyIssued2 = DB.issuances.filter(i=>i.beneficiaryId===a.beneficiaryId).reduce((s,i)=>s+i.bags,0);
+  const balanceAfterThis2 = Math.max(0, sanctioned2 - alreadyIssued2 - a.bags);
+
+  openModal('Confirm BDO Approval – ' + a.id, `
+    <div class="alert alert-info" style="margin-bottom:14px">
+      <span class="material-icons-round">approval</span>
+      <div>Review cement entitlement before approving allotment for <strong>${a.beneficiaryName}</strong> · ${a.village}</div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:12px 0;background:var(--grey-50);border-radius:8px;padding:14px">
+      <div style="text-align:center"><div style="font-size:22px;font-weight:700;color:var(--blue)">${sanctioned2}</div><div style="font-size:11px;color:var(--grey-600)">Total Sanctioned</div></div>
+      <div style="text-align:center"><div style="font-size:22px;font-weight:700;color:var(--green)">${alreadyIssued2}</div><div style="font-size:11px;color:var(--grey-600)">Previously Issued</div></div>
+      <div style="text-align:center"><div style="font-size:22px;font-weight:700;color:var(--yellow)">${a.bags}</div><div style="font-size:11px;color:var(--grey-600)">This Issuance</div></div>
+      <div style="text-align:center"><div style="font-size:22px;font-weight:700;color:${balanceAfterThis2>0?'var(--blue)':'var(--grey-400)'}">${balanceAfterThis2}</div><div style="font-size:11px;color:var(--grey-600)">Pending / Balance</div></div>
+    </div>
+    <div class="info-row"><span class="info-key">Scheme</span><span class="info-val">${a.scheme}</span></div>
+    <div class="info-row"><span class="info-key">Village / Block</span><span class="info-val">${a.village} · ${a.block}</span></div>
+    <div class="info-row"><span class="info-key">Engineer Verified By</span><span class="info-val">${a.engineerVerifiedBy||'—'}</span></div>
+    ${balanceAfterThis2 < 0 ? `<div class="alert alert-danger" style="margin-top:8px"><span class="material-icons-round">warning</span><strong>Over-allotment!</strong> This order exceeds the sanctioned balance. Please reject or reduce bags.</div>` : ''}
+  `, [
+    {label:'Cancel', cls:'btn-outlined', fn:closeModal},
+    {label:'✓ Approve & Generate Challan', cls:'btn-green', fn:()=>{
+      closeModal();
+      a.status = 'Approved';
+      a.approvedBy = currentUser.name;
+      a.approvedAt = new Date().toISOString();
+      if (!a.challanNumber) {
+        a.challanNumber = generateChallanNumber(a.block);
+      }
+      a.timeline.push({event:'Approved by BDO', by:currentUser.name, at:new Date().toISOString(), note:'Challan: ' + a.challanNumber});
+      saveAndSync();
+      showToast('Allotment approved ✓  Challan: ' + a.challanNumber);
+      filterAllotTable();
+      updateBadges();
+    }}
+  ]);
 }
 
 function engineerVerifyAllotment(id) {
@@ -2614,9 +2640,21 @@ function engineerVerifyAllotment(id) {
       <div class="info-row"><span class="info-key">Cement Type</span><span class="info-val">${a.cementType||'OPC 43 Grade'}</span></div>
       <div class="info-row"><span class="info-key">Sanctioned Bags</span><span class="info-val"><strong>${ben.sanctionedBags||a.bags}</strong></span></div>
       <div class="info-row"><span class="info-key">Submitted By (Overseer)</span><span class="info-val">${a.createdBy||'—'}</span></div>
-      <div class="info-row"><span class="info-key">Submitted At</span><span class="info-val">${a.createdAt?new Date(a.createdAt).toLocaleString('en-IN',{dateStyle:'short',timeStyle:'short'}):' —'}</span></div>
-      ${a.remark ? `<div class="info-row" style="grid-column:1/-1"><span class="info-key">Overseer Remarks</span><span class="info-val">${a.remark}</span></div>` : ''}
     </div>
+    <!-- Cement entitlement summary for Engineer -->
+    ${(()=>{
+      const sanctioned = ben.sanctionedBags || a.bags;
+      const alreadyIssued = DB.issuances.filter(i=>i.beneficiaryId===a.beneficiaryId).reduce((s,i)=>s+i.bags,0);
+      const balanceAfterThis = Math.max(0, sanctioned - alreadyIssued - a.bags);
+      return `<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:10px 0;background:var(--grey-50);border-radius:8px;padding:12px">
+        <div style="text-align:center"><div style="font-size:20px;font-weight:700;color:var(--blue)">${sanctioned}</div><div style="font-size:11px;color:var(--grey-600)">Sanctioned</div></div>
+        <div style="text-align:center"><div style="font-size:20px;font-weight:700;color:var(--green)">${alreadyIssued}</div><div style="font-size:11px;color:var(--grey-600)">Already Issued</div></div>
+        <div style="text-align:center"><div style="font-size:20px;font-weight:700;color:var(--yellow)">${a.bags}</div><div style="font-size:11px;color:var(--grey-600)">This Order</div></div>
+        <div style="text-align:center"><div style="font-size:20px;font-weight:700;color:${balanceAfterThis>0?'var(--blue)':'var(--grey-400)'}">${balanceAfterThis}</div><div style="font-size:11px;color:var(--grey-600)">Balance After</div></div>
+      </div>`;
+    })()}
+    <div class="info-row"><span class="info-key">Submitted At</span><span class="info-val">${a.createdAt?new Date(a.createdAt).toLocaleString('en-IN',{dateStyle:'short',timeStyle:'short'}):' —'}</span></div>
+    ${a.remark ? `<div class="info-row" style="grid-column:1/-1"><span class="info-key">Overseer Remarks</span><span class="info-val">${a.remark}</span></div>` : ''}
     ${a.receiptPhotos && a.receiptPhotos.length ? `
     <hr class="divider">
     <div class="section-title">Work Order / Stage Photos (${a.receiptPhotos.length})</div>
