@@ -1242,6 +1242,8 @@ function loadDB() {
       saveDB(); // persist the cleaned version
     }
 
+    // Always rebuild cached stock totals from ledger source-of-truth
+    recalcStockCache();
     return true;
   } catch(e) {
     console.error('loadDB error:', e);
@@ -1434,6 +1436,9 @@ function mergeRemoteIntoDB(remote) {
   if (remote.challanCounter)                DB.challanCounter  = remote.challanCounter;
   // Custom users: remote wins (Collector adds/deletes propagate everywhere)
   if (Array.isArray(remote.customUsers))    DB.customUsers     = remote.customUsers;
+
+  // Rebuild cached stock totals from ledger source-of-truth after every merge
+  recalcStockCache();
 }
 
 // ── Silently refresh current page without losing scroll position ─────
@@ -1864,6 +1869,63 @@ function pagesForRole(role) {
   return [...new Set(pages)];
 }
 
+// ===== CANONICAL METRIC HELPERS =============================================
+// ALL display calculations must use these functions.
+// Never read DB.stock.issued / DB.stock.balance / DB.stock.total directly for UI —
+// those cached fields can drift after cross-device Firebase sync.
+// Source of truth: DB.issuances (for issued bags) + DB.stockLedger (for central stock).
+
+function issuedFor(benId) {
+  return DB.issuances.filter(i=>i.beneficiaryId===benId).reduce((s,i)=>s+i.bags,0);
+}
+// Effective issued for a beneficiary: DB.issuances is authoritative.
+// b.issuedBags only supplements when no DB issuances exist (pre-app history).
+function effectiveIssued(b) {
+  const fromDB = issuedFor(b.id);
+  return fromDB > 0 ? fromDB : (b.issuedBags || 0);
+}
+function balanceFor(b) {
+  return Math.max(0, (b.sanctionedBags||0) - effectiveIssued(b));
+}
+function blockIssued(blk) {
+  return DB.issuances.filter(i=>i.block===blk).reduce((s,i)=>s+i.bags,0);
+}
+function blockSanctioned(blk) {
+  return DB.beneficiaries.filter(b=>b.block===blk).reduce((t,b)=>t+(b.sanctionedBags||0),0);
+}
+function blockReceived(blk) {
+  return (DB.bdoStockEntries||[]).filter(e=>e.block===blk).reduce((t,e)=>t+e.bags,0);
+}
+function blockStockBal(blk) {
+  return Math.max(0, blockReceived(blk) - blockIssued(blk));
+}
+function ledgerReceived() {
+  return (DB.stockLedger||[]).filter(l=>l.type==='RECEIPT').reduce((s,l)=>s+l.bags,0);
+}
+function ledgerIssued() {
+  return (DB.stockLedger||[]).filter(l=>l.type==='ISSUE').reduce((s,l)=>s+l.bags,0);
+}
+function centralStockBal() {
+  return Math.max(0, ledgerReceived() - ledgerIssued());
+}
+function districtIssued() {
+  return DB.issuances.reduce((s,i)=>s+i.bags,0);
+}
+function districtSanctioned() {
+  return DB.beneficiaries.reduce((t,b)=>t+(b.sanctionedBags||0),0);
+}
+// Rebuild DB.stock cached fields from source data.
+// Call after every Firebase merge + after CSV import so cached values stay consistent.
+function recalcStockCache() {
+  const recv = ledgerReceived();
+  const iss  = ledgerIssued();
+  if (!DB.stock) DB.stock = {};
+  DB.stock.total   = recv;
+  DB.stock.issued  = iss;
+  DB.stock.balance = Math.max(0, recv - iss);
+}
+// ============================================================================
+
 // ===== DASHBOARD =====
 function renderDashboard(el) {
   const myBens    = scopedBeneficiaries();
@@ -1874,33 +1936,33 @@ function renderDashboard(el) {
   const role = currentUser.role;
   const isBlockOfficer = !!currentUser.block; // BDO, overseer, engineer, store, inspector
 
-  // Block-wise summary for Collector
+  // Block-wise summary for Collector — all values from canonical helpers
   const blockSummary = currentUser.block === null ? BLOCKS.map(blk => {
-    const bb = DB.beneficiaries.filter(b=>b.block===blk);
-    const bi = DB.issuances.filter(i=>i.block===blk);
-    const ba = DB.allotments.filter(a=>a.block===blk);
-    const bdoEntries = (DB.bdoStockEntries||[]).filter(e=>e.block===blk);
-    const stockRecv = bdoEntries.reduce((t,e)=>t+e.bags,0);
-    return { blk, bens: bb.length, issued: bi.reduce((s,x)=>s+x.bags,0),
-             allots: ba.length, pend: ba.filter(a=>a.status==='Pending').length,
-             stockRecv, sanctioned: bb.reduce((t,b)=>t+(b.sanctionedBags||0),0) };
+    const bb   = DB.beneficiaries.filter(b=>b.block===blk);
+    const ba   = DB.allotments.filter(a=>a.block===blk);
+    const iss  = blockIssued(blk);
+    const sanc = blockSanctioned(blk);
+    const recv = blockReceived(blk);
+    return { blk, bens: bb.length, issued: iss, allots: ba.length,
+             pend: ba.filter(a=>a.status==='Pending').length,
+             stockRecv: recv, sanctioned: sanc };
   }) : [];
 
-  // Block-level stats for block officers
-  const blkBens  = isBlockOfficer ? DB.beneficiaries.filter(b=>b.block===currentUser.block) : [];
-  const blkIss   = isBlockOfficer ? DB.issuances.filter(i=>i.block===currentUser.block) : [];
-  const blkAllots= isBlockOfficer ? DB.allotments.filter(a=>a.block===currentUser.block) : [];
-  const blkSanc  = blkBens.reduce((t,b)=>t+(b.sanctionedBags||0),0);
-  const blkIssBags = blkIss.reduce((t,i)=>t+i.bags,0);
-  const blkPending = blkAllots.filter(a=>a.status==='Pending').length;
+  // Block-level stats for block officers — all from canonical helpers
+  const myBlock    = currentUser.block;
+  const blkBens    = isBlockOfficer ? DB.beneficiaries.filter(b=>b.block===myBlock) : [];
+  const blkAllots  = isBlockOfficer ? DB.allotments.filter(a=>a.block===myBlock) : [];
+  const blkSanc    = isBlockOfficer ? blockSanctioned(myBlock) : 0;
+  const blkIssBags = isBlockOfficer ? blockIssued(myBlock) : 0;
+  const blkIss     = isBlockOfficer ? DB.issuances.filter(i=>i.block===myBlock) : [];
+  const blkPending  = blkAllots.filter(a=>a.status==='Pending').length;
   const blkApproved = blkAllots.filter(a=>a.status==='Approved').length;
-  const blkBalance = Math.max(0, blkSanc - blkIssBags);
-  const blkPct = blkSanc ? Math.round(blkIssBags/blkSanc*100) : 0;
+  const blkBalance  = Math.max(0, blkSanc - blkIssBags);
+  const blkPct      = blkSanc ? Math.round(blkIssBags/blkSanc*100) : 0;
 
   // BDO stock entries for this block
-  const bdoEntries = (DB.bdoStockEntries||[]).filter(e=>!e.block||e.block===currentUser.block);
-  const bdoStockRecv = bdoEntries.reduce((t,e)=>t+e.bags,0);
-  const bdoStockBal = Math.max(0, bdoStockRecv - blkIssBags);
+  const bdoStockRecv = isBlockOfficer ? blockReceived(myBlock) : 0;
+  const bdoStockBal  = isBlockOfficer ? blockStockBal(myBlock) : 0;
 
   // Panchayat breakdown for overseer
   const myPanchs = userPanchayats();
@@ -2028,7 +2090,7 @@ function renderDashboard(el) {
       </div>
       <div class="stat-card" onclick="navigate('stock')" title="View Stock Register">
         <div class="stat-icon purple"><span class="material-icons-round">inventory_2</span></div>
-        <div><div class="stat-val">${DB.stock.balance}</div><div class="stat-label">Central Stock Balance</div><div class="stat-sub">Bags available</div></div>
+        <div><div class="stat-val">${centralStockBal()}</div><div class="stat-label">Central Stock Balance</div><div class="stat-sub">Bags available</div></div>
       </div>
     </div>`}
 
@@ -2086,11 +2148,11 @@ function renderDashboard(el) {
       <div class="card">
         <div class="section-title">Central Stock Utilization</div>
         <div style="margin-bottom:8px;display:flex;justify-content:space-between;font-size:13px">
-          <span>Issued: <strong>${DB.stock.total - DB.stock.balance} bags</strong></span>
-          <span>Total: <strong>${DB.stock.total} bags</strong></span>
+          <span>Issued: <strong>${ledgerIssued()} bags</strong></span>
+          <span>Total: <strong>${ledgerReceived()} bags</strong></span>
         </div>
-        <div class="progress-bar"><div class="progress-fill" style="width:${DB.stock.total?Math.round((DB.stock.total-DB.stock.balance)/DB.stock.total*100):0}%"></div></div>
-        <div style="font-size:11px;color:var(--grey-500);margin-top:6px">${DB.stock.total?Math.round((DB.stock.total-DB.stock.balance)/DB.stock.total*100):0}% utilized</div>
+        <div class="progress-bar"><div class="progress-fill" style="width:${ledgerReceived()?Math.round(ledgerIssued()/ledgerReceived()*100):0}%"></div></div>
+        <div style="font-size:11px;color:var(--grey-500);margin-top:6px">${ledgerReceived()?Math.round(ledgerIssued()/ledgerReceived()*100):0}% utilized</div>
       </div>
       <div class="card">
         <div class="section-title">District Workflow Status</div>
@@ -2120,9 +2182,8 @@ function renderDashboard(el) {
           <tbody>
             ${myPanchs.map((panch, pi) => {
               const pBens = DB.beneficiaries.filter(b=>b.block===currentUser.block && (b.village||'').toUpperCase()===panch.toUpperCase());
-              const pIss  = DB.issuances.filter(i=>i.block===currentUser.block && (i.village||'').toUpperCase()===panch.toUpperCase());
               const sanc  = pBens.reduce((t,b)=>t+(b.sanctionedBags||0),0);
-              const iss   = pIss.reduce((t,i)=>t+i.bags,0);
+              const iss   = pBens.reduce((t,b)=>t+effectiveIssued(b),0);
               const bal   = Math.max(0,sanc-iss);
               const pct   = sanc ? Math.round(iss/sanc*100) : 0;
               return `<tr>
@@ -2142,8 +2203,8 @@ function renderDashboard(el) {
               <td colspan="2">TOTAL</td>
               <td style="text-align:right">${myPanchs.reduce((t,p)=>{const pb=DB.beneficiaries.filter(b=>b.block===currentUser.block&&(b.village||'').toUpperCase()===p.toUpperCase());return t+pb.length;},0)}</td>
               <td style="text-align:right">${myPanchs.reduce((t,p)=>{const pb=DB.beneficiaries.filter(b=>b.block===currentUser.block&&(b.village||'').toUpperCase()===p.toUpperCase());return t+pb.reduce((s,b)=>s+(b.sanctionedBags||0),0);},0)}</td>
-              <td style="text-align:right;color:var(--green)">${myPanchs.reduce((t,p)=>{const pi=DB.issuances.filter(i=>i.block===currentUser.block&&(i.village||'').toUpperCase()===p.toUpperCase());return t+pi.reduce((s,i)=>s+i.bags,0);},0)}</td>
-              <td style="text-align:right;color:var(--blue)">${myPanchs.reduce((t,p)=>{const pb=DB.beneficiaries.filter(b=>b.block===currentUser.block&&(b.village||'').toUpperCase()===p.toUpperCase());const pi=DB.issuances.filter(i=>i.block===currentUser.block&&(i.village||'').toUpperCase()===p.toUpperCase());const s=pb.reduce((x,b)=>x+(b.sanctionedBags||0),0);const iss=pi.reduce((x,i)=>x+i.bags,0);return t+Math.max(0,s-iss);},0)}</td>
+              <td style="text-align:right;color:var(--green)">${myPanchs.reduce((t,p)=>{const pb=DB.beneficiaries.filter(b=>b.block===currentUser.block&&(b.village||'').toUpperCase()===p.toUpperCase());return t+pb.reduce((s,b)=>s+effectiveIssued(b),0);},0)}</td>
+              <td style="text-align:right;color:var(--blue)">${myPanchs.reduce((t,p)=>{const pb=DB.beneficiaries.filter(b=>b.block===currentUser.block&&(b.village||'').toUpperCase()===p.toUpperCase());return t+pb.reduce((s,b)=>s+balanceFor(b),0);},0)}</td>
               <td></td>
             </tr>
           </tbody>
@@ -2261,7 +2322,7 @@ function renderAllotTable(data) {
   if (!data.length) { body.innerHTML = `<tr><td colspan="11"><div class="empty-state"><span class="material-icons-round">assignment</span><p>No allotments found</p></div></td></tr>`; return; }
   body.innerHTML = data.map(a=>{
     const ben = DB.beneficiaries.find(b=>b.id===a.beneficiaryId)||{};
-    const issuedBags = DB.issuances.filter(i=>i.beneficiaryId===a.beneficiaryId).reduce((s,i)=>s+i.bags,0);
+    const issuedBags = effectiveIssued(ben);
     const sanctioned = ben.sanctionedBags || a.bags;
     const toBeIssued = Math.max(0, sanctioned - issuedBags);
     return `
@@ -2351,11 +2412,9 @@ function fillBenDetails() {
   const workIdEl = document.getElementById('aWorkId');
   if (workIdEl) workIdEl.value = b.workId || '—';
 
-  // Calculate balance bags — use DB.issuances as authoritative (same as beneficiary table + stock register)
-  const issuedFromDB  = DB.issuances.filter(i=>i.beneficiaryId===b.id).reduce((s,i)=>s+i.bags,0);
-  // Only fall back to master-upload issuedBags if nothing has been recorded in DB yet
-  const issuedBagsEff = issuedFromDB > 0 ? issuedFromDB : (b.issuedBags || 0);
-  const balanceBags   = Math.max(0, (b.sanctionedBags||0) - issuedBagsEff);
+  // Calculate balance bags using canonical helpers — matches beneficiary register exactly
+  const issuedBagsEff = effectiveIssued(b);
+  const balanceBags   = balanceFor(b);
   const bagsEl = document.getElementById('aBags');
   if (bagsEl) {
     bagsEl.value = balanceBags;
@@ -2434,11 +2493,8 @@ function openNewAllotment() {
     }
   }
 
-  // Build options showing name + work ID + balance (same formula as beneficiary table + stock register)
   const bOpts = myBens.map(b=>{
-    const issuedFromDB = DB.issuances.filter(i=>i.beneficiaryId===b.id).reduce((s,i)=>s+i.bags,0);
-    const issuedEff    = issuedFromDB > 0 ? issuedFromDB : (b.issuedBags || 0);
-    const bal          = Math.max(0, (b.sanctionedBags||0) - issuedEff);
+    const bal = balanceFor(b);
     return `<option value="${b.id}">${b.name} [${b.workId||'—'}] – Bal: ${bal} bags</option>`;
   }).join('');
 
@@ -2573,9 +2629,8 @@ function submitAllotment() {
 
   if (!bags || bags < 1) { showToast('Enter valid bags count','error'); return; }
 
-  // Check beneficiary eligible balance — authoritative: DB.issuances; supplement master-upload only if no DB records
-  const issuedFromDB2       = DB.issuances.filter(i=>i.beneficiaryId===benId).reduce((s,i)=>s+i.bags,0);
-  const totalIssued         = issuedFromDB2 > 0 ? issuedFromDB2 : (b.issuedBags || 0);
+  // Check beneficiary eligible balance using canonical helpers
+  const totalIssued         = effectiveIssued(b);
   const totalActiveAllotments = DB.allotments
     .filter(al => al.beneficiaryId===benId && (al.status==='Pending' || al.status==='Approved'))
     .reduce((s,al)=>s+al.bags, 0);
@@ -2590,11 +2645,8 @@ function submitAllotment() {
     if (errEl) { errEl.innerHTML=`<strong>Error:</strong> Cannot allot <strong>${bags}</strong> bags — balance as per beneficiary register is only <strong>${balanceBags} bags</strong>.`; errEl.style.display='block'; }
     return;
   }
-  // Check block stock balance (use BDO block entries if available, else central stock)
-  const blkEntries = (DB.bdoStockEntries||[]).filter(e=>e.block===b.block);
-  const blkRecvd = blkEntries.reduce((t,e)=>t+e.bags,0);
-  const blkIssued = DB.issuances.filter(i=>i.block===b.block).reduce((t,i)=>t+i.bags,0);
-  const blkBal = blkRecvd > 0 ? Math.max(0, blkRecvd - blkIssued) : DB.stock.balance;
+  // Check block stock balance using canonical helpers
+  const blkBal = blockReceived(b.block) > 0 ? blockStockBal(b.block) : centralStockBal();
   if (bags > blkBal) { showToast(`Insufficient block stock! ${b.block} balance: ${blkBal} bags`,'error'); return; }
 
   const allotment = {
@@ -2648,7 +2700,7 @@ function approveAllotment(id) {
   // Show confirmation modal with cement summary before approving
   const ben2 = DB.beneficiaries.find(b=>b.id===a.beneficiaryId)||{};
   const sanctioned2 = ben2.sanctionedBags || a.bags;
-  const alreadyIssued2 = DB.issuances.filter(i=>i.beneficiaryId===a.beneficiaryId).reduce((s,i)=>s+i.bags,0);
+  const alreadyIssued2 = effectiveIssued(ben2);
   const balanceAfterThis2 = Math.max(0, sanctioned2 - alreadyIssued2 - a.bags);
 
   openModal('Confirm BDO Approval – ' + a.id, `
@@ -2709,7 +2761,7 @@ function engineerVerifyAllotment(id) {
     <!-- Cement entitlement summary for Engineer -->
     ${(()=>{
       const sanctioned = ben.sanctionedBags || a.bags;
-      const alreadyIssued = DB.issuances.filter(i=>i.beneficiaryId===a.beneficiaryId).reduce((s,i)=>s+i.bags,0);
+      const alreadyIssued = effectiveIssued(ben);
       const balanceAfterThis = Math.max(0, sanctioned - alreadyIssued - a.bags);
       return `<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:10px 0;background:var(--grey-50);border-radius:8px;padding:12px">
         <div style="text-align:center"><div style="font-size:20px;font-weight:700;color:var(--blue)">${sanctioned}</div><div style="font-size:11px;color:var(--grey-600)">Sanctioned</div></div>
@@ -2861,9 +2913,9 @@ function viewAllotment(id) {
   const a = DB.allotments.find(x=>x.id===id);
   if (!a) return;
   const ben = DB.beneficiaries.find(b=>b.id===a.beneficiaryId)||{};
-  const totalIssuedToBen = DB.issuances.filter(i=>i.beneficiaryId===a.beneficiaryId).reduce((s,i)=>s+i.bags,0);
+  const totalIssuedToBen = effectiveIssued(ben);
   const sanctioned = ben.sanctionedBags || a.bags;
-  const balanceBags = Math.max(0, sanctioned - totalIssuedToBen);
+  const balanceBags = balanceFor(ben);
   openModal('Allotment Details – ' + a.id, `
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:0">
       <div class="info-row" style="grid-column:1/-1"><span class="info-key">Beneficiary</span><span class="info-val">${a.beneficiaryName} (${a.beneficiaryId})</span></div>
@@ -2974,8 +3026,8 @@ function saveEditAllotment(id) {
   if (!bags || bags < 1) { showToast('Enter valid bags count','error'); return; }
   if (issPhotosData.length < 1) { showToast('At least 1 cement receipt photo is required','error'); return; }
 
-  const totalIssued = DB.issuances.filter(i=>i.beneficiaryId===a.beneficiaryId).reduce((s,i)=>s+i.bags,0);
   const b = DB.beneficiaries.find(x=>x.id===a.beneficiaryId)||{};
+  const totalIssued = effectiveIssued(b);
   // Exclude the current allotment itself from "other active" to avoid double-counting
   const otherActive = DB.allotments
     .filter(al=>al.beneficiaryId===a.beneficiaryId && al.id!==id && (al.status==='Pending'||al.status==='Approved'))
@@ -3076,7 +3128,7 @@ function filterReadyToIssue() {
   }
   body.innerHTML = data.map((a,idx)=>{
     const ben = DB.beneficiaries.find(b=>b.id===a.beneficiaryId)||{};
-    const alreadyIssued = DB.issuances.filter(i=>i.beneficiaryId===a.beneficiaryId).reduce((s,i)=>s+i.bags,0);
+    const alreadyIssued = effectiveIssued(ben);
     const sanctioned = ben.sanctionedBags||a.bags;
     const nowIssued  = a.bags;
     const balance    = Math.max(0, sanctioned - alreadyIssued - nowIssued);
@@ -3104,7 +3156,7 @@ function openIssueModal(allotmentId) {
 
   // ── Beneficiary eligibility check ───────────────────────────────
   const benElig = DB.beneficiaries.find(b=>b.id===a.beneficiaryId)||{};
-  const totalIssuedToBen = DB.issuances.filter(i=>i.beneficiaryId===a.beneficiaryId).reduce((s,i)=>s+i.bags,0);
+  const totalIssuedToBen = effectiveIssued(benElig);
   const sanctionedQty = benElig.sanctionedBags || a.bags;
   const benBalance = Math.max(0, sanctionedQty - totalIssuedToBen);
   if (benBalance <= 0) {
@@ -3125,10 +3177,11 @@ function openIssueModal(allotmentId) {
   }
 
   // ── Block stock balance check ────────────────────────────────────
-  const blkEntriesCheck = (DB.bdoStockEntries||[]).filter(e=>e.block===a.block);
-  const blkRecvdCheck   = blkEntriesCheck.reduce((t,e)=>t+e.bags, 0);
-  const blkIssuedCheck  = DB.issuances.filter(i=>i.block===a.block).reduce((t,i)=>t+i.bags, 0);
-  const effectiveStockBal = blkRecvdCheck > 0 ? Math.max(0, blkRecvdCheck - blkIssuedCheck) : DB.stock.balance;
+  const blkRecvdCheck  = blockReceived(a.block);
+  const blkIssuedCheck = blockIssued(a.block);
+  const effectiveStockBal = blkRecvdCheck > 0
+    ? blockStockBal(a.block)
+    : centralStockBal();
   if (effectiveStockBal <= 0) {
     openModal('No Stock Available – Issuance Blocked', `
       <div class="alert alert-danger" style="margin-bottom:12px">
@@ -3320,7 +3373,7 @@ function captureIssueGPS() {
 
 function updateIssueStockPreview() {
   const bags = parseInt(document.getElementById('issBags')?.value)||0;
-  const bal = DB.stock.balance - bags;
+  const bal = centralStockBal() - bags;
   const el = document.getElementById('stockPreview');
   if (!el) return;
   el.innerHTML = `Balance after issue: <strong style="color:${bal<100?'var(--red)':bal<300?'var(--yellow)':'var(--green)'}">${bal}</strong> bags`;
@@ -3488,7 +3541,7 @@ function confirmIssue(allotmentId) {
   // ── Beneficiary eligibility check (final gate) ──────────────────
   // Ensure beneficiary has not already exhausted their sanctioned quota
   const benFinal = DB.beneficiaries.find(b=>b.id===a.beneficiaryId)||{};
-  const totalIssuedToBenFinal = DB.issuances.filter(i=>i.beneficiaryId===a.beneficiaryId).reduce((s,i)=>s+i.bags,0);
+  const totalIssuedToBenFinal = effectiveIssued(benFinal);
   const sanctionedFinal = benFinal.sanctionedBags || a.bags;
   const benBalanceFinal = Math.max(0, sanctionedFinal - totalIssuedToBenFinal);
   if (benBalanceFinal <= 0) {
@@ -3500,21 +3553,19 @@ function confirmIssue(allotmentId) {
     return;
   }
 
-  // ── Stock balance check (both central depot and block BDO stock) ──
-  const blockEntries = (DB.bdoStockEntries||[]).filter(e=>e.block===a.block);
-  const blockReceived = blockEntries.reduce((t,e)=>t+e.bags,0);
-  const blockIssued   = DB.issuances.filter(i=>i.block===a.block).reduce((t,i)=>t+i.bags,0);
-  const blockBalance  = Math.max(0, blockReceived - blockIssued);
-
-  // Use block balance if BDO stock entries exist for this block, else fall back to central
-  const effectiveBalance = blockReceived > 0 ? blockBalance : DB.stock.balance;
+  // ── Stock balance check (block BDO stock first, then central) ──
+  const blockRecv    = blockReceived(a.block);
+  const blockIss     = blockIssued(a.block);
+  const blockBal     = blockStockBal(a.block);
+  const effectiveBalance = blockRecv > 0 ? blockBal : centralStockBal();
   if (bags > effectiveBalance) {
-    const src = blockReceived > 0 ? `${a.block} block stock balance` : 'central depot balance';
+    const src = blockRecv > 0 ? `${a.block} block stock balance` : 'central depot balance';
     showToast(`Insufficient stock! ${src}: ${effectiveBalance} bags only`, 'error');
     return;
   }
 
-  const openingBalanceForEntry = DB.stock.balance;
+  // Opening/closing balances for the central ledger entry
+  const openingBalanceForEntry = centralStockBal();
   const closingBalanceForEntry = openingBalanceForEntry - bags;
 
   const issuanceId = 'ISS' + Date.now();
@@ -3570,32 +3621,31 @@ function confirmIssue(allotmentId) {
     remark: `Issued to ${a.beneficiaryName} | ${a.scheme}`
   });
 
-  // ── Update stock totals ─────────────────────────────────────────
-  DB.stock.issued  += bags;
-  DB.stock.balance -= bags;
-  DB.stock.lastUpdated = issuedAt;
-
-  // ── Update allotment + beneficiary ─────────────────────────────
+  // ── Update allotment ───────────────────────────────────────────
   a.status = 'Issued';
   a.timeline.push({
     event: 'Cement Issued',
     by: currentUser.name,
     at: issuedAt,
-    note: `${bags} bags · vehicle ${veh||'N/A'} · GPS: ${gpsCoords.lat},${gpsCoords.lng} · balance now ${closingBalanceForEntry} bags`
+    note: `${bags} bags · vehicle ${veh||'N/A'} · GPS: ${gpsCoords.lat},${gpsCoords.lng}`
   });
+
+  // ── Push issuance to DB, then rebuild all caches ───────────────
+  DB.issuances.push(issuance);
+
+  // Rebuild beneficiary-level cached fields from DB.issuances (canonical source)
   const ben = DB.beneficiaries.find(b=>b.id===a.beneficiaryId);
   if (ben) {
-    ben.receivedBags = (ben.receivedBags||0) + bags;
-    // Keep issuedBags in sync so all logins see consistent cement calculations
-    const totalIssuedNow = DB.issuances
-      .filter(i=>i.beneficiaryId===a.beneficiaryId)
-      .reduce((s,i)=>s+i.bags, 0) + bags; // include current issuance (not yet pushed)
-    ben.issuedBags  = Math.max(ben.issuedBags||0, totalIssuedNow);
-    ben.balanceBags = Math.max(0, (ben.sanctionedBags||0) - ben.issuedBags);
+    const totalIssuedNow = issuedFor(a.beneficiaryId);
+    ben.receivedBags = totalIssuedNow;
+    ben.issuedBags   = totalIssuedNow;
+    ben.balanceBags  = Math.max(0, (ben.sanctionedBags||0) - totalIssuedNow);
   }
 
-  // ── Push to DB and Firebase ─────────────────────────────────────
-  DB.issuances.push(issuance);
+  // Rebuild cached stock totals from ledger (the ISSUE entry was just pushed above)
+  recalcStockCache();
+  DB.stock.lastUpdated = issuedAt;
+
   issPhotosData = [];
   sigData = null;
   const capturedGps = { ...gpsCoords };
@@ -3603,7 +3653,7 @@ function confirmIssue(allotmentId) {
   saveAndSync();
 
   closeModal();
-  showToast('✓ Authorized & Issued: ' + bags + ' bags · Balance: ' + closingBalanceForEntry);
+  showToast('✓ Authorized & Issued: ' + bags + ' bags · Balance: ' + centralStockBal());
   printIssuanceSlip(issuance);
 
   // ── SMS Notification ────────────────────────────────────────────
@@ -3989,18 +4039,15 @@ function filterBenTable() {
   const cnt  = document.getElementById('benCount');
   if (!body) return;
 
-  // Compute per-row values and accumulate totals in the same pass
+  // Compute per-row values using canonical helpers — consistent with stock register and dashboard
   let totalSanctioned = 0, totalIssued = 0, totalBalance = 0;
   const rows = data.map((b, idx) => {
-    // Authoritative: actual issuances from DB
-    const issuedFromDB = DB.issuances.filter(i=>i.beneficiaryId===b.id).reduce((s,i)=>s+i.bags,0);
-    // If no DB issuances yet but master-upload had pre-existing issuedBags, show those
-    const issuedBags   = issuedFromDB > 0 ? issuedFromDB : (b.issuedBags || 0);
-    const balBags      = Math.max(0, (b.sanctionedBags||0) - issuedBags);
-    const ovsr         = overseerForVillage(b.block, b.village);
-    totalSanctioned   += (b.sanctionedBags||0);
-    totalIssued       += issuedBags;
-    totalBalance      += balBags;
+    const issuedBags = effectiveIssued(b);
+    const balBags    = balanceFor(b);
+    const ovsr       = overseerForVillage(b.block, b.village);
+    totalSanctioned += (b.sanctionedBags||0);
+    totalIssued     += issuedBags;
+    totalBalance    += balBags;
     return `
     <tr>
       <td style="color:var(--grey-500)">${idx+1}</td>
@@ -4122,8 +4169,8 @@ function viewBeneficiary(id) {
   const b = DB.beneficiaries.find(x=>x.id===id);
   const allotments = DB.allotments.filter(a=>a.beneficiaryId===id);
   const issuances  = DB.issuances.filter(i=>i.beneficiaryId===id);
-  const issuedBags = issuances.reduce((s,i)=>s+i.bags,0);
-  const balBags    = Math.max(0,(b.sanctionedBags||0)-issuedBags);
+  const issuedBags = effectiveIssued(b);
+  const balBags    = balanceFor(b);
   const ovsr       = overseerForVillage(b.block, b.village);
   openModal(b.name + ' – Profile', `
     <div class="info-row"><span class="info-key">Beneficiary ID</span><span class="info-val">${b.id}</span></div>
@@ -4321,9 +4368,11 @@ function renderStock(el) {
   const s = DB.stock;
   if (!DB.stockLedger) DB.stockLedger = [];
   const ledger = DB.stockLedger.slice().sort((a,b)=>new Date(b.date)-new Date(a.date));
-  const totalReceipts = ledger.filter(l=>l.type==='RECEIPT').reduce((t,l)=>t+l.bags,0);
-  const totalIssued   = ledger.filter(l=>l.type==='ISSUE').reduce((t,l)=>t+l.bags,0);
-  const pct = s.total ? Math.round((s.issued||0)/s.total*100) : 0;
+  // Compute fresh from source — never trust cached s.total/s.issued/s.balance
+  const totalReceipts = ledgerReceived();
+  const totalIssued   = ledgerIssued();
+  const stockBalance  = centralStockBal();
+  const pct = totalReceipts ? Math.round(totalIssued/totalReceipts*100) : 0;
 
   // Block-wise received, issued, balance
   // Issued = direct sum from DB.issuances for the block (authoritative) PLUS any
@@ -4331,24 +4380,11 @@ function renderStock(el) {
   // (handles beneficiaries whose cement was tracked before this app was used).
   const blockStats = BLOCKS.map(blk=>{
     const blkBens = DB.beneficiaries.filter(b=>b.block===blk);
-    const blkSanc = blkBens.reduce((t,b)=>t+(b.sanctionedBags||0),0);
-
-    // Authoritative: sum all issuances in DB.issuances for this block
-    const blkIssFromDB = DB.issuances.filter(i=>i.block===blk).reduce((t,i)=>t+i.bags,0);
-
-    // Supplement: for beneficiaries with a pre-existing issuedBags (master upload)
-    // but NO issuances in DB, count those bags (they were issued before the app)
-    const blkBenIds = new Set(DB.issuances.filter(i=>i.block===blk).map(i=>i.beneficiaryId));
-    const masterExtra = blkBens.reduce((t,b)=>{
-      if (!blkBenIds.has(b.id) && b.issuedBags > 0) return t + b.issuedBags;
-      return t;
-    }, 0);
-
-    const blkIss = blkIssFromDB + masterExtra;
-
-    const blkEntries = (DB.bdoStockEntries||[]).filter(e=>e.block===blk);
-    const blkRecv = blkEntries.reduce((t,e)=>t+e.bags,0);
-    const blkBal = Math.max(0, blkRecv - blkIss);
+    const blkSanc = blockSanctioned(blk);
+    // Per-beneficiary effectiveIssued aggregated — matches beneficiary register exactly
+    const blkIss  = blkBens.reduce((t,b)=>t+effectiveIssued(b),0);
+    const blkRecv = blockReceived(blk);
+    const blkBal  = Math.max(0, blkRecv - blkIss);
     return {blk, issued: blkIss, sanctioned: blkSanc, bens: blkBens.length,
             bal: Math.max(0, blkSanc - blkIss), received: blkRecv, stockBal: blkBal };
   });
@@ -4359,21 +4395,21 @@ function renderStock(el) {
       ${can('addStock')?`<button class="btn btn-primary" onclick="openAddStock()"><span class="material-icons-round">add</span> Add Receipt</button>`:''}
     </div>
 
-    ${s.balance<50?`<div class="alert alert-danger"><span class="material-icons-round">warning</span><strong>Critical stock!</strong> Only ${s.balance} bags remaining.</div>`:
-      s.balance<150?`<div class="alert alert-warn"><span class="material-icons-round">warning_amber</span><strong>Low stock warning.</strong> ${s.balance} bags remaining.</div>`:''}
+    ${stockBalance<50?`<div class="alert alert-danger"><span class="material-icons-round">warning</span><strong>Critical stock!</strong> Only ${stockBalance} bags remaining.</div>`:
+      stockBalance<150?`<div class="alert alert-warn"><span class="material-icons-round">warning_amber</span><strong>Low stock warning.</strong> ${stockBalance} bags remaining.</div>`:''}
 
     <!-- Summary stats -->
     <div class="stat-grid" style="grid-template-columns:repeat(auto-fit,minmax(160px,1fr));margin-bottom:16px">
-      <div class="stat-card" onclick="navigate('stock')" title="View Stock Register"><div class="stat-icon blue"><span class="material-icons-round">inventory_2</span></div><div><div class="stat-val">${s.total}</div><div class="stat-label">Total Received</div><div class="stat-sub">Central depot</div></div></div>
-      <div class="stat-card" onclick="navigate('issuance')" title="View Issuances"><div class="stat-icon green"><span class="material-icons-round">output</span></div><div><div class="stat-val">${s.issued||0}</div><div class="stat-label">Total Issued</div><div class="stat-sub">To beneficiaries</div></div></div>
-      <div class="stat-card" onclick="navigate('stock')" title="View Stock Register"><div class="stat-icon ${s.balance<100?'red':s.balance<300?'yellow':'green'}"><span class="material-icons-round">balance</span></div><div><div class="stat-val">${s.balance}</div><div class="stat-label">Current Balance</div><div class="stat-sub">${pct}% utilized</div></div></div>
+      <div class="stat-card" onclick="navigate('stock')" title="View Stock Register"><div class="stat-icon blue"><span class="material-icons-round">inventory_2</span></div><div><div class="stat-val">${totalReceipts}</div><div class="stat-label">Total Received</div><div class="stat-sub">Central depot</div></div></div>
+      <div class="stat-card" onclick="navigate('issuance')" title="View Issuances"><div class="stat-icon green"><span class="material-icons-round">output</span></div><div><div class="stat-val">${totalIssued}</div><div class="stat-label">Total Issued</div><div class="stat-sub">To beneficiaries</div></div></div>
+      <div class="stat-card" onclick="navigate('stock')" title="View Stock Register"><div class="stat-icon ${stockBalance<100?'red':stockBalance<300?'yellow':'green'}"><span class="material-icons-round">balance</span></div><div><div class="stat-val">${stockBalance}</div><div class="stat-label">Current Balance</div><div class="stat-sub">${pct}% utilized</div></div></div>
       <div class="stat-card" onclick="renderStockLedger()" title="View Ledger"><div class="stat-icon purple"><span class="material-icons-round">receipt_long</span></div><div><div class="stat-val">${ledger.length}</div><div class="stat-label">Ledger Entries</div><div class="stat-sub">All movements</div></div></div>
     </div>
 
     <div class="card" style="margin-bottom:16px">
       <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:8px">
         <span>Stock utilization</span>
-        <span><strong>${s.issued||0}</strong> issued of <strong>${s.total}</strong> received</span>
+        <span><strong>${totalIssued}</strong> issued of <strong>${totalReceipts}</strong> received</span>
       </div>
       <div class="progress-bar" style="height:10px">
         <div class="progress-fill" style="width:${pct}%;background:${pct>85?'var(--red)':pct>60?'var(--yellow)':'var(--blue)'}"></div>
@@ -4455,16 +4491,15 @@ function renderStock(el) {
 
 // Block stock view for engineer / overseer (scoped to their block)
 function renderBlockStockView(el) {
-  const blk = currentUser.block;
-  const blkBens  = DB.beneficiaries.filter(b=>b.block===blk);
-  const blkIss   = DB.issuances.filter(i=>i.block===blk).sort((a,b)=>new Date(b.issuedAt)-new Date(a.issuedAt));
-  const blkSanc  = blkBens.reduce((t,b)=>t+(b.sanctionedBags||0),0);
-  const blkIssBags = blkIss.reduce((t,i)=>t+i.bags,0);
-  const blkEntries = (DB.bdoStockEntries||[]).filter(e=>e.block===blk);
-  const blkRecv  = blkEntries.reduce((t,e)=>t+e.bags,0);
-  const blkBal   = Math.max(0, blkRecv - blkIssBags);
+  const blk        = currentUser.block;
+  const blkBens    = DB.beneficiaries.filter(b=>b.block===blk);
+  const blkIss     = DB.issuances.filter(i=>i.block===blk).sort((a,b)=>new Date(b.issuedAt)-new Date(a.issuedAt));
+  const blkSanc    = blockSanctioned(blk);
+  const blkIssBags = blockIssued(blk);
+  const blkRecv    = blockReceived(blk);
+  const blkBal     = blockStockBal(blk);
   const blkSancBal = Math.max(0, blkSanc - blkIssBags);
-  const pct = blkSanc ? Math.round(blkIssBags/blkSanc*100) : 0;
+  const pct        = blkSanc ? Math.round(blkIssBags/blkSanc*100) : 0;
 
   // Date-wise issuance grouped by date
   const dateMap = {};
@@ -4564,13 +4599,9 @@ function renderBlockStockView(el) {
         <tbody>
           ${(BLOCK_DATA[blk]?.villages||[]).map(vil=>{
             const vBens=DB.beneficiaries.filter(b=>b.block===blk&&(b.village||'').toUpperCase()===vil.toUpperCase());
-            const vIss=DB.issuances.filter(i=>i.block===blk&&(i.village||'').toUpperCase()===vil.toUpperCase());
             const sanc=vBens.reduce((t,b)=>t+(b.sanctionedBags||0),0);
-            // Use direct DB issuances as authoritative; supplement with master-upload pre-existing bags
-            const issFromDB=vIss.reduce((t,i)=>t+i.bags,0);
-            const vBenIds=new Set(vIss.map(i=>i.beneficiaryId));
-            const masterExtra=vBens.reduce((t,b)=>(!vBenIds.has(b.id)&&b.issuedBags>0?t+b.issuedBags:t),0);
-            const iss=issFromDB+masterExtra;
+            // Use per-beneficiary effectiveIssued so totals match the beneficiary register
+            const iss=vBens.reduce((t,b)=>t+effectiveIssued(b),0);
             const bal=Math.max(0,sanc-iss);
             const pctV=sanc?Math.round(iss/sanc*100):0;
             if(!vBens.length)return '';
@@ -4597,12 +4628,11 @@ function showBlockStockDrilldown(blk) {
   const sec = document.getElementById('blockStockDrilldown');
   if (!sec) return;
 
-  const blkBens  = DB.beneficiaries.filter(b=>b.block===blk);
-  const blkIss   = DB.issuances.filter(i=>i.block===blk).sort((a,b)=>new Date(a.issuedAt)-new Date(b.issuedAt));
-  const blkSanc  = blkBens.reduce((t,b)=>t+(b.sanctionedBags||0),0);
-  const blkIssBags = blkIss.reduce((t,i)=>t+i.bags,0);
+  const blkIss     = DB.issuances.filter(i=>i.block===blk).sort((a,b)=>new Date(a.issuedAt)-new Date(b.issuedAt));
+  const blkIssBags = blockIssued(blk);
+  const blkSanc    = blockSanctioned(blk);
+  const blkRecv    = blockReceived(blk);
   const blkEntries = (DB.bdoStockEntries||[]).filter(e=>e.block===blk);
-  const blkRecv  = blkEntries.reduce((t,e)=>t+e.bags,0);
 
   // Date-wise issuance groups
   const dateMap = {};
@@ -4743,7 +4773,7 @@ function renderStockLedger() {
         <td colspan="4" style="text-align:right;padding:10px 14px">TOTALS</td>
         <td style="text-align:right;color:var(--green)">+${totalReceipts}</td>
         <td style="text-align:right;color:var(--red)">-${totalIssued}</td>
-        <td></td><td style="text-align:right">${s.balance}</td><td></td><td></td>
+        <td></td><td style="text-align:right">${Math.max(0,totalReceipts-totalIssued)}</td><td></td><td></td>
       </tr>`:''}
     </tbody>
   </table>`;
@@ -4755,9 +4785,9 @@ function showPanchayatStock(block) {
   const villages = BLOCK_DATA[block]?.villages || [];
   const panchData = villages.map(vil=>{
     const vilBens = DB.beneficiaries.filter(b=>b.block===block && b.village===vil);
-    const vilIss  = DB.issuances.filter(i=>i.block===block && i.village===vil);
     const sanctioned = vilBens.reduce((t,b)=>t+(b.sanctionedBags||0),0);
-    const issued     = vilIss.reduce((t,i)=>t+i.bags,0);
+    // Per-beneficiary effectiveIssued so totals match the beneficiary register
+    const issued     = vilBens.reduce((t,b)=>t+effectiveIssued(b),0);
     return {vil, bens: vilBens.length, sanctioned, issued, bal: Math.max(0,sanctioned-issued)};
   });
   sec.style.display = 'block';
@@ -4811,15 +4841,12 @@ function openAddStock() {
 function addStock() {
   const bags = parseInt(document.getElementById('stBags').value);
   if (!bags||bags<1) { showToast('Enter valid bags count','error'); return; }
-  const openingBal = DB.stock.balance;
+  if (!DB.stockLedger) DB.stockLedger = [];
+  const openingBal = centralStockBal();   // always computed from ledger
   const closingBal = openingBal + bags;
   const now = new Date().toISOString();
-  DB.stock.total   += bags;
-  DB.stock.balance  = closingBal;
-  DB.stock.openingBalance = DB.stock.openingBalance || 0;
   DB.stock.type = document.getElementById('stType').value;
   DB.stock.lastUpdated = now;
-  if (!DB.stockLedger) DB.stockLedger = [];
   const ledgerEntry = {
     id: 'GRN' + Date.now(),
     type: 'RECEIPT',
@@ -4834,9 +4861,10 @@ function addStock() {
     remark: 'Stock receipt'
   };
   DB.stockLedger.push(ledgerEntry);
+  recalcStockCache();   // rebuild cached totals from ledger
   saveAndSync();
   closeModal();
-  showToast(bags + ' bags added · New balance: ' + closingBal);
+  showToast(bags + ' bags added · New balance: ' + centralStockBal());
   navigate('stock');
 }
 
@@ -4850,14 +4878,6 @@ async function deleteStockLedgerEntry(entryId) {
   // Remove from ledger
   DB.stockLedger = (DB.stockLedger||[]).filter(l=>l.id!==entryId);
 
-  // Recalculate stock totals from remaining ledger entries
-  const receipts = DB.stockLedger.filter(l=>l.type==='RECEIPT').reduce((t,l)=>t+l.bags,0);
-  const issues   = DB.stockLedger.filter(l=>l.type==='ISSUE').reduce((t,l)=>t+l.bags,0);
-  DB.stock.total   = receipts;
-  DB.stock.balance = Math.max(0, receipts - issues);
-  DB.stock.issued  = issues;
-  DB.stock.lastUpdated = new Date().toISOString();
-
   // Re-calculate opening/closing balances on remaining ledger (running balance)
   let runBal = 0;
   const sorted = DB.stockLedger.slice().sort((a,b)=>new Date(a.date)-new Date(b.date));
@@ -4867,6 +4887,10 @@ async function deleteStockLedgerEntry(entryId) {
     else runBal = Math.max(0, runBal - l.bags);
     l.closingBalance = runBal;
   });
+
+  // Rebuild cached stock totals from the now-updated ledger
+  recalcStockCache();
+  DB.stock.lastUpdated = new Date().toISOString();
 
   // Save locally first
   saveDB();
@@ -4882,12 +4906,12 @@ async function deleteStockLedgerEntry(entryId) {
       // Use set() WITHOUT merge so deletions propagate — and AWAIT to confirm write
       await db.collection('drdData').doc('main').set(safe);
       _lastLocalWrite = Date.now(); // suppress the echo from our own write
-      showToast('✓ GRN entry deleted & synced to all devices · Balance: ' + DB.stock.balance + ' bags');
+      showToast('✓ GRN entry deleted & synced to all devices · Balance: ' + centralStockBal() + ' bags');
     } catch(e) {
       showToast('Deleted locally. Cloud sync failed — retry Sync Now', 'error');
     }
   } else {
-    showToast('GRN entry deleted · Balance: ' + DB.stock.balance + ' bags (offline)');
+    showToast('GRN entry deleted · Balance: ' + centralStockBal() + ' bags (offline)');
   }
 
   navigate('stock');
@@ -4960,14 +4984,7 @@ function editStockLedgerEntry(entryId) {
       entry.editedBy = currentUser.name;
       entry.editedAt = new Date().toISOString();
 
-      // Recalculate all running balances
-      const receipts = (DB.stockLedger||[]).filter(l=>l.type==='RECEIPT').reduce((t,l)=>t+l.bags,0);
-      const issues   = (DB.stockLedger||[]).filter(l=>l.type==='ISSUE').reduce((t,l)=>t+l.bags,0);
-      DB.stock.total   = receipts;
-      DB.stock.balance = Math.max(0, receipts - issues);
-      DB.stock.issued  = issues;
-      DB.stock.lastUpdated = new Date().toISOString();
-
+      // Recalculate all running balances and rebuild cache from ledger
       let runBal = 0;
       const sorted = (DB.stockLedger||[]).slice().sort((a,b)=>new Date(a.date)-new Date(b.date));
       sorted.forEach(l=>{
@@ -4976,10 +4993,12 @@ function editStockLedgerEntry(entryId) {
         else runBal = Math.max(0, runBal - l.bags);
         l.closingBalance = runBal;
       });
+      recalcStockCache();
+      DB.stock.lastUpdated = new Date().toISOString();
 
       saveAndSync();
       closeModal();
-      showToast('Ledger entry updated ✓  Balance: ' + DB.stock.balance + ' bags');
+      showToast('Ledger entry updated ✓  Balance: ' + centralStockBal() + ' bags');
       navigate('stock');
     }}
   ]);
@@ -4987,11 +5006,11 @@ function editStockLedgerEntry(entryId) {
 
 function renderBDOStock(el) {
   if (!DB.bdoStockEntries) DB.bdoStockEntries = [];
-  const myBlock   = currentUser.block;
-  const entries   = (DB.bdoStockEntries||[]).filter(e=>!e.block||e.block===myBlock).slice().sort((a,b)=>new Date(b.date)-new Date(a.date));
-  const totalReceived = entries.reduce((t,e)=>t+e.bags,0);
-  const totalIssued   = DB.issuances.filter(i=>i.block===myBlock).reduce((t,i)=>t+i.bags,0);
-  const available     = Math.max(0, totalReceived - totalIssued);
+  const myBlock    = currentUser.block;
+  const entries    = (DB.bdoStockEntries||[]).filter(e=>!e.block||e.block===myBlock).slice().sort((a,b)=>new Date(b.date)-new Date(a.date));
+  const totalReceived = blockReceived(myBlock);
+  const totalIssued   = blockIssued(myBlock);
+  const available     = blockStockBal(myBlock);
   const pct           = totalReceived ? Math.round(totalIssued/totalReceived*100) : 0;
 
   el.innerHTML = `
@@ -5224,9 +5243,15 @@ async function deleteBDOStockEntry(id) {
   if (!e) { showToast('Entry not found','error'); return; }
   if (!confirm(`Delete stock entry?\n\nSupplier: ${e.supplier||'—'}\nInvoice: ${e.invoice||'—'}\nBags: ${e.bags}\n\nThis cannot be undone.`)) return;
   DB.bdoStockEntries = (DB.bdoStockEntries||[]).filter(x=>x.id!==id);
-  // Adjust global stock totals
-  DB.stock.total   = Math.max(0, (DB.stock.total||0) - e.bags);
-  DB.stock.balance = Math.max(0, (DB.stock.balance||0) - e.bags);
+  // Also remove the mirrored ledger entry (GL prefix) for this BDO stock entry if present
+  if (DB.stockLedger) {
+    DB.stockLedger = DB.stockLedger.filter(l => !(l.id && l.id.startsWith('GL') && l.grn===e.invoice && l.bags===e.bags));
+  }
+  // Rebuild running balances on remaining ledger
+  let runBal2 = 0;
+  const sorted2 = (DB.stockLedger||[]).slice().sort((a,b)=>new Date(a.date)-new Date(b.date));
+  sorted2.forEach(l=>{ l.openingBalance=runBal2; if(l.type==='RECEIPT')runBal2+=l.bags; else runBal2=Math.max(0,runBal2-l.bags); l.closingBalance=runBal2; });
+  recalcStockCache();
   DB.stock.lastUpdated = new Date().toISOString();
   saveDB();
   showToast('Deleting & syncing to cloud…');
@@ -5238,7 +5263,7 @@ async function deleteBDOStockEntry(id) {
       (safe.beneficiaries||[]).forEach(b=>{delete b._photos;});
       await db.collection('drdData').doc('main').set(safe);
       _lastLocalWrite = Date.now();
-      showToast('✓ Stock entry deleted & synced · Balance: ' + DB.stock.balance + ' bags');
+      showToast('✓ Stock entry deleted & synced · Balance: ' + centralStockBal() + ' bags');
     } catch(ex) {
       showToast('Deleted locally. Cloud sync failed — retry Sync Now', 'error');
     }
@@ -5374,7 +5399,6 @@ function saveBDOStockEntry(editId) {
     // Edit existing
     const idx = DB.bdoStockEntries.findIndex(e=>e.id===editId);
     if (idx >= 0) {
-      const oldBags = DB.bdoStockEntries[idx].bags;
       DB.bdoStockEntries[idx] = {
         ...DB.bdoStockEntries[idx],
         date, invoice, supplier, scheme, year, cementType: cType,
@@ -5383,10 +5407,6 @@ function saveBDOStockEntry(editId) {
         updatedBy: currentUser.name,
         updatedAt: new Date().toISOString()
       };
-      // Adjust global stock total for bag difference
-      const diff = bags - oldBags;
-      DB.stock.total   = Math.max(0, (DB.stock.total||0) + diff);
-      DB.stock.balance = Math.max(0, (DB.stock.balance||0) + diff);
     }
     showToast('Stock entry updated ✓');
   } else {
@@ -5400,27 +5420,24 @@ function saveBDOStockEntry(editId) {
       addedBy: currentUser.name,
       createdAt: new Date().toISOString()
     });
-    // Update global stock
-    const openBal = DB.stock.balance || 0;
-    DB.stock.total   = (DB.stock.total||0) + bags;
-    DB.stock.balance = openBal + bags;
-    DB.stock.lastUpdated = new Date().toISOString();
-    // Add to global ledger for store keeper visibility
+    // Mirror into the central stock ledger for admin/store-keeper visibility
     if (!DB.stockLedger) DB.stockLedger = [];
+    const openBal = centralStockBal();
     DB.stockLedger.push({
       id: 'GL'+Date.now(), type:'RECEIPT',
       date: new Date(date+'T00:00:00').toISOString(),
-      bags, scheme, year, cementType: cType,
+      bags, scheme, year, cementType: cType, block: currentUser.block,
       supplier: supplier||'—', grn: invoice,
       openingBalance: openBal,
-      closingBalance: DB.stock.balance,
+      closingBalance: openBal + bags,
       addedBy: currentUser.name,
       remark: `BDO Stock Entry – ${scheme} – Invoice: ${invoice}`
     });
-    showToast('Stock entry added ✓ ' + bags + ' bags | Balance: ' + DB.stock.balance);
+    showToast('Stock entry added ✓ ' + bags + ' bags | Balance: ' + (openBal + bags));
   }
 
   bdoStockPhotoData = null;
+  recalcStockCache();   // rebuild central stock cache from ledger
   saveAndSync();
   pingSheetWebhook();
   closeModal();
@@ -5457,11 +5474,11 @@ function viewBDOStockEntry(id) {
 // ===== STORE KEEPER STOCK (view-only of BDO stock) =====
 function renderStoreKeeperStock(el) {
   if (!DB.bdoStockEntries) DB.bdoStockEntries = [];
-  const myBlock = currentUser.block;
-  const entries = DB.bdoStockEntries.filter(e=>!e.block||e.block===myBlock).slice().sort((a,b)=>new Date(b.date)-new Date(a.date));
-  const totalReceived = entries.reduce((t,e)=>t+e.bags,0);
-  const totalIssued   = DB.issuances.filter(i=>i.block===myBlock).reduce((t,i)=>t+i.bags,0);
-  const available     = Math.max(0, totalReceived - totalIssued);
+  const myBlock       = currentUser.block;
+  const entries       = DB.bdoStockEntries.filter(e=>!e.block||e.block===myBlock).slice().sort((a,b)=>new Date(b.date)-new Date(a.date));
+  const totalReceived = blockReceived(myBlock);
+  const totalIssued   = blockIssued(myBlock);
+  const available     = blockStockBal(myBlock);
   const pct           = totalReceived ? Math.round(totalIssued/totalReceived*100) : 0;
 
   el.innerHTML = `
@@ -5667,16 +5684,16 @@ function generateRoleReport() {
   });
   const blkBagsIssued = blkIssPeriod.reduce((t,i)=>t+i.bags,0);
 
-  // Block stock overall
-  const blkEntries = (DB.bdoStockEntries||[]).filter(e=>e.block===myBlock);
-  const blkTotalRecv = blkEntries.reduce((t,e)=>t+e.bags,0);
-  const blkTotalIss  = DB.issuances.filter(i=>i.block===myBlock).reduce((t,i)=>t+i.bags,0);
-  const blkBal       = Math.max(0, blkTotalRecv - blkTotalIss);
+  // Block stock overall — canonical helpers
+  const blkTotalRecv = blockReceived(myBlock);
+  const blkTotalIss  = blockIssued(myBlock);
+  const blkBal       = blockStockBal(myBlock);
 
-  // Beneficiary summary
-  const blkBens = DB.beneficiaries.filter(b=>b.block===myBlock);
-  const blkSanc = blkBens.reduce((t,b)=>t+(b.sanctionedBags||0),0);
-  const blkSancBal = Math.max(0, blkSanc - blkTotalIss);
+  // Beneficiary summary — effectiveIssued per beneficiary (matches beneficiary register)
+  const blkBens    = DB.beneficiaries.filter(b=>b.block===myBlock);
+  const blkSanc    = blockSanctioned(myBlock);
+  const blkEffIss  = blkBens.reduce((t,b)=>t+effectiveIssued(b),0);
+  const blkSancBal = Math.max(0, blkSanc - blkEffIss);
 
   const output = document.getElementById('roleReportOutput');
   if (!output) return;
@@ -6148,7 +6165,7 @@ function renderAlerts(el) {
     else if (blkBal < 50 && blkBal > 0) alerts.push({type:'warn', msg:`${myBlock} Block: Only ${blkBal} bags remaining – replenishment needed soon.`, time:new Date().toISOString(), link:'stock'});
   } else {
     // Collector sees central stock + per-block warnings
-    if (DB.stock.balance < 100) alerts.push({type:'danger', msg:`Central stock critical – only ${DB.stock.balance} bags remaining!`, time:new Date().toISOString(), link:'stock'});
+    if (centralStockBal() < 100) alerts.push({type:'danger', msg:`Central stock critical – only ${centralStockBal()} bags remaining!`, time:new Date().toISOString(), link:'stock'});
     BLOCKS.forEach(blk=>{
       const blkEntries = (DB.bdoStockEntries||[]).filter(e=>e.block===blk);
       const blkRecv = blkEntries.reduce((t,e)=>t+e.bags,0);
@@ -6681,6 +6698,7 @@ function commitMasterUpload() {
     }
   });
   saveAndSync();
+  recalcStockCache();
   clearUploadPreview();
   showToast(added + ' beneficiaries added · ' + updated + ' updated · ' + (valid.length-added-updated) + ' skipped');
   navigate('masterupload');
@@ -6719,9 +6737,8 @@ function renderMU2BenList() {
         </thead>
         <tbody>
           ${bens.map((b, idx) => {
-            const issuedFromDB = DB.issuances.filter(i=>i.beneficiaryId===b.id).reduce((s,i)=>s+i.bags,0);
-            const issuedBags   = issuedFromDB > 0 ? issuedFromDB : (b.issuedBags || 0);
-            const balBags      = Math.max(0, (b.sanctionedBags||0) - issuedBags);
+            const issuedBags = effectiveIssued(b);
+            const balBags    = balanceFor(b);
             return `<tr>
               <td style="color:var(--grey-500)">${idx+1}</td>
               <td style="font-family:monospace;font-size:11px;color:var(--blue)">${b.workId||'—'}</td>
@@ -6736,8 +6753,8 @@ function renderMU2BenList() {
           <tr style="background:var(--blue-light);font-weight:700;font-size:12px">
             <td colspan="5" style="text-align:right">Block Total</td>
             <td style="text-align:right">${bens.reduce((t,b)=>t+(b.sanctionedBags||0),0)}</td>
-            <td style="text-align:right;color:var(--green)">${bens.reduce((t,b)=>{const iss=DB.issuances.filter(i=>i.beneficiaryId===b.id).reduce((s,i)=>s+i.bags,0);return t+(iss>0?iss:(b.issuedBags||0));},0)}</td>
-            <td style="text-align:right;color:var(--blue)">${bens.reduce((t,b)=>{const iss=DB.issuances.filter(i=>i.beneficiaryId===b.id).reduce((s,i)=>s+i.bags,0);const ef=iss>0?iss:(b.issuedBags||0);return t+Math.max(0,(b.sanctionedBags||0)-ef);},0)}</td>
+            <td style="text-align:right;color:var(--green)">${bens.reduce((t,b)=>t+effectiveIssued(b),0)}</td>
+            <td style="text-align:right;color:var(--blue)">${bens.reduce((t,b)=>t+balanceFor(b),0)}</td>
           </tr>
         </tbody>
       </table>
@@ -7582,7 +7599,7 @@ function printSlip(allotmentId) {
 function generateAllotmentSlipHTML(a, ben, qrData, copyLabel) {
   const challan = a.challanNumber || '—';
   const qr = qrCodeImg(qrData || challan, 75);
-  const issuedBags = DB.issuances.filter(i=>i.beneficiaryId===a.beneficiaryId).reduce((s,i)=>s+i.bags,0);
+  const issuedBags = effectiveIssued(ben);
   // Pending = Total Sanctioned − Previously Issued − This Allotment
   const pendingAfterThis = Math.max(0, (ben.sanctionedBags||a.bags) - issuedBags - a.bags);
   // Overseer name for this beneficiary
@@ -7702,8 +7719,9 @@ function processQRScan() {
   }
   if (!data) { res.innerHTML = '<div class="alert alert-danger"><span class="material-icons-round">error</span> No matching record found for this QR / Challan.</div>'; return; }
 
-  const issuedBags = DB.issuances.filter(i=>i.beneficiaryId===(DB.allotments.find(a=>a.id===data.allotmentId)?.beneficiaryId||'')).reduce((s,i)=>s+i.bags,0);
   const allot = DB.allotments.find(a=>a.id===data.allotmentId||a.challanNumber===data.challan);
+  const qrBen = allot ? (DB.beneficiaries.find(b=>b.id===allot.beneficiaryId)||{}) : {};
+  const issuedBags = effectiveIssued(qrBen);
   const balBags = Math.max(0,(data.sanctioned||data.bags) - issuedBags - data.bags);
   const isApproved = allot && allot.status==='Approved';
   const alreadyIssued = allot && DB.issuances.find(i=>i.allotmentId===allot.id);
