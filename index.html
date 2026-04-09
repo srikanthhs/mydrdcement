@@ -3973,13 +3973,18 @@ function filterBenTable() {
   if (overseerF) data = data.filter(b=>overseerForVillage(b.block,b.village)===overseerF);
   const body = document.getElementById('benBody');
   const cnt  = document.getElementById('benCount');
-  if (cnt) cnt.textContent = data.length + ' beneficiaries';
   if (!body) return;
-  body.innerHTML = data.map((b,idx)=>{
+
+  // Compute per-row values and accumulate totals in the same pass
+  let totalSanctioned = 0, totalIssued = 0, totalBalance = 0;
+  const rows = data.map((b, idx) => {
     const issuedFromDB = DB.issuances.filter(i=>i.beneficiaryId===b.id).reduce((s,i)=>s+i.bags,0);
     const issuedBags   = Math.max(issuedFromDB, b.issuedBags || 0);
-    const balBags      = Math.max(0,(b.sanctionedBags||0)-issuedBags);
-    const ovsr       = overseerForVillage(b.block, b.village);
+    const balBags      = Math.max(0, (b.sanctionedBags||0) - issuedBags);
+    const ovsr         = overseerForVillage(b.block, b.village);
+    totalSanctioned   += (b.sanctionedBags||0);
+    totalIssued       += issuedBags;
+    totalBalance      += balBags;
     return `
     <tr>
       <td style="color:var(--grey-500)">${idx+1}</td>
@@ -4000,7 +4005,39 @@ function filterBenTable() {
         ${can('createAllotment')?`<button class="btn btn-outlined btn-sm" onclick="openAllotForBen('${b.id}')">Allot</button>`:''}
       </td>
     </tr>`;
-  }).join('') || '<tr><td colspan="13"><div class="empty-state"><span class="material-icons-round">people</span><p>No beneficiaries found</p></div></td></tr>';
+  });
+
+  body.innerHTML = rows.join('') ||
+    '<tr><td colspan="13"><div class="empty-state"><span class="material-icons-round">people</span><p>No beneficiaries found</p></div></td></tr>';
+
+  // Update count label with total summary
+  if (cnt) cnt.innerHTML =
+    `<strong>${data.length}</strong> beneficiaries &nbsp;|&nbsp; ` +
+    `Sanctioned: <strong style="color:var(--grey-900)">${totalSanctioned}</strong> bags &nbsp;|&nbsp; ` +
+    `Issued: <strong style="color:var(--green)">${totalIssued}</strong> bags &nbsp;|&nbsp; ` +
+    `Balance: <strong style="color:var(--blue)">${totalBalance}</strong> bags`;
+
+  // Inject / update the tfoot totals row (separate from tbody so sorting never disrupts it)
+  const table = document.getElementById('benTable');
+  if (table) {
+    // Remove any existing tfoot before re-inserting
+    const existingFoot = table.querySelector('tfoot');
+    if (existingFoot) existingFoot.remove();
+    if (data.length > 0) {
+      const tfoot = document.createElement('tfoot');
+      tfoot.innerHTML = `
+        <tr style="background:var(--blue-light);font-weight:700;font-size:13px;border-top:2px solid var(--blue)">
+          <td colspan="9" style="padding:10px 14px;color:var(--grey-700)">
+            TOTAL &nbsp;<span style="font-weight:400;font-size:11px;color:var(--grey-500)">(${data.length} beneficiaries shown)</span>
+          </td>
+          <td style="text-align:right;padding:10px 14px;color:var(--grey-900)">${totalSanctioned}</td>
+          <td style="text-align:right;padding:10px 14px;color:var(--green)">${totalIssued}</td>
+          <td style="text-align:right;padding:10px 14px;color:var(--blue)">${totalBalance}</td>
+          <td></td>
+        </tr>`;
+      table.appendChild(tfoot);
+    }
+  }
 }
 function openAddBeneficiary() {
   const myBlocks = allowedBlocks();
@@ -4270,10 +4307,16 @@ function renderStock(el) {
   const pct = s.total ? Math.round((s.issued||0)/s.total*100) : 0;
 
   // Block-wise received, issued, balance
+  // "issued" uses the same Math.max(issuedFromDB, b.issuedBags) formula as the
+  // Beneficiary Register so that both tables always show identical totals.
   const blockStats = BLOCKS.map(blk=>{
-    const blkIss = DB.issuances.filter(i=>i.block===blk).reduce((t,i)=>t+i.bags,0);
     const blkBens = DB.beneficiaries.filter(b=>b.block===blk);
     const blkSanc = blkBens.reduce((t,b)=>t+(b.sanctionedBags||0),0);
+    // Mirror Beneficiary Register formula exactly: per-beneficiary max of DB issuances vs cached issuedBags
+    const blkIss = blkBens.reduce((t, b) => {
+      const issuedFromDB = DB.issuances.filter(i=>i.beneficiaryId===b.id).reduce((s,i)=>s+i.bags,0);
+      return t + Math.max(issuedFromDB, b.issuedBags || 0);
+    }, 0);
     const blkEntries = (DB.bdoStockEntries||[]).filter(e=>e.block===blk);
     const blkRecv = blkEntries.reduce((t,e)=>t+e.bags,0);
     const blkBal = Math.max(0, blkRecv - blkIss);
