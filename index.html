@@ -1924,6 +1924,45 @@ function recalcStockCache() {
   DB.stock.issued  = iss;
   DB.stock.balance = Math.max(0, recv - iss);
 }
+// Returns an HTML chip string showing exactly where a beneficiary stands in the pipeline.
+// Used in the beneficiary table, MU2 list, viewBeneficiary modal, etc.
+function benPipelineStatus(b) {
+  const issued  = effectiveIssued(b);
+  const sanc    = b.sanctionedBags || 0;
+  const balance = Math.max(0, sanc - issued);
+
+  // 1. Fully issued — nothing more to do
+  if (sanc > 0 && balance === 0) {
+    return `<span class="chip chip-issued" style="font-size:10px">✓ Fully Issued</span>`;
+  }
+
+  // 2. Find the most urgent active allotment for this beneficiary
+  const allots = DB.allotments.filter(a => a.beneficiaryId === b.id);
+
+  // Priority: Pending > Approved > Issued
+  const pending  = allots.filter(a => a.status === 'Pending')
+                         .sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt));
+  const approved = allots.filter(a => a.status === 'Approved')
+                         .sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+  if (pending.length) {
+    const a = pending[0];
+    if (!a.engineerVerified) {
+      return `<span class="chip" style="background:#fff3e0;color:#e65100;font-size:10px">⏳ Awaiting AE/JE</span>`;
+    } else {
+      return `<span class="chip chip-pending" style="font-size:10px">⏳ Awaiting BDO</span>`;
+    }
+  }
+  if (approved.length) {
+    return `<span class="chip chip-approved" style="font-size:10px">✅ Approved – To Issue</span>`;
+  }
+
+  // 3. No active allotment
+  if (issued > 0 && balance > 0) {
+    return `<span class="chip chip-partial" style="font-size:10px">📦 Partial – No Active Order</span>`;
+  }
+  return `<span class="chip" style="background:var(--grey-100);color:var(--grey-700);font-size:10px">➕ No Allotment Yet</span>`;
+}
 // ============================================================================
 
 // ===== DASHBOARD =====
@@ -4012,11 +4051,20 @@ function renderBeneficiaries(el) {
           <option value="">All Years</option>
           ${dynYears.map(y=>`<option>${y}</option>`).join('')}
         </select>
+        <select class="form-control" style="width:185px" id="benStatusFilter" onchange="filterBenTable()">
+          <option value="">All Statuses</option>
+          <option value="no_allotment">➕ No Allotment Yet</option>
+          <option value="awaiting_engineer">⏳ Awaiting AE/JE</option>
+          <option value="awaiting_bdo">⏳ Awaiting BDO</option>
+          <option value="approved">✅ Approved – To Issue</option>
+          <option value="partial">📦 Partial – No Active Order</option>
+          <option value="fully_issued">✓ Fully Issued</option>
+        </select>
       </div>
       <div style="font-size:12px;color:var(--grey-500);margin-bottom:8px" id="benCount"></div>
       <div class="table-wrap">
         <table id="benTable">
-          <thead><tr><th>S.No.</th><th>Work ID</th><th>Name</th><th>Block</th><th>Village / Panchayat</th><th>Overseer</th><th>Scheme</th><th>Year</th><th>House No.</th><th style="text-align:right">Sanctioned</th><th style="text-align:right">Issued</th><th style="text-align:right">Balance</th><th>Actions</th></tr></thead>
+          <thead><tr><th>S.No.</th><th>Work ID</th><th>Name</th><th>Block</th><th>Village / Panchayat</th><th>Overseer</th><th>Scheme</th><th>Year</th><th>House No.</th><th style="text-align:right">Sanctioned</th><th style="text-align:right">Issued</th><th style="text-align:right">Balance</th><th>Allotment Status</th><th>Actions</th></tr></thead>
           <tbody id="benBody"></tbody>
         </table>
       </div>
@@ -4029,12 +4077,29 @@ function filterBenTable() {
   const block   = document.getElementById('benBlockFilter')?.value||'';
   const year    = document.getElementById('benYearFilter')?.value||'';
   const overseerF = document.getElementById('benOverseerFilter')?.value||'';
+  const statusF   = document.getElementById('benStatusFilter')?.value||'';
   let data = scopedBeneficiaries();
   if (q)       data = data.filter(b=>(JSON.stringify(b)+overseerForVillage(b.block,b.village)).toLowerCase().includes(q));
   if (scheme)  data = data.filter(b=>b.scheme===scheme);
   if (block)   data = data.filter(b=>b.block===block);
   if (year)    data = data.filter(b=>b.year===year);
   if (overseerF) data = data.filter(b=>overseerForVillage(b.block,b.village)===overseerF);
+  if (statusF)   data = data.filter(b=>{
+    const allots = DB.allotments.filter(a=>a.beneficiaryId===b.id);
+    const issued  = effectiveIssued(b);
+    const balance = balanceFor(b);
+    const pending  = allots.filter(a=>a.status==='Pending');
+    const approved = allots.filter(a=>a.status==='Approved');
+    switch(statusF) {
+      case 'fully_issued':    return balance === 0 && (b.sanctionedBags||0) > 0;
+      case 'awaiting_engineer': return pending.some(a=>!a.engineerVerified);
+      case 'awaiting_bdo':    return pending.some(a=>a.engineerVerified) && !pending.some(a=>!a.engineerVerified);
+      case 'approved':        return approved.length > 0 && !pending.length;
+      case 'partial':         return issued > 0 && balance > 0 && !approved.length && !pending.length;
+      case 'no_allotment':    return issued === 0 && !allots.length;
+      default: return true;
+    }
+  });
   const body = document.getElementById('benBody');
   const cnt  = document.getElementById('benCount');
   if (!body) return;
@@ -4042,9 +4107,10 @@ function filterBenTable() {
   // Compute per-row values using canonical helpers — consistent with stock register and dashboard
   let totalSanctioned = 0, totalIssued = 0, totalBalance = 0;
   const rows = data.map((b, idx) => {
-    const issuedBags = effectiveIssued(b);
-    const balBags    = balanceFor(b);
-    const ovsr       = overseerForVillage(b.block, b.village);
+    const issuedBags  = effectiveIssued(b);
+    const balBags     = balanceFor(b);
+    const ovsr        = overseerForVillage(b.block, b.village);
+    const pipeStatus  = benPipelineStatus(b);
     totalSanctioned += (b.sanctionedBags||0);
     totalIssued     += issuedBags;
     totalBalance    += balBags;
@@ -4062,6 +4128,7 @@ function filterBenTable() {
       <td style="text-align:right">${b.sanctionedBags}</td>
       <td style="text-align:right;color:var(--green);font-weight:600">${issuedBags}</td>
       <td style="text-align:right;color:${balBags>0?'var(--blue)':'var(--grey-400)'};font-weight:600">${balBags}</td>
+      <td>${pipeStatus}</td>
       <td>
         <button class="btn btn-text btn-sm" onclick="viewBeneficiary('${b.id}')"><span class="material-icons-round">visibility</span></button>
         ${can('editBeneficiary')?`<button class="btn btn-text btn-sm" style="color:var(--blue)" onclick="editBeneficiary('${b.id}')" title="Edit Beneficiary"><span class="material-icons-round">edit</span></button>`:''}
@@ -4071,7 +4138,7 @@ function filterBenTable() {
   });
 
   body.innerHTML = rows.join('') ||
-    '<tr><td colspan="13"><div class="empty-state"><span class="material-icons-round">people</span><p>No beneficiaries found</p></div></td></tr>';
+    '<tr><td colspan="14"><div class="empty-state"><span class="material-icons-round">people</span><p>No beneficiaries found</p></div></td></tr>';
 
   // Update count label with total summary
   if (cnt) cnt.innerHTML =
@@ -4090,13 +4157,13 @@ function filterBenTable() {
       const tfoot = document.createElement('tfoot');
       tfoot.innerHTML = `
         <tr style="background:var(--blue-light);font-weight:700;font-size:13px;border-top:2px solid var(--blue)">
-          <td colspan="9" style="padding:10px 14px;color:var(--grey-700)">
+          <td colspan="10" style="padding:10px 14px;color:var(--grey-700)">
             TOTAL &nbsp;<span style="font-weight:400;font-size:11px;color:var(--grey-500)">(${data.length} beneficiaries shown)</span>
           </td>
           <td style="text-align:right;padding:10px 14px;color:var(--grey-900)">${totalSanctioned}</td>
           <td style="text-align:right;padding:10px 14px;color:var(--green)">${totalIssued}</td>
           <td style="text-align:right;padding:10px 14px;color:var(--blue)">${totalBalance}</td>
-          <td></td>
+          <td colspan="2"></td>
         </tr>`;
       table.appendChild(tfoot);
     }
@@ -4172,7 +4239,40 @@ function viewBeneficiary(id) {
   const issuedBags = effectiveIssued(b);
   const balBags    = balanceFor(b);
   const ovsr       = overseerForVillage(b.block, b.village);
+  const pipeStatus = benPipelineStatus(b);
+  // Build detailed allotment pipeline display
+  const allotDetails = allotments.length ? allotments.slice().sort((x,y)=>new Date(y.createdAt)-new Date(x.createdAt)).map(a=>{
+    let stageHtml = '';
+    if (a.status === 'Pending' && !a.engineerVerified)
+      stageHtml = `<span class="chip" style="background:#fff3e0;color:#e65100;font-size:10px">⏳ Awaiting AE/JE Verification</span>`;
+    else if (a.status === 'Pending' && a.engineerVerified)
+      stageHtml = `<span class="chip chip-pending" style="font-size:10px">⏳ Awaiting BDO Approval</span><br><span style="font-size:10px;color:var(--grey-500)">Verified by ${a.engineerVerifiedBy||'AE/JE'}</span>`;
+    else if (a.status === 'Approved')
+      stageHtml = `<span class="chip chip-approved" style="font-size:10px">✅ Approved – Pending Issuance</span><br><span style="font-size:10px;color:var(--grey-500)">Challan: ${a.challanNumber||'—'} · By ${a.approvedBy||'BDO'}</span>`;
+    else if (a.status === 'Issued')
+      stageHtml = `<span class="chip chip-issued" style="font-size:10px">✓ Issued</span>`;
+    else if (a.status === 'Rejected')
+      stageHtml = `<span class="chip chip-rejected" style="font-size:10px">✗ Rejected</span>${a.rejectionReason?`<br><span style="font-size:10px;color:var(--red)">${a.rejectionReason}</span>`:''}`;
+    else
+      stageHtml = `<span class="chip" style="font-size:10px">${a.status}</span>`;
+    return `<div style="display:flex;justify-content:space-between;align-items:flex-start;padding:8px 0;border-bottom:1px solid var(--grey-100);gap:8px">
+      <div>
+        <div style="font-size:12px;font-weight:600">${a.id}</div>
+        <div style="font-size:11px;color:var(--grey-500)">${new Date(a.createdAt).toLocaleDateString('en-IN')} · ${a.bags} bags · ${a.stage||a.use||'—'}</div>
+        <div style="margin-top:4px">${stageHtml}</div>
+      </div>
+      <div style="text-align:right;font-size:12px;color:var(--grey-700);white-space:nowrap">
+        By ${a.createdBy||'—'}
+      </div>
+    </div>`;
+  }).join('') : '<div style="font-size:12px;color:var(--grey-500)">No allotments created yet</div>';
+
   openModal(b.name + ' – Profile', `
+    <!-- Pipeline Status Banner -->
+    <div style="background:var(--grey-50);border-radius:8px;padding:10px 14px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;gap:8px">
+      <div style="font-size:12px;font-weight:600;color:var(--grey-700)">Current Pipeline Status</div>
+      <div>${pipeStatus}</div>
+    </div>
     <div class="info-row"><span class="info-key">Beneficiary ID</span><span class="info-val">${b.id}</span></div>
     <div class="info-row"><span class="info-key">TNRD Work ID</span><span class="info-val" style="font-family:monospace">${b.workId||'—'}</span></div>
     <div class="info-row"><span class="info-key">Aadhaar</span><span class="info-val">${b.aadhaar}</span></div>
@@ -4190,11 +4290,7 @@ function viewBeneficiary(id) {
     <div style="font-size:11px;color:var(--grey-500);margin-top:4px">${b.sanctionedBags?Math.round(issuedBags/b.sanctionedBags*100):0}% of sanctioned quantity issued</div>
     <hr class="divider">
     <div class="section-title">Allotments (${allotments.length})</div>
-    ${allotments.map(a=>`
-      <div class="info-row">
-        <span>${a.id} ${a.challanNumber?'· <span style="font-family:monospace;font-size:11px">'+a.challanNumber+'</span>':''}</span>
-        <span><span class="chip chip-${a.status.toLowerCase()}">${a.status}</span> · ${a.bags} bags</span>
-      </div>`).join('') || '<div style="font-size:12px;color:var(--grey-500)">No allotments</div>'}
+    ${allotDetails}
     <hr class="divider">
     <div class="section-title">Issuances (${issuances.length})</div>
     ${issuances.map(i=>`
@@ -4786,9 +4882,18 @@ function showPanchayatStock(block) {
   const panchData = villages.map(vil=>{
     const vilBens = DB.beneficiaries.filter(b=>b.block===block && b.village===vil);
     const sanctioned = vilBens.reduce((t,b)=>t+(b.sanctionedBags||0),0);
-    // Per-beneficiary effectiveIssued so totals match the beneficiary register
     const issued     = vilBens.reduce((t,b)=>t+effectiveIssued(b),0);
-    return {vil, bens: vilBens.length, sanctioned, issued, bal: Math.max(0,sanctioned-issued)};
+    // Pipeline counts
+    const vilAllots = DB.allotments.filter(a=>a.block===block && (a.village||'').toUpperCase()===vil.toUpperCase());
+    const awaitEng  = vilAllots.filter(a=>a.status==='Pending'&&!a.engineerVerified).length;
+    const awaitBDO  = vilAllots.filter(a=>a.status==='Pending'&&a.engineerVerified).length;
+    const ready     = vilAllots.filter(a=>a.status==='Approved').length;
+    const noAllot   = vilBens.filter(b=>{
+      const has = DB.allotments.some(a=>a.beneficiaryId===b.id && (a.status==='Pending'||a.status==='Approved'));
+      return !has && balanceFor(b) > 0;
+    }).length;
+    return {vil, bens: vilBens.length, sanctioned, issued, bal: Math.max(0,sanctioned-issued),
+            awaitEng, awaitBDO, ready, noAllot};
   });
   sec.style.display = 'block';
   sec.innerHTML = `
@@ -4800,16 +4905,23 @@ function showPanchayatStock(block) {
     </div>
     <div class="table-wrap">
       <table>
-        <thead><tr><th>Panchayat / Village</th><th style="text-align:right">Beneficiaries</th><th style="text-align:right">Sanctioned Bags</th><th style="text-align:right">Issued Bags</th><th style="text-align:right">Balance Bags</th><th>Progress</th></tr></thead>
+        <thead><tr><th>Panchayat / Village</th><th style="text-align:right">Beneficiaries</th><th style="text-align:right">Sanctioned</th><th style="text-align:right">Issued</th><th style="text-align:right">Balance</th><th>Pipeline Status</th><th>Progress</th></tr></thead>
         <tbody>
-          ${panchData.map(({vil,bens,sanctioned,issued,bal})=>{
+          ${panchData.map(({vil,bens,sanctioned,issued,bal,awaitEng,awaitBDO,ready,noAllot})=>{
             const pctV = sanctioned ? Math.round(issued/sanctioned*100) : 0;
+            const pipeHtml = [
+              awaitEng  ? `<span class="chip" style="background:#fff3e0;color:#e65100;font-size:10px">${awaitEng} ⏳ AE/JE</span>` : '',
+              awaitBDO  ? `<span class="chip chip-pending" style="font-size:10px">${awaitBDO} ⏳ BDO</span>` : '',
+              ready     ? `<span class="chip chip-approved" style="font-size:10px">${ready} ✅ To Issue</span>` : '',
+              noAllot   ? `<span class="chip" style="background:var(--grey-100);color:var(--grey-700);font-size:10px">${noAllot} ➕ No Order</span>` : '',
+            ].filter(Boolean).join(' ') || '<span style="font-size:10px;color:var(--grey-400)">—</span>';
             return `<tr>
               <td><strong>${vil}</strong></td>
               <td style="text-align:right">${bens}</td>
               <td style="text-align:right">${sanctioned}</td>
               <td style="text-align:right;color:var(--green);font-weight:600">${issued}</td>
               <td style="text-align:right;color:${bal>0?'var(--blue)':'var(--grey-400)'};font-weight:600">${bal}</td>
+              <td style="min-width:160px">${pipeHtml}</td>
               <td style="min-width:100px"><div class="progress-bar"><div class="progress-fill" style="width:${pctV}%"></div></div><div style="font-size:10px;color:var(--grey-500);margin-top:2px">${pctV}%</div></td>
             </tr>`;
           }).join('')}
@@ -4819,6 +4931,11 @@ function showPanchayatStock(block) {
             <td style="text-align:right">${panchData.reduce((t,p)=>t+p.sanctioned,0)}</td>
             <td style="text-align:right;color:var(--green)">${panchData.reduce((t,p)=>t+p.issued,0)}</td>
             <td style="text-align:right;color:var(--blue)">${panchData.reduce((t,p)=>t+p.bal,0)}</td>
+            <td style="font-size:11px">
+              ${panchData.reduce((t,p)=>t+p.awaitEng,0)>0?`<span class="chip" style="background:#fff3e0;color:#e65100;font-size:10px">${panchData.reduce((t,p)=>t+p.awaitEng,0)} ⏳ AE/JE</span> `:''}
+              ${panchData.reduce((t,p)=>t+p.awaitBDO,0)>0?`<span class="chip chip-pending" style="font-size:10px">${panchData.reduce((t,p)=>t+p.awaitBDO,0)} ⏳ BDO</span> `:''}
+              ${panchData.reduce((t,p)=>t+p.ready,0)>0?`<span class="chip chip-approved" style="font-size:10px">${panchData.reduce((t,p)=>t+p.ready,0)} ✅ To Issue</span>`:''}
+            </td>
             <td></td>
           </tr>
         </tbody>
@@ -6429,7 +6546,7 @@ function renderMasterUpload(el) {
       </div>
       <div class="table-wrap">
         <table>
-          <thead><tr><th>S.No.</th><th>Work ID No.</th><th>Name</th><th>Aadhaar No.</th><th>Mobile</th><th>Block</th><th>Village</th><th>Scheme</th><th>Year</th><th style="text-align:right">Sanctioned Bags</th><th style="text-align:right">Issued Bags</th><th style="text-align:right">Balance Bags</th><th>Uploaded By</th><th>Action</th></tr></thead>
+          <thead><tr><th>S.No.</th><th>Work ID No.</th><th>Name</th><th>Aadhaar No.</th><th>Mobile</th><th>Block</th><th>Village</th><th>Scheme</th><th>Year</th><th style="text-align:right">Sanctioned Bags</th><th style="text-align:right">Issued Bags</th><th style="text-align:right">Balance Bags</th><th>Allotment Status</th><th>Uploaded By</th><th>Action</th></tr></thead>
           <tbody>
             ${DB.beneficiaries.map((b,idx)=>{
               // Issued bags = CSV pre-existing + actual DB issuances (avoid double-count)
@@ -6451,6 +6568,7 @@ function renderMasterUpload(el) {
               <td style="text-align:right">${b.sanctionedBags}</td>
               <td style="text-align:right;color:var(--green);font-weight:600">${issuedBags}</td>
               <td style="text-align:right;color:${balBags>0?'var(--blue)':'var(--grey-400)'};font-weight:600">${balBags}</td>
+              <td>${benPipelineStatus(b)}</td>
               <td style="font-size:11px;color:var(--grey-500)">${b.uploadedBy||'—'}</td>
               <td style="display:flex;gap:6px">
                 <button class="btn btn-outlined btn-sm" onclick="editBeneficiaryInline('${b.id}')" title="Edit">
@@ -6460,7 +6578,7 @@ function renderMasterUpload(el) {
                   <span class="material-icons-round">delete</span>
                 </button>
               </td>
-            </tr>`;}).join('') || '<tr><td colspan="14"><div class="empty-state"><span class="material-icons-round">people</span><p>No beneficiaries uploaded yet</p></div></td></tr>'}
+            </tr>`;}).join('') || '<tr><td colspan="15"><div class="empty-state"><span class="material-icons-round">people</span><p>No beneficiaries uploaded yet</p></div></td></tr>'}
           </tbody>
         </table>
       </div>
@@ -6733,6 +6851,7 @@ function renderMU2BenList() {
             <th style="text-align:right">Sanctioned</th>
             <th style="text-align:right">Issued</th>
             <th style="text-align:right">Balance</th>
+            <th>Allotment Status</th>
           </tr>
         </thead>
         <tbody>
@@ -6748,6 +6867,7 @@ function renderMU2BenList() {
               <td style="text-align:right;font-weight:600">${b.sanctionedBags||0}</td>
               <td style="text-align:right;color:var(--green);font-weight:600">${issuedBags}</td>
               <td style="text-align:right;color:${balBags>0?'var(--blue)':'var(--grey-400)'};font-weight:600">${balBags}</td>
+              <td>${benPipelineStatus(b)}</td>
             </tr>`;
           }).join('')}
           <tr style="background:var(--blue-light);font-weight:700;font-size:12px">
@@ -6755,6 +6875,7 @@ function renderMU2BenList() {
             <td style="text-align:right">${bens.reduce((t,b)=>t+(b.sanctionedBags||0),0)}</td>
             <td style="text-align:right;color:var(--green)">${bens.reduce((t,b)=>t+effectiveIssued(b),0)}</td>
             <td style="text-align:right;color:var(--blue)">${bens.reduce((t,b)=>t+balanceFor(b),0)}</td>
+            <td></td>
           </tr>
         </tbody>
       </table>
