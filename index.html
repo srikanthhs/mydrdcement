@@ -2342,19 +2342,32 @@ function fillBenDetails() {
   const workIdEl = document.getElementById('aWorkId');
   if (workIdEl) workIdEl.value = b.workId || '—';
 
-  // Calculate balance bags
-  const totalIssued = DB.issuances.filter(i=>i.beneficiaryId===b.id).reduce((s,i)=>s+i.bags,0);
-  const balanceBags = Math.max(0, (b.sanctionedBags||0) - totalIssued);
+  // Calculate balance bags — SAME formula as Collector beneficiary table
+  const issuedFromDB  = DB.issuances.filter(i=>i.beneficiaryId===b.id).reduce((s,i)=>s+i.bags,0);
+  const issuedBagsEff = Math.max(issuedFromDB, b.issuedBags || 0);   // mirrors collector table
+  const balanceBags   = Math.max(0, (b.sanctionedBags||0) - issuedBagsEff);
   const bagsEl = document.getElementById('aBags');
   if (bagsEl) {
     bagsEl.value = balanceBags;
-    bagsEl.max = balanceBags;
+    bagsEl.max   = balanceBags;
     // Clear error on beneficiary change
     const errEl = document.getElementById('aBagsErr');
     if (errEl) errEl.style.display = 'none';
-    // If balance is 0, warn immediately
+    // Warn immediately if balance is 0
     if (balanceBags === 0) {
-      if (errEl) { errEl.textContent = 'No balance remaining — all sanctioned bags have been issued or allotted.'; errEl.style.display = 'block'; }
+      if (errEl) { errEl.textContent = 'No balance remaining — all sanctioned bags have been issued.'; errEl.style.display = 'block'; }
+    }
+  }
+
+  // Update the balance-info strip
+  const balInfoEl = document.getElementById('aBagsBalanceInfo');
+  if (balInfoEl) {
+    if (balanceBags > 0) {
+      balInfoEl.innerHTML = `✓ No cement issued yet. Full sanctioned quantity of <strong>${b.sanctionedBags} bags</strong> available.`;
+      balInfoEl.style.cssText = 'background:var(--green-light);border-radius:8px;padding:10px 14px;margin:8px 0;font-size:12px;color:var(--green);display:block';
+    } else if (issuedBagsEff > 0) {
+      balInfoEl.innerHTML = `⚠ All <strong>${b.sanctionedBags} sanctioned bags</strong> already issued. Balance: <strong>0 bags</strong>.`;
+      balInfoEl.style.cssText = 'background:var(--red-light);border-radius:8px;padding:10px 14px;margin:8px 0;font-size:12px;color:var(--red);display:block';
     }
   }
 
@@ -2373,13 +2386,12 @@ function fillBenDetails() {
             </div>`).join('')}
           <div style="margin-top:8px;font-size:13px;font-weight:700;color:var(--blue)">
             Balance remaining: <strong>${balanceBags} bags</strong>
-            (Sanctioned: ${b.sanctionedBags} – Issued: ${totalIssued})
+            (Sanctioned: ${b.sanctionedBags} – Issued: ${issuedBagsEff})
           </div>
         </div>`;
       histEl.style.display = 'block';
     } else {
-      histEl.innerHTML = `<div style="background:var(--green-light);border-radius:8px;padding:10px 14px;margin:12px 0;font-size:12px;color:var(--green)">✓ No cement issued yet. Full sanctioned quantity of <strong>${b.sanctionedBags} bags</strong> available.</div>`;
-      histEl.style.display = 'block';
+      histEl.style.display = 'none';
     }
   }
 }
@@ -2406,10 +2418,11 @@ function openNewAllotment() {
     }
   }
 
-  // Build options showing name + work ID + balance
+  // Build options showing name + work ID + balance (same formula as Collector beneficiary table)
   const bOpts = myBens.map(b=>{
-    const issued = DB.issuances.filter(i=>i.beneficiaryId===b.id).reduce((s,i)=>s+i.bags,0);
-    const bal    = Math.max(0, (b.sanctionedBags||0) - issued);
+    const issuedFromDB = DB.issuances.filter(i=>i.beneficiaryId===b.id).reduce((s,i)=>s+i.bags,0);
+    const issuedEff    = Math.max(issuedFromDB, b.issuedBags || 0);
+    const bal          = Math.max(0, (b.sanctionedBags||0) - issuedEff);
     return `<option value="${b.id}">${b.name} [${b.workId||'—'}] – Bal: ${bal} bags</option>`;
   }).join('');
 
@@ -2434,10 +2447,25 @@ function openNewAllotment() {
         <select class="form-control" id="aCType">${CEMENT_TYPES.map(t=>`<option>${t}</option>`).join('')}</select>
       </div>
       <div class="form-group">
-        <label class="form-label">Bags to Allot * <span style="font-size:11px;color:var(--green);font-weight:600">(must not exceed balance)</span></label>
+        <label class="form-label">Bags to Allot * <span style="font-size:11px;color:var(--grey-700);font-weight:400">– Balance as per beneficiary register shown below</span></label>
         <input class="form-control" type="number" id="aBags" min="1" max="0" value="0"
-          oninput="(function(el){const mx=parseInt(el.max)||0;const val=parseInt(el.value)||0;const errEl=document.getElementById('aBagsErr');if(mx===0){el.value=0;if(errEl){errEl.textContent='Select a beneficiary first.';errEl.style.display='block';}}else if(val>mx){el.value=mx;if(errEl){errEl.textContent='Cannot exceed balance of '+mx+' bags.';errEl.style.display='block';}showToast('Cannot exceed balance of '+mx+' bags','error');}else if(val<1){if(errEl){errEl.textContent='Minimum 1 bag required.';errEl.style.display='block';}}else{if(errEl)errEl.style.display='none';}})(this)">
-        <div id="aBagsErr" style="display:none;font-size:12px;color:var(--red);margin-top:4px;font-weight:500"></div>
+          oninput="(function(el){
+            const mx  = parseInt(el.max)||0;
+            const val = parseInt(el.value)||0;
+            const errEl = document.getElementById('aBagsErr');
+            if (mx === 0) {
+              if(errEl){ errEl.textContent='Select a beneficiary first.'; errEl.style.display='block'; }
+            } else if (val > mx) {
+              if(errEl){ errEl.innerHTML='<strong>Error:</strong> Cannot allot <strong>'+val+'</strong> bags — balance as per beneficiary register is only <strong>'+mx+' bags</strong>. Please enter a value ≤ '+mx+'.'; errEl.style.display='block'; }
+              showToast('Bags entered ('+val+') exceed balance of '+mx+' bags','error');
+            } else if (val < 1) {
+              if(errEl){ errEl.textContent='Minimum 1 bag required.'; errEl.style.display='block'; }
+            } else {
+              if(errEl) errEl.style.display='none';
+            }
+          })(this)">
+        <div id="aBagsErr" style="display:none;font-size:12px;color:var(--red);background:var(--red-light);border-radius:6px;padding:8px 12px;margin-top:6px;font-weight:500;line-height:1.5"></div>
+        <div id="aBagsBalanceInfo" style="display:none;border-radius:8px;padding:10px 14px;margin:8px 0;font-size:12px"></div>
       </div>
       <div class="form-group"><label class="form-label">Stage *</label>
         <select class="form-control" id="aUse">
@@ -2529,8 +2557,9 @@ function submitAllotment() {
 
   if (!bags || bags < 1) { showToast('Enter valid bags count','error'); return; }
 
-  // Check beneficiary eligible balance (issued bags + active pending/approved allotments)
-  const totalIssued = DB.issuances.filter(i=>i.beneficiaryId===benId).reduce((s,i)=>s+i.bags,0);
+  // Check beneficiary eligible balance — SAME formula as Collector beneficiary table
+  const issuedFromDB2       = DB.issuances.filter(i=>i.beneficiaryId===benId).reduce((s,i)=>s+i.bags,0);
+  const totalIssued         = Math.max(issuedFromDB2, b.issuedBags || 0);
   const totalActiveAllotments = DB.allotments
     .filter(al => al.beneficiaryId===benId && (al.status==='Pending' || al.status==='Approved'))
     .reduce((s,al)=>s+al.bags, 0);
@@ -2539,7 +2568,12 @@ function submitAllotment() {
     showToast(`No eligible balance! Sanctioned: ${b.sanctionedBags||0} bags, Issued: ${totalIssued}, Active allotments: ${totalActiveAllotments}`,'error');
     return;
   }
-  if (bags > balanceBags) { showToast(`Only ${balanceBags} eligible balance bags available (sanctioned: ${b.sanctionedBags||0} – issued: ${totalIssued} – active allotments: ${totalActiveAllotments})`,'error'); return; }
+  if (bags > balanceBags) {
+    showToast(`Bags entered (${bags}) exceed balance of ${balanceBags} bags (Sanctioned: ${b.sanctionedBags||0} – Issued: ${totalIssued} – Active allotments: ${totalActiveAllotments})`,'error');
+    const errEl = document.getElementById('aBagsErr');
+    if (errEl) { errEl.innerHTML=`<strong>Error:</strong> Cannot allot <strong>${bags}</strong> bags — balance as per beneficiary register is only <strong>${balanceBags} bags</strong>.`; errEl.style.display='block'; }
+    return;
+  }
   // Check block stock balance (use BDO block entries if available, else central stock)
   const blkEntries = (DB.bdoStockEntries||[]).filter(e=>e.block===b.block);
   const blkRecvd = blkEntries.reduce((t,e)=>t+e.bags,0);
