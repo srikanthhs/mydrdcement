@@ -2359,14 +2359,20 @@ function fillBenDetails() {
     }
   }
 
-  // Update the balance-info strip
+  // Update the balance-info strip (3 states: nothing issued / partially issued / fully issued)
   const balInfoEl = document.getElementById('aBagsBalanceInfo');
   if (balInfoEl) {
-    if (balanceBags > 0) {
-      balInfoEl.innerHTML = `✓ No cement issued yet. Full sanctioned quantity of <strong>${b.sanctionedBags} bags</strong> available.`;
+    if (issuedBagsEff === 0) {
+      // Nothing issued yet — full sanctioned quantity is the balance
+      balInfoEl.innerHTML = `✓ No cement issued yet. Balance to allot: <strong>${b.sanctionedBags} bags</strong> (Sanctioned: ${b.sanctionedBags}).`;
       balInfoEl.style.cssText = 'background:var(--green-light);border-radius:8px;padding:10px 14px;margin:8px 0;font-size:12px;color:var(--green);display:block';
-    } else if (issuedBagsEff > 0) {
-      balInfoEl.innerHTML = `⚠ All <strong>${b.sanctionedBags} sanctioned bags</strong> already issued. Balance: <strong>0 bags</strong>.`;
+    } else if (balanceBags > 0) {
+      // Some bags issued, remaining balance exists — show exact calculation
+      balInfoEl.innerHTML = `⚠ <strong>${issuedBagsEff} bag${issuedBagsEff !== 1 ? 's' : ''} already issued</strong>. Balance to allot: <strong>${balanceBags} bags</strong> &nbsp;(Sanctioned: ${b.sanctionedBags} &minus; Issued: ${issuedBagsEff} = <strong>${balanceBags}</strong>).`;
+      balInfoEl.style.cssText = 'background:var(--yellow-light);border-radius:8px;padding:10px 14px;margin:8px 0;font-size:12px;color:#7d5c00;display:block';
+    } else {
+      // All bags issued — zero balance
+      balInfoEl.innerHTML = `&#9940; All <strong>${b.sanctionedBags} sanctioned bags</strong> have already been issued. Balance: <strong>0 bags</strong>.`;
       balInfoEl.style.cssText = 'background:var(--red-light);border-radius:8px;padding:10px 14px;margin:8px 0;font-size:12px;color:var(--red);display:block';
     }
   }
