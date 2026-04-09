@@ -8,6 +8,8 @@
 <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
 
 <!-- Firebase loaded dynamically after DOM ready -->
+<!-- SheetJS for XLSX parsing (loaded once, cached by browser) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
 <style>
   :root {
@@ -1355,12 +1357,19 @@ function startFirestoreListener() {
 function mergeRemoteIntoDB(remote) {
   if (!remote) return;
 
-  // Beneficiaries: remote is authoritative list; keep local photo extras
+  // Beneficiaries: remote is authoritative; keep local photo extras AND preserve
+  // locally-added beneficiaries that have not yet been pushed to remote.
   if (Array.isArray(remote.beneficiaries)) {
     const localMap = {};
     (DB.beneficiaries||[]).forEach(b => localMap[b.id] = b);
-    // Remote list is authoritative — deleted items on remote should NOT come back
-    DB.beneficiaries = remote.beneficiaries.map(b => ({...(localMap[b.id]||{}), ...b}));
+    const remoteMap = {};
+    remote.beneficiaries.forEach(b => remoteMap[b.id] = b);
+    // Preserve locally-added beneficiaries not yet pushed to Firebase
+    const localOnly = (DB.beneficiaries||[]).filter(b => !remoteMap[b.id]);
+    DB.beneficiaries = [
+      ...remote.beneficiaries.map(b => ({...(localMap[b.id]||{}), ...b})),
+      ...localOnly
+    ];
   }
 
   // Allotments: remote is authoritative; keep local allotments not yet pushed to remote
@@ -2342,9 +2351,10 @@ function fillBenDetails() {
   const workIdEl = document.getElementById('aWorkId');
   if (workIdEl) workIdEl.value = b.workId || '—';
 
-  // Calculate balance bags — SAME formula as Collector beneficiary table
+  // Calculate balance bags — use DB.issuances as authoritative (same as beneficiary table + stock register)
   const issuedFromDB  = DB.issuances.filter(i=>i.beneficiaryId===b.id).reduce((s,i)=>s+i.bags,0);
-  const issuedBagsEff = Math.max(issuedFromDB, b.issuedBags || 0);   // mirrors collector table
+  // Only fall back to master-upload issuedBags if nothing has been recorded in DB yet
+  const issuedBagsEff = issuedFromDB > 0 ? issuedFromDB : (b.issuedBags || 0);
   const balanceBags   = Math.max(0, (b.sanctionedBags||0) - issuedBagsEff);
   const bagsEl = document.getElementById('aBags');
   if (bagsEl) {
@@ -2424,10 +2434,10 @@ function openNewAllotment() {
     }
   }
 
-  // Build options showing name + work ID + balance (same formula as Collector beneficiary table)
+  // Build options showing name + work ID + balance (same formula as beneficiary table + stock register)
   const bOpts = myBens.map(b=>{
     const issuedFromDB = DB.issuances.filter(i=>i.beneficiaryId===b.id).reduce((s,i)=>s+i.bags,0);
-    const issuedEff    = Math.max(issuedFromDB, b.issuedBags || 0);
+    const issuedEff    = issuedFromDB > 0 ? issuedFromDB : (b.issuedBags || 0);
     const bal          = Math.max(0, (b.sanctionedBags||0) - issuedEff);
     return `<option value="${b.id}">${b.name} [${b.workId||'—'}] – Bal: ${bal} bags</option>`;
   }).join('');
@@ -2563,9 +2573,9 @@ function submitAllotment() {
 
   if (!bags || bags < 1) { showToast('Enter valid bags count','error'); return; }
 
-  // Check beneficiary eligible balance — SAME formula as Collector beneficiary table
+  // Check beneficiary eligible balance — authoritative: DB.issuances; supplement master-upload only if no DB records
   const issuedFromDB2       = DB.issuances.filter(i=>i.beneficiaryId===benId).reduce((s,i)=>s+i.bags,0);
-  const totalIssued         = Math.max(issuedFromDB2, b.issuedBags || 0);
+  const totalIssued         = issuedFromDB2 > 0 ? issuedFromDB2 : (b.issuedBags || 0);
   const totalActiveAllotments = DB.allotments
     .filter(al => al.beneficiaryId===benId && (al.status==='Pending' || al.status==='Approved'))
     .reduce((s,al)=>s+al.bags, 0);
@@ -2966,8 +2976,12 @@ function saveEditAllotment(id) {
 
   const totalIssued = DB.issuances.filter(i=>i.beneficiaryId===a.beneficiaryId).reduce((s,i)=>s+i.bags,0);
   const b = DB.beneficiaries.find(x=>x.id===a.beneficiaryId)||{};
-  const balanceBags = Math.max(0,(b.sanctionedBags||0)-totalIssued);
-  if (bags > balanceBags) { showToast(`Only ${balanceBags} balance bags available`,'error'); return; }
+  // Exclude the current allotment itself from "other active" to avoid double-counting
+  const otherActive = DB.allotments
+    .filter(al=>al.beneficiaryId===a.beneficiaryId && al.id!==id && (al.status==='Pending'||al.status==='Approved'))
+    .reduce((s,al)=>s+al.bags,0);
+  const balanceBags = Math.max(0,(b.sanctionedBags||0)-totalIssued-otherActive);
+  if (bags > balanceBags) { showToast(`Only ${balanceBags} balance bags available (sanctioned: ${b.sanctionedBags||0} − issued: ${totalIssued} − other active allotments: ${otherActive})`,'error'); return; }
 
   a.cementType     = document.getElementById('eaCType').value;
   a.bags           = bags;
@@ -3978,8 +3992,10 @@ function filterBenTable() {
   // Compute per-row values and accumulate totals in the same pass
   let totalSanctioned = 0, totalIssued = 0, totalBalance = 0;
   const rows = data.map((b, idx) => {
+    // Authoritative: actual issuances from DB
     const issuedFromDB = DB.issuances.filter(i=>i.beneficiaryId===b.id).reduce((s,i)=>s+i.bags,0);
-    const issuedBags   = Math.max(issuedFromDB, b.issuedBags || 0);
+    // If no DB issuances yet but master-upload had pre-existing issuedBags, show those
+    const issuedBags   = issuedFromDB > 0 ? issuedFromDB : (b.issuedBags || 0);
     const balBags      = Math.max(0, (b.sanctionedBags||0) - issuedBags);
     const ovsr         = overseerForVillage(b.block, b.village);
     totalSanctioned   += (b.sanctionedBags||0);
@@ -4086,8 +4102,11 @@ function addBeneficiary() {
     block: document.getElementById('nbBlock').value,
     scheme: document.getElementById('nbScheme').value,
     houseNo: document.getElementById('nbHouse').value,
+    workId: document.getElementById('nbHouse').value,
     sanctionedBags: parseInt(document.getElementById('nbBags').value)||100,
     receivedBags: 0,
+    issuedBags: 0,
+    balanceBags: parseInt(document.getElementById('nbBags').value)||100,
     status: 'Active',
     uploadedBy: currentUser.name,
     uploadedAt: new Date().toISOString(),
@@ -4307,16 +4326,26 @@ function renderStock(el) {
   const pct = s.total ? Math.round((s.issued||0)/s.total*100) : 0;
 
   // Block-wise received, issued, balance
-  // "issued" uses the same Math.max(issuedFromDB, b.issuedBags) formula as the
-  // Beneficiary Register so that both tables always show identical totals.
+  // Issued = direct sum from DB.issuances for the block (authoritative) PLUS any
+  // pre-existing issuedBags from master upload that have NO corresponding DB issuance record
+  // (handles beneficiaries whose cement was tracked before this app was used).
   const blockStats = BLOCKS.map(blk=>{
     const blkBens = DB.beneficiaries.filter(b=>b.block===blk);
     const blkSanc = blkBens.reduce((t,b)=>t+(b.sanctionedBags||0),0);
-    // Mirror Beneficiary Register formula exactly: per-beneficiary max of DB issuances vs cached issuedBags
-    const blkIss = blkBens.reduce((t, b) => {
-      const issuedFromDB = DB.issuances.filter(i=>i.beneficiaryId===b.id).reduce((s,i)=>s+i.bags,0);
-      return t + Math.max(issuedFromDB, b.issuedBags || 0);
+
+    // Authoritative: sum all issuances in DB.issuances for this block
+    const blkIssFromDB = DB.issuances.filter(i=>i.block===blk).reduce((t,i)=>t+i.bags,0);
+
+    // Supplement: for beneficiaries with a pre-existing issuedBags (master upload)
+    // but NO issuances in DB, count those bags (they were issued before the app)
+    const blkBenIds = new Set(DB.issuances.filter(i=>i.block===blk).map(i=>i.beneficiaryId));
+    const masterExtra = blkBens.reduce((t,b)=>{
+      if (!blkBenIds.has(b.id) && b.issuedBags > 0) return t + b.issuedBags;
+      return t;
     }, 0);
+
+    const blkIss = blkIssFromDB + masterExtra;
+
     const blkEntries = (DB.bdoStockEntries||[]).filter(e=>e.block===blk);
     const blkRecv = blkEntries.reduce((t,e)=>t+e.bags,0);
     const blkBal = Math.max(0, blkRecv - blkIss);
@@ -4537,7 +4566,11 @@ function renderBlockStockView(el) {
             const vBens=DB.beneficiaries.filter(b=>b.block===blk&&(b.village||'').toUpperCase()===vil.toUpperCase());
             const vIss=DB.issuances.filter(i=>i.block===blk&&(i.village||'').toUpperCase()===vil.toUpperCase());
             const sanc=vBens.reduce((t,b)=>t+(b.sanctionedBags||0),0);
-            const iss=vIss.reduce((t,i)=>t+i.bags,0);
+            // Use direct DB issuances as authoritative; supplement with master-upload pre-existing bags
+            const issFromDB=vIss.reduce((t,i)=>t+i.bags,0);
+            const vBenIds=new Set(vIss.map(i=>i.beneficiaryId));
+            const masterExtra=vBens.reduce((t,b)=>(!vBenIds.has(b.id)&&b.issuedBags>0?t+b.issuedBags:t),0);
+            const iss=issFromDB+masterExtra;
             const bal=Math.max(0,sanc-iss);
             const pctV=sanc?Math.round(iss/sanc*100):0;
             if(!vBens.length)return '';
@@ -6448,11 +6481,59 @@ function handleMasterFileSelect(e) {
 }
 
 function parseMasterFile(file) {
-  const reader = new FileReader();
-  reader.onload = e => {
-    const text = e.target.result;
+  const ext = file.name.split('.').pop().toLowerCase();
+
+  if (ext === 'xlsx' || ext === 'xls') {
+    // ── XLSX branch: use SheetJS ────────────────────────────────────
+    if (typeof XLSX === 'undefined') {
+      showToast('XLSX library not loaded yet — please try again in a moment', 'error');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = e => {
+      try {
+        const wb   = XLSX.read(new Uint8Array(e.target.result), {type:'array'});
+        const ws   = wb.Sheets[wb.SheetNames[0]];
+        // Convert sheet to CSV string so we reuse the same parser below
+        const csv  = XLSX.utils.sheet_to_csv(ws, {blankrows: false});
+        _parseMasterCSVText(csv);
+      } catch(err) {
+        showToast('Failed to read XLSX: ' + err.message, 'error');
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  } else {
+    // ── CSV branch ──────────────────────────────────────────────────
+    const reader = new FileReader();
+    reader.onload = e => _parseMasterCSVText(e.target.result);
+    reader.readAsText(file);
+  }
+}
+
+function _parseMasterCSVText(text) {
+  // RFC-4180 CSV row splitter — handles "quoted,fields" and "quoted ""escaped"" quotes"
+  function parseCSVRow(line) {
+    const result = [];
+    let cur = '', inQ = false;
+    for (let i = 0; i < line.length; i++) {
+      const ch = line[i];
+      if (inQ) {
+        if (ch === '"') {
+          if (line[i+1] === '"') { cur += '"'; i++; } // escaped ""
+          else inQ = false;
+        } else cur += ch;
+      } else {
+        if (ch === '"') { inQ = true; }
+        else if (ch === ',') { result.push(cur.trim()); cur = ''; }
+        else cur += ch;
+      }
+    }
+    result.push(cur.trim());
+    return result;
+  }
+
     const lines = text.split('\n').map(l=>l.trim()).filter(l=>l);
-    const headers = lines[0].toLowerCase().split(',').map(h=>h.trim());
+    const headers = parseCSVRow(lines[0].toLowerCase());
     const col = k => headers.findIndex(h=>h.includes(k));
 
     // New column mapping: S.No., Block, Village, Scheme, Year, Work ID No., Name, Sanctioned Bags, Issued Bags, Balance Bags
@@ -6472,7 +6553,7 @@ function parseMasterFile(file) {
     _masterPreviewData = [];
     const errors = [];
     for (let i=1; i<lines.length; i++) {
-      const cols = lines[i].split(',').map(c=>c.trim());
+      const cols = parseCSVRow(lines[i]);
       const blk  = (iBlk>=0 ? cols[iBlk] : '')||'';
       const sanctBags = parseInt(iSancBags>=0 ? cols[iSancBags] : '100')||100;
       const issBags   = parseInt(iIssBags>=0  ? cols[iIssBags]  : '0')||0;
@@ -6502,8 +6583,6 @@ function parseMasterFile(file) {
     }
 
     showUploadPreview(_masterPreviewData, errors);
-  };
-  reader.readAsText(file);
 }
 
 function showUploadPreview(data, errors) {
@@ -6641,7 +6720,7 @@ function renderMU2BenList() {
         <tbody>
           ${bens.map((b, idx) => {
             const issuedFromDB = DB.issuances.filter(i=>i.beneficiaryId===b.id).reduce((s,i)=>s+i.bags,0);
-            const issuedBags   = Math.max(issuedFromDB, b.issuedBags || 0);
+            const issuedBags   = issuedFromDB > 0 ? issuedFromDB : (b.issuedBags || 0);
             const balBags      = Math.max(0, (b.sanctionedBags||0) - issuedBags);
             return `<tr>
               <td style="color:var(--grey-500)">${idx+1}</td>
@@ -6657,8 +6736,8 @@ function renderMU2BenList() {
           <tr style="background:var(--blue-light);font-weight:700;font-size:12px">
             <td colspan="5" style="text-align:right">Block Total</td>
             <td style="text-align:right">${bens.reduce((t,b)=>t+(b.sanctionedBags||0),0)}</td>
-            <td style="text-align:right;color:var(--green)">${bens.reduce((t,b)=>{const iss=Math.max(DB.issuances.filter(i=>i.beneficiaryId===b.id).reduce((s,i)=>s+i.bags,0),b.issuedBags||0);return t+iss;},0)}</td>
-            <td style="text-align:right;color:var(--blue)">${bens.reduce((t,b)=>{const iss=Math.max(DB.issuances.filter(i=>i.beneficiaryId===b.id).reduce((s,i)=>s+i.bags,0),b.issuedBags||0);return t+Math.max(0,(b.sanctionedBags||0)-iss);},0)}</td>
+            <td style="text-align:right;color:var(--green)">${bens.reduce((t,b)=>{const iss=DB.issuances.filter(i=>i.beneficiaryId===b.id).reduce((s,i)=>s+i.bags,0);return t+(iss>0?iss:(b.issuedBags||0));},0)}</td>
+            <td style="text-align:right;color:var(--blue)">${bens.reduce((t,b)=>{const iss=DB.issuances.filter(i=>i.beneficiaryId===b.id).reduce((s,i)=>s+i.bags,0);const ef=iss>0?iss:(b.issuedBags||0);return t+Math.max(0,(b.sanctionedBags||0)-ef);},0)}</td>
           </tr>
         </tbody>
       </table>
@@ -6682,7 +6761,7 @@ function addMasterBeneficiary() {
     village: document.getElementById('muVillage').value,
     scheme:  document.getElementById('muScheme').value,
     year:    document.getElementById('muYear').value || '2025-26',
-    houseNo: '',
+    houseNo: workId,
     sanctionedBags: parseInt(document.getElementById('muBags').value)||100,
     issuedBags: parseInt(document.getElementById('muIssuedBags')?.value)||0, balanceBags: Math.max(0,(parseInt(document.getElementById('muBags').value)||100)-(parseInt(document.getElementById('muIssuedBags')?.value)||0)), receivedBags: parseInt(document.getElementById('muIssuedBags')?.value)||0, status: 'Active',
     uploadedBy: currentUser.name,
