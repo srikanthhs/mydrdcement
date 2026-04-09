@@ -8008,11 +8008,13 @@ function printIssuanceSlip(issuance) {
 function generateIssuanceSlipCopy(i, copyLabel, gpsStr, gpsUrl, dateStr) {
   // Compute beneficiary-level cement summary
   const ben = DB.beneficiaries.find(b=>b.id===i.beneficiaryId)||{};
-  const sanctionedBags = ben.sanctionedBags || i.bags;
-  // All issuances for this beneficiary (including current)
-  const allBenIss = DB.issuances.filter(x=>x.beneficiaryId===i.beneficiaryId);
-  const totalIssuedToBen = allBenIss.reduce((s,x)=>s+x.bags,0);
-  const prevIssued = totalIssuedToBen - i.bags;
+  const sanctionedBags = ben.sanctionedBags || 0;
+  // Total issued via DB.issuances for this beneficiary (includes current issuance record)
+  const dbIssuedToBen = DB.issuances.filter(x=>x.beneficiaryId===i.beneficiaryId).reduce((s,x)=>s+x.bags,0);
+  // If beneficiary has DB issuance records, use those; else fall back to pre-app b.issuedBags
+  const totalIssuedToBen = dbIssuedToBen > 0 ? dbIssuedToBen : (ben.issuedBags||0);
+  // Previously Issued = total issued BEFORE this trip (exclude current i.bags)
+  const prevIssued = Math.max(0, totalIssuedToBen - i.bags);
   const pendingBags = Math.max(0, sanctionedBags - totalIssuedToBen);
 
   return `
