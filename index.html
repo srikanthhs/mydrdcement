@@ -4465,10 +4465,20 @@ function renderStock(el) {
   if (!DB.stockLedger) DB.stockLedger = [];
   const ledger = DB.stockLedger.slice().sort((a,b)=>new Date(b.date)-new Date(a.date));
   // Compute fresh from source — never trust cached s.total/s.issued/s.balance
-  const totalReceipts = ledgerReceived();
-  const totalIssued   = ledgerIssued();
-  const stockBalance  = centralStockBal();
-  const pct = totalReceipts ? Math.round(totalIssued/totalReceipts*100) : 0;
+  // Central ledger receipts (added via Add Receipt by admin/collector)
+  const centralReceipts = ledgerReceived();
+  // Block-wise receipts from BDO stock entries (supplement when central ledger is empty)
+  const bdoTotalRecv = (DB.bdoStockEntries||[]).reduce((t,e)=>t+e.bags,0);
+  // Use central ledger if populated, else fall back to aggregated BDO block entries
+  const totalReceipts = centralReceipts > 0 ? centralReceipts : bdoTotalRecv;
+  // Total issued: DB.issuances is authoritative for all roles
+  const totalIssued   = districtIssued();
+  // Balance: total received minus total issued (floor at 0)
+  const stockBalance  = Math.max(0, totalReceipts - totalIssued);
+  // Ledger entries: central ledger rows + BDO block-level entries combined
+  const totalLedgerEntries = ledger.length + (DB.bdoStockEntries||[]).length;
+  const pct           = totalReceipts ? Math.round(totalIssued / totalReceipts * 100) : 0;
+  const pctBalance    = totalReceipts ? Math.round(stockBalance / totalReceipts * 100) : 0;
 
   // Block-wise received, issued, balance
   // Issued = direct sum from DB.issuances for the block (authoritative) PLUS any
@@ -4496,10 +4506,42 @@ function renderStock(el) {
 
     <!-- Summary stats -->
     <div class="stat-grid" style="grid-template-columns:repeat(auto-fit,minmax(160px,1fr));margin-bottom:16px">
-      <div class="stat-card" onclick="navigate('stock')" title="View Stock Register"><div class="stat-icon blue"><span class="material-icons-round">inventory_2</span></div><div><div class="stat-val">${totalReceipts}</div><div class="stat-label">Total Received</div><div class="stat-sub">Central depot</div></div></div>
-      <div class="stat-card" onclick="navigate('issuance')" title="View Issuances"><div class="stat-icon green"><span class="material-icons-round">output</span></div><div><div class="stat-val">${totalIssued}</div><div class="stat-label">Total Issued</div><div class="stat-sub">To beneficiaries</div></div></div>
-      <div class="stat-card" onclick="navigate('stock')" title="View Stock Register"><div class="stat-icon ${stockBalance<100?'red':stockBalance<300?'yellow':'green'}"><span class="material-icons-round">balance</span></div><div><div class="stat-val">${stockBalance}</div><div class="stat-label">Current Balance</div><div class="stat-sub">${pct}% utilized</div></div></div>
-      <div class="stat-card" onclick="renderStockLedger()" title="View Ledger"><div class="stat-icon purple"><span class="material-icons-round">receipt_long</span></div><div><div class="stat-val">${ledger.length}</div><div class="stat-label">Ledger Entries</div><div class="stat-sub">All movements</div></div></div>
+      <div class="stat-card" onclick="navigate('stock')" title="View Stock Register">
+        <div class="stat-icon blue"><span class="material-icons-round">inventory_2</span></div>
+        <div>
+          <div class="stat-val">${totalReceipts}</div>
+          <div class="stat-label">Total Received</div>
+          <div class="stat-sub">District-wide total</div>
+          <div style="font-size:11px;font-weight:700;color:var(--blue);margin-top:3px">100% baseline</div>
+        </div>
+      </div>
+      <div class="stat-card" onclick="navigate('issuance')" title="View Issuances">
+        <div class="stat-icon green"><span class="material-icons-round">output</span></div>
+        <div>
+          <div class="stat-val">${totalIssued}</div>
+          <div class="stat-label">Total Issued</div>
+          <div class="stat-sub">To beneficiaries</div>
+          <div style="font-size:11px;font-weight:700;color:var(--green);margin-top:3px">${pct}% of received</div>
+        </div>
+      </div>
+      <div class="stat-card" onclick="navigate('stock')" title="View Stock Register">
+        <div class="stat-icon ${stockBalance<100?'red':stockBalance<300?'yellow':'green'}"><span class="material-icons-round">balance</span></div>
+        <div>
+          <div class="stat-val">${stockBalance}</div>
+          <div class="stat-label">Current Balance</div>
+          <div class="stat-sub">Remaining stock</div>
+          <div style="font-size:11px;font-weight:700;color:${stockBalance<100?'var(--red)':stockBalance<300?'var(--yellow)':'var(--green)'};margin-top:3px">${pctBalance}% remaining</div>
+        </div>
+      </div>
+      <div class="stat-card" onclick="renderStockLedger()" title="View Ledger">
+        <div class="stat-icon purple"><span class="material-icons-round">receipt_long</span></div>
+        <div>
+          <div class="stat-val">${totalLedgerEntries}</div>
+          <div class="stat-label">Ledger Entries</div>
+          <div class="stat-sub">All movements</div>
+          <div style="font-size:11px;font-weight:700;color:var(--purple,#7c3aed);margin-top:3px">${ledger.length} central · ${(DB.bdoStockEntries||[]).length} block</div>
+        </div>
+      </div>
     </div>
 
     <div class="card" style="margin-bottom:16px">
@@ -4596,6 +4638,7 @@ function renderBlockStockView(el) {
   const blkBal     = blockStockBal(blk);
   const blkSancBal = Math.max(0, blkSanc - blkIssBags);
   const pct        = blkSanc ? Math.round(blkIssBags/blkSanc*100) : 0;
+  const blkEntries = (DB.bdoStockEntries||[]).filter(e=>e.block===blk).slice().sort((a,b)=>new Date(b.date)-new Date(a.date));
 
   // Date-wise issuance grouped by date
   const dateMap = {};
@@ -5608,9 +5651,30 @@ function renderStoreKeeperStock(el) {
     </div>
 
     <div class="stat-grid" style="grid-template-columns:repeat(auto-fit,minmax(160px,1fr));margin-bottom:16px">
-      <div class="stat-card" onclick="navigate('stock')" title="View Stock Register"><div class="stat-icon blue"><span class="material-icons-round">inventory_2</span></div><div><div class="stat-val">${totalReceived}</div><div class="stat-label">Total Received Bags</div></div></div>
-      <div class="stat-card" onclick="navigate('issuance')" title="View Issuances"><div class="stat-icon red"><span class="material-icons-round">output</span></div><div><div class="stat-val">${totalIssued}</div><div class="stat-label">Total Issued Bags</div></div></div>
-      <div class="stat-card" onclick="navigate('stock')" title="View Stock Register"><div class="stat-icon ${available<50?'red':available<200?'yellow':'green'}"><span class="material-icons-round">balance</span></div><div><div class="stat-val">${available}</div><div class="stat-label">Available Bags</div></div></div>
+      <div class="stat-card" onclick="navigate('stock')" title="View Stock Register">
+        <div class="stat-icon blue"><span class="material-icons-round">inventory_2</span></div>
+        <div>
+          <div class="stat-val">${totalReceived}</div>
+          <div class="stat-label">Total Received Bags</div>
+          <div style="font-size:11px;font-weight:700;color:var(--blue);margin-top:3px">100% baseline</div>
+        </div>
+      </div>
+      <div class="stat-card" onclick="navigate('issuance')" title="View Issuances">
+        <div class="stat-icon red"><span class="material-icons-round">output</span></div>
+        <div>
+          <div class="stat-val">${totalIssued}</div>
+          <div class="stat-label">Total Issued Bags</div>
+          <div style="font-size:11px;font-weight:700;color:var(--red);margin-top:3px">${pct}% of received</div>
+        </div>
+      </div>
+      <div class="stat-card" onclick="navigate('stock')" title="View Stock Register">
+        <div class="stat-icon ${available<50?'red':available<200?'yellow':'green'}"><span class="material-icons-round">balance</span></div>
+        <div>
+          <div class="stat-val">${available}</div>
+          <div class="stat-label">Available Bags</div>
+          <div style="font-size:11px;font-weight:700;color:${available<50?'var(--red)':available<200?'var(--yellow)':'var(--green)'};margin-top:3px">${totalReceived?Math.round(available/totalReceived*100):0}% remaining</div>
+        </div>
+      </div>
     </div>
 
     <div class="card" style="margin-bottom:16px">
