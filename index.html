@@ -2342,9 +2342,12 @@ function fillBenDetails() {
   const workIdEl = document.getElementById('aWorkId');
   if (workIdEl) workIdEl.value = b.workId || '—';
 
-  // Calculate balance bags
+  // Calculate balance bags — subtract both actual issuances AND bags locked in active allotments
   const totalIssued = DB.issuances.filter(i=>i.beneficiaryId===b.id).reduce((s,i)=>s+i.bags,0);
-  const balanceBags = Math.max(0, (b.sanctionedBags||0) - totalIssued);
+  const activeAllotBags = DB.allotments
+    .filter(al => al.beneficiaryId===b.id && (al.status==='Pending' || al.status==='Approved'))
+    .reduce((s,al)=>s+al.bags, 0);
+  const balanceBags = Math.max(0, (b.sanctionedBags||0) - totalIssued - activeAllotBags);
   const bagsEl = document.getElementById('aBags');
   if (bagsEl) { bagsEl.value = balanceBags; bagsEl.max = balanceBags; }
 
@@ -2352,18 +2355,27 @@ function fillBenDetails() {
   const histEl = document.getElementById('aIssuedHistory');
   if (histEl) {
     const prevIssuances = DB.issuances.filter(i=>i.beneficiaryId===b.id);
-    if (prevIssuances.length > 0) {
+    const activeAllots  = DB.allotments.filter(al=>al.beneficiaryId===b.id && (al.status==='Pending'||al.status==='Approved'));
+    const hasActivity   = prevIssuances.length > 0 || activeAllots.length > 0;
+    if (hasActivity) {
       histEl.innerHTML = `
         <div style="background:var(--yellow-light);border-radius:8px;padding:12px 16px;margin:12px 0">
-          <div style="font-size:12px;font-weight:700;color:#9c6e00;margin-bottom:8px">⚠ Previously Issued Cement</div>
-          ${prevIssuances.map(i=>`
+          <div style="font-size:12px;font-weight:700;color:#9c6e00;margin-bottom:8px">⚠ Cement Entitlement Status</div>
+          ${prevIssuances.length>0 ? prevIssuances.map(i=>`
             <div style="display:flex;justify-content:space-between;font-size:12px;padding:4px 0;border-bottom:1px dashed rgba(0,0,0,.1)">
-              <span>${new Date(i.issuedAt).toLocaleString('en-IN',{dateStyle:'short',timeStyle:'short'})}</span>
+              <span>Issued – ${new Date(i.issuedAt).toLocaleString('en-IN',{dateStyle:'short',timeStyle:'short'})}</span>
               <strong>${i.bags} bags</strong>
-            </div>`).join('')}
+            </div>`).join('') : ''}
+          ${activeAllots.length>0 ? activeAllots.map(al=>`
+            <div style="display:flex;justify-content:space-between;font-size:12px;padding:4px 0;border-bottom:1px dashed rgba(0,0,0,.1);color:#9c6e00">
+              <span>🔒 Active allotment (${al.status}) – ${al.id}</span>
+              <strong>${al.bags} bags</strong>
+            </div>`).join('') : ''}
           <div style="margin-top:8px;font-size:13px;font-weight:700;color:var(--blue)">
-            Balance remaining: <strong>${balanceBags} bags</strong>
-            (Sanctioned: ${b.sanctionedBags} – Issued: ${totalIssued})
+            Balance to allot: <strong>${balanceBags} bags</strong>
+            <span style="font-size:11px;font-weight:400;color:var(--grey-700)">
+              (Sanctioned: ${b.sanctionedBags} − Issued: ${totalIssued} − Active allotments: ${activeAllotBags})
+            </span>
           </div>
         </div>`;
       histEl.style.display = 'block';
@@ -2399,7 +2411,10 @@ function openNewAllotment() {
   // Build options showing name + work ID + balance
   const bOpts = myBens.map(b=>{
     const issued = DB.issuances.filter(i=>i.beneficiaryId===b.id).reduce((s,i)=>s+i.bags,0);
-    const bal    = Math.max(0, (b.sanctionedBags||0) - issued);
+    const activeAllot = DB.allotments
+      .filter(al=>al.beneficiaryId===b.id && (al.status==='Pending'||al.status==='Approved'))
+      .reduce((s,al)=>s+al.bags,0);
+    const bal    = Math.max(0, (b.sanctionedBags||0) - issued - activeAllot);
     return `<option value="${b.id}">${b.name} [${b.workId||'—'}] – Bal: ${bal} bags</option>`;
   }).join('');
 
